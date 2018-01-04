@@ -1,9 +1,14 @@
+"""
+Code to write instance catalogs for phosim and imsim using the gcr-catalogs
+galaxy catalogs.
+"""
 from __future__ import with_statement
 import os
 import copy
 import subprocess
-import numpy as np
+from collections import namedtuple
 import gzip
+import numpy as np
 import h5py
 
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
@@ -23,7 +28,8 @@ class InstanceCatalogWriter(object):
     galaxies accessed via the gcr-catalogs interface.
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
-                 min_mag=10, minsource=100, proper_motion=False):
+                 min_mag=10, minsource=100, proper_motion=False,
+                 imsim_catalog=False):
         """
         Parameters
         ----------
@@ -39,12 +45,19 @@ class InstanceCatalogWriter(object):
             Minimum number of objects for phosim.py to simulate a chip.
         proper_motion: bool [True]
             Flag to enable application of proper motion to stars.
+        imsim_catalog: bool [False]
+            Flag to write an imsim-style object catalog.
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
 
         self.descqa_catalog = descqa_catalog
         self.dither = dither
+        self.min_mag = min_mag
+        self.minsource = minsource
+        self.proper_motion = proper_motion
+        self.imsim_catalog = imsim_catalog
+
         self.obs_gen = ObservationMetaDataGenerator(database=opsimdb,
                                                     driver='sqlite')
 
@@ -54,7 +67,7 @@ class InstanceCatalogWriter(object):
 
         self.instcats = get_instance_catalogs(imsim_catalog)
 
-    def write_catalog(self, obsHistID, out_dir='.', fov=2, imsim_catalog=False):
+    def write_catalog(self, obsHistID, out_dir='.', fov=2):
         """
         Write the instance catalog for the specified obsHistID.
 
@@ -67,8 +80,6 @@ class InstanceCatalogWriter(object):
         fov: float [2.]
             Field-of-view angular radius in degrees.  2 degrees will cover
             the LSST focal plane.
-        imsim_catalog: bool [False]
-            Flag to write an imsim-style object catalog.
         """
         if not os.path.exists(out_dir):
             os.mkdir(out_dir)
@@ -82,7 +93,7 @@ class InstanceCatalogWriter(object):
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
         make_instcat_header(self.star_db, obs_md, cat_name,
-                            imsim_catalog=imsim_catalog,
+                            imsim_catalog=self.imsim_catalog,
                             object_catalogs=(star_name, gal_name))
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md,
@@ -111,7 +122,7 @@ class InstanceCatalogWriter(object):
         cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                           write_mode='a', write_header=False)
 
-        if imsim_catalog:
+        if self.imsim_catalog:
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
             command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s > %(imsim_cat)s' % locals()
             subprocess.check_call(command, shell=True)
@@ -235,7 +246,7 @@ class MaskedPhoSimCatalogPoint(PhoSimCatalogPoint):
         raw_norm = self.column_by_name('phoSimMagNorm')
         if self.min_mag is None:
             return raw_norm
-        return np.where(raw_norm<self.min_mag, self.min_mag, raw_norm)
+        return np.where(raw_norm < self.min_mag, self.min_mag, raw_norm)
 
     @cached
     def get_inProtoDc2(self):

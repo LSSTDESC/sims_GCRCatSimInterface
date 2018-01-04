@@ -33,8 +33,8 @@ instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
                                        dither=not args.disable_dithering,
                                        min_mag=args.min_mag,
                                        minsource=args.minsource,
-                                       proper_motion=args.enable_proper_motion)
+                                       proper_motion=args.enable_proper_motion,
+                                       imsim_catalog=args.imsim_catalog)
 
 for obsHistID in args.ids:
-    instcat_writer.write_catalog(obsHistID, out_dir=args.out_dir, fov=args.fov,
-                                 imsim_catalog=args.imsim_catalog)
+    instcat_writer.write_catalog(obsHistID, out_dir=args.out_dir, fov=args.fov)
