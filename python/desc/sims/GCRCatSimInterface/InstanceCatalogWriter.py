@@ -184,7 +184,7 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     return cat
 
 
-def get_obs_md(obs_gen, obsHistID, fov, dither=True):
+def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     """
     Get the ObservationMetaData object for the specified obsHistID.
 
@@ -194,7 +194,7 @@ def get_obs_md(obs_gen, obsHistID, fov, dither=True):
         Object that reads the opsim db file and generates obs_md objects.
     obsHistID: int
         The ID number of the desired visit.
-    fov: float
+    fov: float [2]
         Field-of-view angular radius in degrees.  2 degrees will cover
         the LSST focal plane.
     dither: bool [True]
