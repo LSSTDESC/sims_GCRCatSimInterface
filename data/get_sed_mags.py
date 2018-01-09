@@ -25,7 +25,7 @@ with open('dc2_seds.txt', 'r') as input_file:
 assert len(bp_params_dict['disk']) >0
 assert len(bp_params_dict['bulge']) > 0
 assert len(bp_params_dict['bulge']) == len(bp_params_dict['disk'])
-print('len %d' % len(bp_params_dict['disk']))
+#print('len %d' % len(bp_params_dict['disk']))
 
 for bp in bp_params_dict['disk']:
     assert bp in bp_params_dict['bulge']

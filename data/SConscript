@@ -1,1 +1,16 @@
-import get_sed_mags
+# -*- python -*-
+import os
+#from SCons.Script import Dir
+#from lsst.sconsUtils import scripts
+#
+#def build(target, source, env):
+#    print("Building data/CatSimMagGrid.txt")
+#    import get_sed_mags
+#
+#target = os.path.join(Dir('#data').abspath, 'CatSimMagGrid.txt')
+#result = scripts.state.env.Command(target=target, source=[], action=build)
+#scripts.state.targets['data'] = result
+
+if not os.path.isfile('CatSimMagGrid.txt'):
+    import get_sed_mags
+
