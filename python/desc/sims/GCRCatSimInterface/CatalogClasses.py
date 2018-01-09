@@ -84,14 +84,11 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     def get_fittedSedAndNorm(self):
 
         if not hasattr(self, '_disk_flux_names'):
-            catsim_mag_file = os.path.join(getPackageDir('gcr_catalogs'),
-                                           'GCRCatSimInterface', 'data',
-                                           'CatSimMagGrid.txt')
+            catsim_dir \
+                = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
+            catsim_mag_file = os.path.join(catsim_dir, 'CatSimMagGrid.txt')
 
             if not os.path.exists(catsim_mag_file):
-                catsim_dir = os.path.join(getPackageDir('gcr_catalogs'),
-                                          'GCRCatSimInterface',
-                                          'data')
                 msg = '\n%s does not exist\n' % catsim_mag_file
                 msg += 'Go into the directory %s ' % catsim_dir
                 msg += 'and run the script get_sed_mags.py'
