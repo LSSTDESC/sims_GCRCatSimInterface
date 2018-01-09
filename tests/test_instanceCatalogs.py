@@ -14,16 +14,16 @@ class InstanceCatalogTestCase(unittest.TestCase):
                                                driver='sqlite')
         self.obs_md \
             = obs_gen.getObservationMetaData(obsHistID=self.obsHistID)[0]
+        self.outfile = 'phosim_instcat_%i.txt' % self.obsHistID
 
     def tearDown(self):
-        pass
+        os.remove(self.outfile)
 
     def test_make_instcat_header(self):
         star_db = StarObj(database='LSSTCATSIM',
                           host='fatboy.phys.washington.edu',
                           port=1433, driver='mssql+pymssql')
-        outfile = 'phosim_instcat_%i.txt' % self.obsHistID
-        cat = make_instcat_header(star_db, self.obs_md, outfile)
+        cat = make_instcat_header(star_db, self.obs_md, self.outfile)
 
 if __name__ == '__main__':
     unittest.main()

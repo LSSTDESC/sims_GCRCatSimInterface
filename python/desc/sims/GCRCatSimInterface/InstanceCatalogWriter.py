@@ -18,7 +18,7 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
-from GCRCatSimInterface import PhoSimDESCQA, bulgeDESCQAObject, diskDESCQAObject
+from . import PhoSimDESCQA, bulgeDESCQAObject, diskDESCQAObject
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
