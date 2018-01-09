@@ -8,5 +8,5 @@
 # PATH, etc..
 
 inst_dir=$( cd $(dirname $BASH_SOURCE)/..; pwd -P )
-eups declare sims_gcrcatsiminterface -r ${inst_dir} -t ${USER}
-setup sims_gcrcatsiminterface -t ${USER}
+eups declare sims_GCRCatSimInterface -r ${inst_dir} -t ${USER}
+setup sims_GCRCatSimInterface -t ${USER}
