@@ -26,6 +26,8 @@ class DESCQAObject_protoDC2(DESCQAObject):
     connect CatSim to a database.
     """
 
+    _cat_cache_suffix = '_rotated'
+
     def _rotate_to_correct_field(self, ra_rad, dec_rad):
         """
         Takes arrays of RA and Dec (in radians) centered

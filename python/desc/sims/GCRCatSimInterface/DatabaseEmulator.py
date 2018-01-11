@@ -135,6 +135,10 @@ class DESCQAObject(object):
     idColKey = 'galaxy_id'
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')
     _postfix = None
+    _cat_cache_suffix = '_standard'  # so that different DESCQAObject
+                                     # classes with different
+                                     # self._transform_catalog()
+                                     # methods can be loaded simultaneously
 
     def __init__(self, yaml_file_name, config_overwrite=None):
         """
@@ -148,12 +152,12 @@ class DESCQAObject(object):
             raise RuntimeError("You cannot use DESCQAObject\n"
                                "You do not have *GCR* installed and setup")
 
-        if yaml_file_name not in _CATALOG_CACHE:
+        if yaml_file_name + self._cat_cache_suffix not in _CATALOG_CACHE:
             gc = GCRCatalogs.load_catalog(yaml_file_name, config_overwrite)
             self._transform_catalog(gc)
-            _CATALOG_CACHE[yaml_file_name] = gc
+            _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix] = gc
 
-        self._catalog = _CATALOG_CACHE[yaml_file_name]
+        self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
         self.columnMap = None
         self._make_column_map()
 
