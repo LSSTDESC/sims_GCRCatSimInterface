@@ -14,14 +14,10 @@ __all__ = ["DESCQAObject_protoDC2",
 
 _LSST_IS_AVAILABLE = True
 try:
-    from lsst.sims.utils import _angularSeparation
     from lsst.sims.utils import rotationMatrixFromVectors
     from lsst.sims.utils import cartesianFromSpherical, sphericalFromCartesian
 except ImportError:
     _LSST_IS_AVAILABLE = False
-    from astropy.coordinates import SkyCoord
-    def _angularSeparation(ra1, dec1, ra2, dec2):
-        return SkyCoord(ra1, dec1, unit="radian").separation(SkyCoord(ra2, dec2, unit="radian")).radian
 
 
 class DESCQAObject_protoDC2(DESCQAObject):
