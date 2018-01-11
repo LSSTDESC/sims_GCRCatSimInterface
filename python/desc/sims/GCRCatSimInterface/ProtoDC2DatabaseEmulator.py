@@ -27,6 +27,13 @@ class DESCQAObject_protoDC2(DESCQAObject):
     """
 
     def _rotate_to_correct_field(self, ra_rad, dec_rad):
+        """
+        Takes arrays of RA and Dec (in radians) centered
+        on RA=0, Dec=0 and rotates them to coordinates
+        centered on self.field_ra, self.field_dec
+
+        Returns the rotated RA, Dec in radians.
+        """
 
         if not _LSST_IS_AVAILABLE:
             raise RuntimeError("\nCannot use DESCQAObject_protoDC2\n"
@@ -61,11 +68,24 @@ class DESCQAObject_protoDC2(DESCQAObject):
         return self._ra_rotated, self._dec_rotated
 
     def _transform_ra(self, ra_deg, dec_deg):
+        """
+        Transform RA in degrees to RA_rot in radians
+        where RA was from a catalog centered on
+        RA=0, Dec=0 and RA_rot is from a catalog
+        centered on RA=self.field_ra, Dec=self.field_dec
+        """
         ra, dec = self._rotate_to_correct_field(deg2rad_double(ra_deg),
                                                 deg2rad_double(dec_deg))
         return ra
 
     def _transform_dec(self, ra_deg, dec_deg):
+        """
+        Transform Dec in degrees to Dec_rot in radians
+        where Dec was from a catalog centered on
+        RA=0, Dec=0 and Dec_rot is from a catalog
+        centered on RA=self.field_ra, Dec=self.field_dec
+        """
+
         ra, dec = self._rotate_to_correct_field(deg2rad_double(ra_deg),
                                                 deg2rad_double(dec_deg))
         return dec
