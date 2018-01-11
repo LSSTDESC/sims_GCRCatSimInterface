@@ -27,6 +27,11 @@ class DESCQAObject_protoDC2(DESCQAObject):
     """
 
     def _rotate_to_correct_field(self, ra_rad, dec_rad):
+
+        if not _LSST_IS_AVAILABLE:
+            raise RuntimeError("\nCannot use DESCQAObject_protoDC2\n"
+                               "The LSST simulations stack is not setup\n")
+
         if not hasattr(self, '_rotate_ra_in_cache'):
             self._rotate_ra_in_cache = None
             self._rotate_dec_in_cache = None
