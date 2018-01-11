@@ -31,6 +31,10 @@ class DESCQAObject_protoDC2(DESCQAObject):
     """
 
     def _rotate_to_correct_field(self, ra_rad, dec_rad):
+        if not hasattr(self, '_rotate_ra_in_cache'):
+            self._rotate_ra_in_cache = None
+            self._rotate_dec_in_cache = None
+
         if not hasattr(self, '_field_rot_matrix'):
             dc2_origin = cartesianFromSpherical(0.0, 0.0)
             correct_field = cartesianFromSpherical(np.radians(self.field_ra),
@@ -39,11 +43,21 @@ class DESCQAObject_protoDC2(DESCQAObject):
             self._field_rot_matrix = rotationMatrixFromVectors(dc2_origin,
                                                                correct_field)
 
-        xyz = cartesianFromSpherical(ra_rad, dec_rad).transpose()
-        xyz_rotated = np.dot(self._field_rot_matrix, xyz).transpose()
 
-        ra_rotated, dec_rotated = sphericalFromCartesian(xyz_rotated)
-        return ra_rotated, dec_rotated
+        if self._rotate_ra_in_cache is None or \
+           not np.array_equal(ra_rad, self._rotate_ra_in_cache) or \
+           not np.array_equal(dec_rad, self._rotate_dec_in_cache):
+
+            xyz = cartesianFromSpherical(ra_rad, dec_rad).transpose()
+            xyz_rotated = np.dot(self._field_rot_matrix, xyz).transpose()
+
+            self._rotate_ra_in_cache = ra_rad
+            self._rotate_dec_in_cache = dec_rad
+
+            (self._ra_rotated,
+             self._dec_rotated) = sphericalFromCartesian(xyz_rotated)
+
+        return self._ra_rotated, self._dec_rotated
 
     def _transform_ra(self, ra_deg, dec_deg):
         ra, dec = self._rotate_to_correct_field(deg2rad_double(ra_deg),
