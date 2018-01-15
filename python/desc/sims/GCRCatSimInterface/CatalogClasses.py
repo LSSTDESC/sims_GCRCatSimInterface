@@ -32,7 +32,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             if 'hasDisk' not in kwargs['cannot_be_null']:
                 kwargs['cannot_be_null'].append('hasDisk')
 
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(PhoSimDESCQA, self).__init__(*args, **kwargs)
+
 
     # below are defined getter methods used to define CatSim value-added columns
     @cached
@@ -40,6 +41,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
         return output
 
+    @cached
+    def get_hasKnots(self):
+        return self.get_hasDisk()
+    
     @cached
     def get_hasBulge(self):
         output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)

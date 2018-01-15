@@ -18,7 +18,7 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
-from . import PhoSimDESCQA, bulgeDESCQAObject, diskDESCQAObject
+from . import PhoSimDESCQA, bulgeDESCQAObject, diskDESCQAObject, knotsDESCQAObject
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
@@ -111,6 +111,12 @@ class InstanceCatalogWriter(object):
                     os.path.join(out_dir, bright_star_name): bright_cat}
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
 
+        cat = self.instcats.DESCQACat(knotsDESCQAObject(self.descqa_catalog),
+                                      obs_metadata=obs_md,
+                                      cannot_be_null=['hasKnots'])
+        cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
+                          write_header=False)
+        
         cat = self.instcats.DESCQACat(bulgeDESCQAObject(self.descqa_catalog),
                                       obs_metadata=obs_md,
                                       cannot_be_null=['hasBulge'])
@@ -122,12 +128,6 @@ class InstanceCatalogWriter(object):
                                       cannot_be_null=['hasDisk'])
         cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                           write_mode='a', write_header=False)
-
-        cat = self.instcats.DESCQACat(diskDESCQAObject(self.descqa_catalog),
-                                      obs_metadata=obs_md,
-                                      cannot_be_null=['hasKnots'])
-        cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
-                          write_header=False)
 
         if self.imsim_catalog:
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
