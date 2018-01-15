@@ -10,6 +10,7 @@ _GCR_IS_AVAILABLE = True
 try:
     from GCR import dict_to_numpy_array
     import GCRCatalogs
+    from GCRCatalogs.alphaq_addon import AlphaQAddonCatalog
 except ImportError:
     _GCR_IS_AVAILABLE = False
 
@@ -170,7 +171,7 @@ class DESCQAObject(object):
             gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
 
             # Test for random walk specific addon
-            if isinstance(gc, GCRCatalogs.alphaq_addon.AlphaQAddonCatalog):
+            if isinstance(gc, AlphaQAddonCatalog):
                 # Very hacky solution, the number of knots replaces the sersic index, keeping the rest
                 # of the sersic
                 gc.add_quantity_modifier('sindex::knots', gc.get_quantity_modifier('n_knots'))
