@@ -110,13 +110,18 @@ class InstanceCatalogWriter(object):
         cat_dict = {os.path.join(out_dir, star_name): star_cat,
                     os.path.join(out_dir, bright_star_name): bright_cat}
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
-
-        cat = self.instcats.DESCQACat(knotsDESCQAObject(self.descqa_catalog),
-                                      obs_metadata=obs_md,
-                                      cannot_be_null=['hasKnots'])
-        cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
-                          write_header=False)
         
+        # TODO: Find a better way of checking for catalog type
+        if 'knots' in self.descqa_catalog:
+            cat = self.instcats.DESCQACat(knotsDESCQAObject(self.descqa_catalog),
+                                          obs_metadata=obs_md,
+                                          cannot_be_null=['hasKnots'])
+            cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
+                              write_header=False)
+        else:
+            # Creating empty knots component
+            subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
+            
         cat = self.instcats.DESCQACat(bulgeDESCQAObject(self.descqa_catalog),
                                       obs_metadata=obs_md,
                                       cannot_be_null=['hasBulge'])
@@ -130,8 +135,9 @@ class InstanceCatalogWriter(object):
                           write_mode='a', write_header=False)
 
         if self.imsim_catalog:
+            
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
-            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s > %(imsim_cat)s' % locals()
+            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name) > %(imsim_cat)s' % locals()
             subprocess.check_call(command, shell=True)
 
         # gzip the object files.
