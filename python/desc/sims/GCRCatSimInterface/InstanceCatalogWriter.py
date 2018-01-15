@@ -92,7 +92,8 @@ class InstanceCatalogWriter(object):
         gal_name = 'gal_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
-        make_instcat_header(self.star_db, obs_md, cat_name,
+        make_instcat_header(self.star_db, obs_md,
+                            os.path.join(out_dir, cat_name),
                             imsim_catalog=self.imsim_catalog,
                             object_catalogs=(star_name, gal_name))
 
