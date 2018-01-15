@@ -174,7 +174,7 @@ class DESCQAObject(object):
             if isinstance(gc, AlphaQAddonCatalog):
                 # Very hacky solution, the number of knots replaces the sersic index, keeping the rest
                 # of the sersic
-                gc.add_quantity_modifier('sindex::knots', gc.get_quantity_modifier('n_knots'))
+                gc.add_quantity_modifier('sindex::knots',(lambda x:x, 'n_knots'))
                 gc.add_modifier_on_derived_quantities('majorAxis::knots', arcsec2rad, 'size_disk_true')
                 gc.add_modifier_on_derived_quantities('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
 

@@ -90,6 +90,7 @@ class InstanceCatalogWriter(object):
         star_name = 'star_cat_%d.txt' % obsHistID
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
+        knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
         make_instcat_header(self.star_db, obs_md, cat_name,
@@ -121,6 +122,12 @@ class InstanceCatalogWriter(object):
                                       cannot_be_null=['hasDisk'])
         cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                           write_mode='a', write_header=False)
+
+        cat = self.instcats.DESCQACat(diskDESCQAObject(self.descqa_catalog),
+                                      obs_metadata=obs_md,
+                                      cannot_be_null=['hasKnots'])
+        cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
+                          write_header=False)
 
         if self.imsim_catalog:
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
