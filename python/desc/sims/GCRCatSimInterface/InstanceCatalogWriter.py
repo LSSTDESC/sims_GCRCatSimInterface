@@ -137,7 +137,7 @@ class InstanceCatalogWriter(object):
         if self.imsim_catalog:
             
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
-            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name) > %(imsim_cat)s' % locals()
+            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
             subprocess.check_call(command, shell=True)
 
         # gzip the object files.
