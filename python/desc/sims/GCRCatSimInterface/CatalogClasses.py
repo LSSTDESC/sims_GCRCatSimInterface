@@ -22,6 +22,18 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                        ('galacticExtinctionModel', 'CCM', str, 3),
                        ('galacticRv', 3.1, float)]
 
+
+    def __init__(self, *args, **kwargs):
+        # Update the spatial model if knots are requested, for knots, the sersic
+        # parameter actually contains the number of knots
+        if 'hasKnots' in kwargs['cannot_be_null']:
+            self.catalog_type = 'phoSim_catalog_KNOTS'
+            self.spatialModel = 'knots'
+            if 'hasDisk' not in kwargs['cannot_be_null']:
+                kwargs['cannot_be_null'].append('hasDisk')
+
+        super(self.__class__, self).__init__(*args, **kwargs)
+
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
@@ -140,4 +152,3 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         in the base PhoSim InstanceCatalog classes
         """
         return self.column_by_name('fittedMagNorm')
-
