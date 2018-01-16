@@ -50,8 +50,11 @@ class DESCQAObject_protoDC2(DESCQAObject):
             correct_field = cartesianFromSpherical(np.radians(self.field_ra),
                                                    np.radians(self.field_dec))
 
-            self._field_rot_matrix = rotationMatrixFromVectors(dc2_origin,
-                                                               correct_field)
+            if np.abs(1.0-np.dot(dc2_origin, correct_field))<1.0e-7:
+                self._field_rot_matrix = np.identity(3, dtype=float)
+            else:
+                self._field_rot_matrix = rotationMatrixFromVectors(dc2_origin,
+                                                                   correct_field)
 
 
         if self._rotate_ra_in_cache is None or \
