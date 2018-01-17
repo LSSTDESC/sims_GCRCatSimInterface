@@ -3,7 +3,8 @@ This script will define classes that enable CatSim to interface with GCR
 """
 import numpy as np
 
-__all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject"]
+__all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject",
+           "deg2rad_double", "arcsec2rad"]
 
 
 _GCR_IS_AVAILABLE = True
@@ -134,6 +135,10 @@ class DESCQAObject(object):
     idColKey = 'galaxy_id'
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')
     _postfix = None
+    _cat_cache_suffix = '_standard'  # so that different DESCQAObject
+                                     # classes with different
+                                     # self._transform_catalog()
+                                     # methods can be loaded simultaneously
 
     def __init__(self, yaml_file_name, config_overwrite=None):
         """
@@ -147,31 +152,12 @@ class DESCQAObject(object):
             raise RuntimeError("You cannot use DESCQAObject\n"
                                "You do not have *GCR* installed and setup")
 
-        if yaml_file_name not in _CATALOG_CACHE:
+        if yaml_file_name + self._cat_cache_suffix not in _CATALOG_CACHE:
             gc = GCRCatalogs.load_catalog(yaml_file_name, config_overwrite)
+            self._transform_catalog(gc)
+            _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix] = gc
 
-            gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
-            gc.add_modifier_on_derived_quantities('decJ2000', deg2rad_double, 'dec_true')
-
-            gc.add_quantity_modifier('redshift', gc.get_quantity_modifier('redshift_true'), overwrite=True)
-            gc.add_quantity_modifier('true_redshift', gc.get_quantity_modifier('redshift_true'))
-            gc.add_quantity_modifier('gamma1', gc.get_quantity_modifier('shear_1'))
-            gc.add_quantity_modifier('gamma2', gc.get_quantity_modifier('shear_2'))
-            gc.add_quantity_modifier('kappa', gc.get_quantity_modifier('convergence'))
-
-            gc.add_quantity_modifier('positionAngle', gc.get_quantity_modifier('position_angle_true'))
-
-            gc.add_modifier_on_derived_quantities('majorAxis::disk', arcsec2rad, 'size_disk_true')
-            gc.add_modifier_on_derived_quantities('minorAxis::disk', arcsec2rad, 'size_minor_disk_true')
-            gc.add_modifier_on_derived_quantities('majorAxis::bulge', arcsec2rad, 'size_bulge_true')
-            gc.add_modifier_on_derived_quantities('minorAxis::bulge', arcsec2rad, 'size_minor_bulge_true')
-
-            gc.add_quantity_modifier('sindex::disk', gc.get_quantity_modifier('sersic_disk'))
-            gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
-
-            _CATALOG_CACHE[yaml_file_name] = gc
-
-        self._catalog = _CATALOG_CACHE[yaml_file_name]
+        self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
         self.columnMap = None
         self._make_column_map()
 
@@ -180,6 +166,39 @@ class DESCQAObject(object):
 
         if self.idColKey is None:
             raise RuntimeError("Need to define idColKey for your DESCQAObject")
+
+    def _transform_catalog(self, gc):
+        """
+        Accept a GCR catalog object and add transformations to the
+        columns in order to get the quantities expected by the CatSim
+        code
+
+        Parameters
+        ----------
+        gc -- a GCRCatalog object;
+              the result of calling GCRCatalogs.load_catalog()
+        """
+
+        gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
+        gc.add_modifier_on_derived_quantities('decJ2000', deg2rad_double, 'dec_true')
+
+        gc.add_quantity_modifier('redshift', gc.get_quantity_modifier('redshift_true'), overwrite=True)
+        gc.add_quantity_modifier('true_redshift', gc.get_quantity_modifier('redshift_true'))
+        gc.add_quantity_modifier('gamma1', gc.get_quantity_modifier('shear_1'))
+        gc.add_quantity_modifier('gamma2', gc.get_quantity_modifier('shear_2'))
+        gc.add_quantity_modifier('kappa', gc.get_quantity_modifier('convergence'))
+
+        gc.add_quantity_modifier('positionAngle', gc.get_quantity_modifier('position_angle_true'))
+
+        gc.add_modifier_on_derived_quantities('majorAxis::disk', arcsec2rad, 'size_disk_true')
+        gc.add_modifier_on_derived_quantities('minorAxis::disk', arcsec2rad, 'size_minor_disk_true')
+        gc.add_modifier_on_derived_quantities('majorAxis::bulge', arcsec2rad, 'size_bulge_true')
+        gc.add_modifier_on_derived_quantities('minorAxis::bulge', arcsec2rad, 'size_minor_bulge_true')
+
+        gc.add_quantity_modifier('sindex::disk', gc.get_quantity_modifier('sersic_disk'))
+        gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
+
+        return None
 
     def getIdColKey(self):
         return self.idColKey
