@@ -13,21 +13,21 @@ class FieldRotator(object):
 
         # create a basis set in which the unit vector
         # defining the new field center is the x axis
-        self._x = np.dot(self._first_rotation, xyz)
+        xx = np.dot(self._first_rotation, xyz)
         rng = np.random.RandomState(99)
         mag = np.NaN
         while np.abs(mag)<1.0e-20 or np.isnan(mag):
             random_vec = rng.random_sample(3)
-            comp = np.dot(random_vec, self._x)
-            self._y = random_vec - comp*self._x
-            mag = np.sqrt((self._y**2).sum())
-            self._y /= mag
+            comp = np.dot(random_vec, xx)
+            yy = random_vec - comp*xx
+            mag = np.sqrt((yy**2).sum())
+            yy /= mag
 
-        self._z = np.cross(self._x, self._y)
+        zz = np.cross(xx, yy)
 
-        self._to_self_bases = np.array([self._x,
-                                        self._y,
-                                        self._z])
+        self._to_self_bases = np.array([xx,
+                                        yy,
+                                        zz])
 
         self._out_of_self_bases =self._to_self_bases.transpose()
 
