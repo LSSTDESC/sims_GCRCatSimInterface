@@ -30,6 +30,10 @@ class FieldRotator(object):
         # to the new field center
         xyz = cartesianFromSpherical(np.radians(ra0), np.radians(dec0))
         xyz1 = cartesianFromSpherical(np.radians(ra1), np.radians(dec1))
+        if np.abs(1.0-np.dot(xyz, xyz1))<1.0e-10:
+            self._transformation = np.identity(3, dtype=float)
+            return
+
         first_rotation = rotationMatrixFromVectors(xyz, xyz1)
 
         # create a basis set in which the unit vector
