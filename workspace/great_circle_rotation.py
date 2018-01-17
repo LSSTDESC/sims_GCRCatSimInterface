@@ -25,11 +25,11 @@ class FieldRotator(object):
 
         zz = np.cross(xx, yy)
 
-        self._to_self_bases = np.array([xx,
-                                        yy,
-                                        zz])
+        to_self_bases = np.array([xx,
+                                  yy,
+                                  zz])
 
-        self._out_of_self_bases =self._to_self_bases.transpose()
+        out_of_self_bases =to_self_bases.transpose()
 
         # find the transformation necessary to preserve
         # the due north relationship at field center
@@ -44,8 +44,8 @@ class FieldRotator(object):
         north_true = cartesianFromSpherical(np.radians(ra1),
                                             np.radians(dec1+d_dec))
 
-        north = np.dot(self._to_self_bases, north)
-        north_true = np.dot(self._to_self_bases, north_true)
+        north = np.dot(to_self_bases, north)
+        north_true = np.dot(to_self_bases, north_true)
         north = np.array([north[1], north[2]])
         north /= np.sqrt((north**2).sum())
         north_true = np.array([north_true[1], north_true[2]])
@@ -61,9 +61,9 @@ class FieldRotator(object):
                                 [0.0, c, -s],
                                 [0.0, s, c]])
 
-        second_rotation = np.dot(self._out_of_self_bases,
+        second_rotation = np.dot(out_of_self_bases,
                                  np.dot(yz_rotation,
-                                        self._to_self_bases))
+                                        to_self_bases))
 
         self._transformation = np.dot(second_rotation,
                                       first_rotation)
