@@ -61,11 +61,11 @@ class FieldRotator(object):
                                 [0.0, c, -s],
                                 [0.0, s, c]])
 
-        self._second_rotation = np.dot(self._out_of_self_bases,
-                                np.dot(yz_rotation,
-                                       self._to_self_bases))
+        second_rotation = np.dot(self._out_of_self_bases,
+                                 np.dot(yz_rotation,
+                                        self._to_self_bases))
 
-        self._transformation = np.dot(self._second_rotation,
+        self._transformation = np.dot(second_rotation,
                                       first_rotation)
 
     def transform(self, ra, dec):
