@@ -7,6 +7,27 @@ from lsst.sims.utils import rotationMatrixFromVectors
 class FieldRotator(object):
 
     def __init__(self, ra0, dec0, ra1, dec1):
+        """
+        Parameters
+        ----------
+        ra0, dec0 are the coordinates of the original field
+        center in degrees
+
+        ra1, dec1 are the coordinates of the new field center
+        in degrees
+
+        The transform() method of this class operates by first
+        applying a rotation that carries the original field center
+        into the new field center.  Points are then transformed into
+        a basis in which the unit vector defining the new field center
+        is the x-axis.  A rotation about the x-axis is applied so that
+        a point that was due north of the original field center is still
+        due north of the field center at the new location.  Finally,
+        points are transformed back into the original x,y,z bases.
+        """
+
+        # find the rotation that carries the original field center
+        # to the new field center
         xyz = cartesianFromSpherical(np.radians(ra0), np.radians(dec0))
         xyz1 = cartesianFromSpherical(np.radians(ra1), np.radians(dec1))
         first_rotation = rotationMatrixFromVectors(xyz, xyz1)
@@ -31,8 +52,12 @@ class FieldRotator(object):
 
         out_of_self_bases =to_self_bases.transpose()
 
-        # find the transformation necessary to preserve
-        # the due north relationship at field center
+        # Take a point due north of the original field
+        # center.  Apply first_rotation to carry it to
+        # the new field.  Transform it to the [xx, yy, zz]
+        # bases and find the rotation about xx that will
+        # make it due north of the new field center.
+        # Finally, transform back to the original bases.
         d_dec = 0.1
         north = cartesianFromSpherical(np.radians(ra0),
                                        np.radians(dec0+d_dec))
@@ -69,6 +94,10 @@ class FieldRotator(object):
                                       first_rotation)
 
     def transform(self, ra, dec):
+        """
+        ra, dec are in degrees; return the RA, Dec coordinates
+        of the point about the new field center
+        """
         xyz = cartesianFromSpherical(np.radians(ra), np.radians(dec))
         xyz = np.dot(self._transformation, xyz)
         ra_out, dec_out = sphericalFromCartesian(xyz)
