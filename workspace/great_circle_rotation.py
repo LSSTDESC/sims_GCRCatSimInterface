@@ -78,6 +78,8 @@ class FieldRotator(object):
 
         c = north_true[0]*north[0]+north_true[1]*north[1]
         s = north[0]*north_true[1]-north[1]*north_true[0]
+        c = c/np.sqrt(c*c+s*s)
+        s = s/np.sqrt(c*c+s*s)
 
         nprime = np.array([c*north[0]-s*north[1],
                            s*north[0]+c*north[1]])
