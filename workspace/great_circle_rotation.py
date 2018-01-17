@@ -9,11 +9,11 @@ class FieldRotator(object):
     def __init__(self, ra0, dec0, ra1, dec1):
         xyz = cartesianFromSpherical(np.radians(ra0), np.radians(dec0))
         xyz1 = cartesianFromSpherical(np.radians(ra1), np.radians(dec1))
-        self._first_rotation = rotationMatrixFromVectors(xyz, xyz1)
+        first_rotation = rotationMatrixFromVectors(xyz, xyz1)
 
         # create a basis set in which the unit vector
         # defining the new field center is the x axis
-        xx = np.dot(self._first_rotation, xyz)
+        xx = np.dot(first_rotation, xyz)
         rng = np.random.RandomState(99)
         mag = np.NaN
         while np.abs(mag)<1.0e-20 or np.isnan(mag):
@@ -37,7 +37,7 @@ class FieldRotator(object):
         north = cartesianFromSpherical(np.radians(ra0),
                                        np.radians(dec0+d_dec))
 
-        north = np.dot(self._first_rotation, north)
+        north = np.dot(first_rotation, north)
 
         #print(np.degrees(sphericalFromCartesian(north)))
 
@@ -66,7 +66,7 @@ class FieldRotator(object):
                                        self._to_self_bases))
 
         self._transformation = np.dot(self._second_rotation,
-                                      self._first_rotation)
+                                      first_rotation)
 
     def transform(self, ra, dec):
         xyz = cartesianFromSpherical(np.radians(ra), np.radians(dec))
