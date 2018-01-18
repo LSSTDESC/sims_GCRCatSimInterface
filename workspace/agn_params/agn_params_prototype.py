@@ -136,6 +136,9 @@ if __name__ == "__main__":
     print(n_rat, len(np.where(log_rat>-2.0)[0]))
     """
 
+    # below is the code used to test the K correction
+    #################################################
+    """
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
     rng = np.random.RandomState(41321)
     sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
@@ -154,3 +157,4 @@ if __name__ == "__main__":
         obs_mag = ss.calcMag(bp)
         k_corr = k_correction(ss, bp, zz)
         print(true_rest_mag, obs_mag, k_corr, obs_mag-k_corr, zz)
+    """
