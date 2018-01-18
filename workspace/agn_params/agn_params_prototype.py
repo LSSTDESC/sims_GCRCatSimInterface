@@ -153,4 +153,4 @@ if __name__ == "__main__":
         ss.redshiftSED(zz, dimming=True)
         obs_mag = ss.calcMag(bp)
         k_corr = k_correction(ss, bp, zz)
-        print(true_rest_mag, obs_mag, k_corr, obs_mag-k_corr)
+        print(true_rest_mag, obs_mag, k_corr, obs_mag-k_corr, zz)
