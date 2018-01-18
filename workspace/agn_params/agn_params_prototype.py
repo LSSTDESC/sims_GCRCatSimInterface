@@ -62,7 +62,7 @@ def k_correction(sed_obj, bp, redshift):
 
     dilation = 1.0 + redshift
 
-    restframe_wavelen_grid = bp.wavelen/dilation
+    restframe_wavelen_grid = bp.wavelen*dilation
 
     valid_bp_dex = np.where(np.abs(bp.sb)>0.0)
     valid_restframe_wavelen = restframe_wavelen_grid[valid_bp_dex]
