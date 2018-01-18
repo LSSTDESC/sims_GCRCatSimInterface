@@ -105,6 +105,9 @@ def k_correction(sed_obj, bp, redshift):
 
 if __name__ == "__main__":
 
+    # below is the code I used to test the log_Eddington_ratio method
+    #################################################################
+    """
     dtype = np.dtype([('bhmass', float), ('accretion_rate', float)])
     data = np.genfromtxt('data/proto_dc2_bh_params.txt', dtype=dtype)
     valid = np.where(np.logical_and(data['bhmass']!=0.0,
@@ -129,3 +132,4 @@ if __name__ == "__main__":
     print(log_rat[(3*n_rat)//4])
     print(log_rat[-1])
     print(n_rat, len(np.where(log_rat>-2.0)[0]))
+    """
