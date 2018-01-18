@@ -38,6 +38,70 @@ def log_Eddington_ratio(bhmass, accretion_rate):
     output = log_L-log_L_Eddington
     return output
 
+def M_i_from_L_Mass(Ledd_ratio, bhmass):
+    """
+    Parameters
+    ----------
+    Ledd_ratio is the log10(L/L_Eddington) ratio
+
+    bhmass is the log10(mass of the blackhole in solar masses)
+
+    Returns
+    -------
+    Absolute i-band magnitude.  This will be read off from
+    the apparent relationships in Figure 15 of MacLeod et al 2010
+    (ApJ, 721, 1014)
+    """
+
+    if not hasattr(M_i_from_L_Mass, '_initialized'):
+        M_i_from_L_Mass._initialized = True
+
+        # example points taken from Figure 15 of MacLeod et al (2010)
+        l_edd = [-0.5, -0.1, -1.4, -1.8, -1.0]
+        mbh = [9.15, 8.42, 9.65, 10.1, 8.95]
+        m_i = [-26.8, -26.4, -25.2, -26.0, -24.7]
+
+        l_edd = np.array(l_edd)
+        mbh = np.array(mbh)
+        m_i = np.array(m_i)
+
+        theta_best = None
+        l_edd_0_best = None
+        mbh_0_best = None
+        err_best = None
+        mm = np.zeros((2,2), dtype=float)
+        bb = np.zeros(2, dtype=float)
+        nn = len(m_i)
+        for theta in np.arange(0.0, 2.0*np.pi, 0.01):
+            mm[0][0] = -1.0*nn*np.cos(theta)**2
+            mm[0][1] = nn*np.sin(theta)*np.cos(theta)
+            mm[1][0] = -1.0*nn*np.sin(theta)*np.cos(theta)
+            mm[1][1] = nn*np.sin(theta)**2
+
+            bb_sum = (m_i-l_edd*np.cos(theta)+mbh*np.sin(theta)).sum()
+            bb[0] = np.cos(theta)*bb_sum
+            bb[1] = np.sin(theta)*bb_sum
+
+            try:
+                vv = np.linalg.solve(mm, bb)
+            except np.linalg.LinAlgError:
+                continue
+            err = ((m_i-np.cos(theta)*(l_edd-vv[0])+np.sin(theta)*(mbh-vv[1]))**2).sum()
+            if err_best is None or err<err_best:
+                err_best = err
+                theta_best=theta
+                l_edd_0_best = vv[0]
+                mbh_0_best = vv[1]
+
+        M_i_from_L_Mass._c_theta = np.cos(theta_best)
+        M_i_from_L_Mass._s_theta = np.sin(theta_best)
+        M_i_from_L_Mass._ledd_0 = l_edd_0_best
+        M_i_from_L_Mass._mbh_0 = mbh_0_best
+
+        return (M_i_from_L_Mass._c_theta*(Ledd_ratio-M_i_from_L_Mass._ledd_0) -
+                M_i_from_L_Mass._s_theta*(bhmass-M_i_from_L_Mass._mbh_0))
+
+
 def k_correction(sed_obj, bp, redshift):
     """
     Parameters
@@ -158,3 +222,5 @@ if __name__ == "__main__":
         k_corr = k_correction(ss, bp, zz)
         print(true_rest_mag, obs_mag, k_corr, obs_mag-k_corr, zz)
     """
+
+    print(M_i_from_L_Mass(-0.5, 8.7))
