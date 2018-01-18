@@ -150,7 +150,7 @@ if __name__ == "__main__":
         ss = Sed()
         ss.readSED_flambda(full_name)
         true_rest_mag = ss.calcMag(bp)
-        ss.redshiftSED(zz)
+        ss.redshiftSED(zz, dimming=True)
         obs_mag = ss.calcMag(bp)
         k_corr = k_correction(ss, bp, zz)
         print(true_rest_mag, obs_mag, k_corr, obs_mag-k_corr)
