@@ -3,7 +3,7 @@ This script will define classes that enable CatSim to interface with GCR
 """
 import numpy as np
 
-__all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject"
+__all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject",
            "deg2rad_double", "arcsec2rad"]
 
 
