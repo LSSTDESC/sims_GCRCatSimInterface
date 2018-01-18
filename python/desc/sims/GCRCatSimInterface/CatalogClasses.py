@@ -43,11 +43,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_hasKnots(self):
-        if 'knots_flux_ratio' in [self.iter_column_names()]:
-            return get_hasDisk()
-        else:
-            return np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, None, None)
-    
+        return self.get_hasDisk()
+
     @cached
     def get_hasBulge(self):
         output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
