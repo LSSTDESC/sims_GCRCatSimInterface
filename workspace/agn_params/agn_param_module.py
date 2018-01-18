@@ -98,8 +98,8 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
         M_i_from_L_Mass._ledd_0 = l_edd_0_best
         M_i_from_L_Mass._mbh_0 = mbh_0_best
 
-        return (M_i_from_L_Mass._c_theta*(Ledd_ratio-M_i_from_L_Mass._ledd_0) -
-                M_i_from_L_Mass._s_theta*(bhmass-M_i_from_L_Mass._mbh_0))
+    return (M_i_from_L_Mass._c_theta*(Ledd_ratio-M_i_from_L_Mass._ledd_0) -
+            M_i_from_L_Mass._s_theta*(bhmass-M_i_from_L_Mass._mbh_0))
 
 
 def k_correction(sed_obj, bp, redshift):
