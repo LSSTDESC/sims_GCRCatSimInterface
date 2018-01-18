@@ -1,4 +1,5 @@
 import numpy as np
+from lsst.sims.photUtils import Sed, BandpassDict
 
 def log_Eddington_ratio(bhmass, accretion_rate):
     """
@@ -34,6 +35,72 @@ def log_Eddington_ratio(bhmass, accretion_rate):
 
     output = log_L-log_L_Eddington
     return output
+
+def k_correction(sed_obj, bp, redshift):
+    """
+    Parameters
+    ----------
+    sed_obj is an instantiation of Sed representing the observed
+    spectral energy density of the source
+
+    bp is an instantiation of Bandpass representing the bandpass
+    in which we are calculating the magnitudes
+
+    redshift is a float representing the redshift of the source
+
+    Returns
+    -------
+    K correction in magnitudes according to equation (12) of
+    Hogg et al. 2002 (arXiv:astro-ph/0210394)
+    """
+    if bp.phi is None:
+        bp.sbToPhi()
+    if sed_obj.fnu is None:
+        sed_obj.flambdaTofnu()
+
+    dilation = 1.0 + redshift
+
+    restrame_wavelen_grid = bp.wavelen/dilation
+
+    valid_bp_dex = np.where(np.abs(bp.sb)>0.0)
+    valid_restframe_wavelen = restframe_wavelen_grid[valid_bp_dex]
+    restframe_min_wavelen = valid_restframe_wavelen.min()
+    restframe_max_wavelen = valid_restframe_wavelen.max()
+    try:
+        assert restframe_min_wavelen > sed_obj.wavelen.min()
+        assert restframe_max_wavelen < sed_obj.wavelen.max()
+    except:
+        msg = '\nBP/(1+z) range '
+        msg += '%.6e < lambda < %.6e\n' % (restframe_min_wavelen,
+                                           restframe_max_wavelen)
+        msg += 'SED range '
+        mst += '%.6e < lambda < %.6e\n' % (sed_obj.wavelen.min(),
+                                           sed_obj.wavelen.max())
+
+        raise RuntimeError(msg)
+
+
+    restframe_fnu = np.interp(restframe_wavelen_grid,
+                              sed_obj.wavelen,
+                              sed_obj.fnu,
+                              left=0.0,
+                              right=0.0)
+
+    observed_fnu = np.interp(bp.wavelen,
+                             sed_obj.wavelen,
+                             sed_obj.fnu,
+                             left=0.0,
+                             right=0.0)
+
+    restframe_integral = (0.5*(bp.sb[1:]*restframe_fnu[1:]/bp.wavelen[1:] +
+                               bp.sb[:-1]*restframe_fnu[:-1]/bp.wavelen[:-1]) *
+                              (bp.wavelen[1:]-bp.wavelen[:-1])).sum()
+
+    observer_integral = (0.5*(bp.sb[1:]*observed_fnu[1:]/bp.wavelen[1:] +
+                              bp.sb[:-1]*observed_fnu[:-1]/bp.wavelen[:-1]) *
+                             (bp.wavelen[1:]-bp.wavelen[:-1])).sum()
+
+    return -2.5*np.log10((1.0+redshift)*observer_integral/restframe_integral)
 
 
 if __name__ == "__main__":
