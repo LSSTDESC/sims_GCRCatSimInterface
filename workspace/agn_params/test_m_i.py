@@ -29,9 +29,9 @@ if __name__ == "__main__":
     m_i_test = M_i_from_L_Mass(l_edd, mbh)
     err = 0.0
     for ii in range(len(l_edd)):
-        print(m_i[ii], m_i_test[ii], np.abs(m_i[ii]-m_i_test[ii]))
+        # print(m_i[ii], m_i_test[ii], np.abs(m_i[ii]-m_i_test[ii]))
         err += (m_i[ii]-m_i_test[ii])**2
-    print('err is %e' % (np.sqrt(err/len(m_i_test))))
+    print('rms err is %e' % (np.sqrt(err/len(m_i_test))))
 
 
     mbh_grid = np.arange(7.5, 10.5, 0.1)
