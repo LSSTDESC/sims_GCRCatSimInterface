@@ -202,28 +202,4 @@ if __name__ == "__main__":
     print(log_rat[-1])
     print(n_rat, len(np.where(log_rat>-2.0)[0]))
     """
-
-    # below is the code used to test the K correction
-    #################################################
-    """
-    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
-    rng = np.random.RandomState(41321)
-    sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
-    list_of_sed_files = os.listdir(sed_dir)
-    list_of_sed_files.sort()
-    sed_to_check = rng.choice(list_of_sed_files, size=10)
-    redshift_arr = rng.random_sample(len(sed_to_check))*2.0+0.1
-
-    bp = bp_dict['g']
-    for sed_name, zz in zip(sed_to_check, redshift_arr):
-        full_name = os.path.join(sed_dir, sed_name)
-        ss = Sed()
-        ss.readSED_flambda(full_name)
-        true_rest_mag = ss.calcMag(bp)
-        ss.redshiftSED(zz, dimming=True)
-        obs_mag = ss.calcMag(bp)
-        k_corr = k_correction(ss, bp, zz)
-        print(true_rest_mag, obs_mag, k_corr, obs_mag-k_corr, zz)
-    """
-
     print(M_i_from_L_Mass(-0.5, 8.7))
