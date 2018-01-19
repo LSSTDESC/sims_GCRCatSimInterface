@@ -144,10 +144,10 @@ def k_correction(sed_obj, bp, redshift):
 
     restframe_min_wavelen = restframe_wavelen_grid[valid_bp_dex[0][0]]
     restframe_max_wavelen = restframe_wavelen_grid[valid_bp_dex[0][-1]]
-    try:
-        assert restframe_min_wavelen > sed_obj.wavelen[0]
-        assert restframe_max_wavelen < sed_obj.wavelen[-1]
-    except:
+
+    if (restframe_min_wavelen < sed_obj.wavelen[0] or
+        restframe_max_wavelen > sed_obj.wavelen[-1]):
+
         msg = '\nBP/(1+z) range '
         msg += '%.6e < lambda < %.6e\n' % (restframe_min_wavelen,
                                            restframe_max_wavelen)
