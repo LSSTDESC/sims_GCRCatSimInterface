@@ -54,6 +54,7 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
     """
 
     if not hasattr(M_i_from_L_Mass, '_initialized'):
+        print('initializing M_i')
         M_i_from_L_Mass._initialized = True
 
         # example points taken from Figure 15 of MacLeod et al (2010)
