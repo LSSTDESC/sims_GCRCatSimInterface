@@ -131,13 +131,21 @@ def k_correction(sed_obj, bp, redshift):
 
     restframe_wavelen_grid = bp.wavelen*dilation
 
-    valid_bp_dex = np.where(np.abs(bp.sb)>0.0)
-    valid_restframe_wavelen = restframe_wavelen_grid[valid_bp_dex]
-    restframe_min_wavelen = valid_restframe_wavelen.min()
-    restframe_max_wavelen = valid_restframe_wavelen.max()
+    if not hasattr(k_correction, '_valid_dex_dict'):
+        k_correction._valid_dex_dict = {}
+
+    if bp not in k_correction._valid_dex_dict:
+        print('calculating valid dexes')
+        valid_bp_dex = np.where(np.abs(bp.sb)>0.0)
+        k_correction._valid_dex_dict[bp] = valid_bp_dex
+    else:
+        valid_bp_dex = k_correction._valid_dex_dict[bp]
+
+    restframe_min_wavelen = restframe_wavelen_grid[valid_bp_dex[0][0]]
+    restframe_max_wavelen = restframe_wavelen_grid[valid_bp_dex[0][-1]]
     try:
-        assert restframe_min_wavelen > sed_obj.wavelen.min()
-        assert restframe_max_wavelen < sed_obj.wavelen.max()
+        assert restframe_min_wavelen > sed_obj.wavelen[0]
+        assert restframe_max_wavelen < sed_obj.wavelen[-1]
     except:
         msg = '\nBP/(1+z) range '
         msg += '%.6e < lambda < %.6e\n' % (restframe_min_wavelen,
