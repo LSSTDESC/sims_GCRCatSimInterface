@@ -113,25 +113,23 @@ if __name__ == "__main__":
         raise RuntimeError('\n\n%s\n\nndoes not exist\n\n' % sed_name)
     base_sed = Sed()
     base_sed.readSED_flambda(sed_name)
-    obs_mag = []
+    z_grid = np.arange(0.0, data['redshift'].max(), 0.01)
+    k_grid = np.zeros(len(z_grid),dtype=float)
+    for i_z, zz in enumerate(z_grid):
+        ss = Sed(flambda=base_sed.flambda, wavelen=base_sed.wavelen)
+        ss.redshiftSED(zz, dimming=True)
+        k = k_correction(ss, bp, zz)
+        k_grid[i_z] = k
+
+    obs_mag = np.zeros(len(data), dtype=float)
+    k_arr = np.interp(data['redshift'], z_grid, k_grid)
     print('calculating observed mag')
     t_start = time.time()
     n_observable = 0
-    #for i_obj in range(len(data)):
-    for i_obj in range(500000):
-       if i_obj>0 and i_obj%10000==0:
-           elapsed =(time.time()-t_start)/3600.0
-           print('    done with %d -- %d %.2e -- %.2e hrs per' %
-                (i_obj,n_observable,n_observable/(i_obj+1),elapsed/i_obj))
-       ss = Sed(flambda=base_sed.flambda, wavelen=base_sed.wavelen)
-       ss.redshiftSED(data['redshift'][i_obj],dimming=True)
-       k_corr = k_correction(ss, bp, data['redshift'][i_obj])
-       local_obs_mag = m_i[i_obj] + DM[i_obj] + k_corr
-       obs_mag.append(local_obs_mag)
-       if local_obs_mag<=24.0:
-           n_observable += 1
+    for i_obj in range(len(data)):
+       local_obs_mag = m_i[i_obj] + DM[i_obj] + k_arr[i_obj]
+       obs_mag[i_obj] = local_obs_mag
 
-    obs_mag = np.array(obs_mag)
     print('tot mags %d' % len(obs_mag))
     observable = np.where(obs_mag<=24.0)
     print('observable mags %d' % len(observable[0]))
