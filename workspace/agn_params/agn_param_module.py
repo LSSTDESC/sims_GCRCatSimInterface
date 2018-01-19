@@ -122,8 +122,6 @@ def k_correction(sed_obj, bp, redshift):
     K correction in magnitudes according to equation (12) of
     Hogg et al. 2002 (arXiv:astro-ph/0210394)
     """
-    if bp.phi is None:
-        bp.sbToPhi()
     if sed_obj.fnu is None:
         sed_obj.flambdaTofnu()
 
