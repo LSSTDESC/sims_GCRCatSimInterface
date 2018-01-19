@@ -57,9 +57,21 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
         M_i_from_L_Mass._initialized = True
 
         # example points taken from Figure 15 of MacLeod et al (2010)
-        l_edd = [-0.5, -0.1, -1.4, -1.8, -1.0]
-        mbh = [9.15, 8.42, 9.65, 10.1, 8.95]
-        m_i = [-26.8, -26.4, -25.2, -26.0, -24.7]
+        l_edd = [-0.5, -0.5, -0.5,
+                 0.15, 0.15, 0.1,
+                 -0.9, -0.9, -0.9, -0.9,
+                 -1.4, -1.4, -1.4,
+                 -1.8, -1.8, -1.8]
+        mbh = [7.7, 9.0, 9.6,
+               8.4, 8.2, 7.9,
+               9.6, 8.9, 8.4, 10.1,
+               10.1, 9.6, 9.1,
+               8.9, 9.2, 9.4]
+        m_i = [-23.2, -26.5, -27.8,
+               -26.8, -26.4, -26.0,
+               -26.8, -25.2, -23.6, -28.5,
+               -26.9, -25.2, -24.0,
+               -23.2, -23.6, -24.0]
 
         l_edd = np.array(l_edd)
         mbh = np.array(mbh)
@@ -87,6 +99,7 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
             except np.linalg.LinAlgError:
                 continue
             err = ((m_i-np.cos(theta)*(l_edd-vv[0])+np.sin(theta)*(mbh-vv[1]))**2).sum()
+            #print('err %e' % (np.sqrt(err/nn)))
             if err_best is None or err<err_best:
                 err_best = err
                 theta_best=theta
@@ -97,6 +110,8 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
         M_i_from_L_Mass._s_theta = np.sin(theta_best)
         M_i_from_L_Mass._ledd_0 = l_edd_0_best
         M_i_from_L_Mass._mbh_0 = mbh_0_best
+        print('err_best %e' % (np.sqrt(err_best/len(l_edd))))
+        print('theta best %e slope %e\n' % (theta_best, np.tan(theta_best)))
 
     return (M_i_from_L_Mass._c_theta*(Ledd_ratio-M_i_from_L_Mass._ledd_0) -
             M_i_from_L_Mass._s_theta*(bhmass-M_i_from_L_Mass._mbh_0))
