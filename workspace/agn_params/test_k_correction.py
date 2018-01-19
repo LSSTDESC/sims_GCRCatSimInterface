@@ -28,7 +28,7 @@ class K_correction_test_case(unittest.TestCase):
             obs_mag = ss.calcMag(bp)
             k_corr = k_correction(ss, bp, zz)
             self.assertLess(np.abs(true_rest_mag-obs_mag+k_corr),
-                            0.05)
+                            0.001)
 
 
 if __name__ == "__main__":
