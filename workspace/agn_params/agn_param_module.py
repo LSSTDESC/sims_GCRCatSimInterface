@@ -133,20 +133,14 @@ def k_correction(sed_obj, bp, redshift):
 
     if not hasattr(k_correction, '_valid_dex_dict'):
         k_correction._valid_dex_dict = {}
-        k_correction._d_wavelen_dict = {}
 
     if bp not in k_correction._valid_dex_dict:
         print('calculating valid dexes')
         valid_bp_dex = np.where(np.abs(bp.sb)>0.0)
         k_correction._valid_dex_dict[bp] = valid_bp_dex
 
-        d_wavelen = bp.wavelen[1:]-bp.wavelen[:-1]
-        k_correction._d_wavelen_dict[bp] = d_wavelen
-
-
     else:
         valid_bp_dex = k_correction._valid_dex_dict[bp]
-        d_wavelen = k_correction._d_wavelen_dict[bp]
 
     restframe_min_wavelen = restframe_wavelen_grid[valid_bp_dex[0][0]]
     restframe_max_wavelen = restframe_wavelen_grid[valid_bp_dex[0][-1]]
@@ -174,6 +168,8 @@ def k_correction(sed_obj, bp, redshift):
                              sed_obj.fnu,
                              left=0.0,
                              right=0.0)
+
+    d_wavelen = bp.wavelen[1:]-bp.wavelen[:-1]
 
     restframe_integral = (0.5*(bp.sb[1:]*restframe_fnu[1:]/bp.wavelen[1:] +
                                bp.sb[:-1]*restframe_fnu[:-1]/bp.wavelen[:-1]) *
