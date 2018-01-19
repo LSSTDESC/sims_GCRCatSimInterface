@@ -78,40 +78,30 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
         l_edd_0_best = None
         mbh_0_best = None
         err_best = None
-        mm = np.zeros((2,2), dtype=float)
-        bb = np.zeros(2, dtype=float)
+        mm = np.zeros((3,3), dtype=float)
+        bb = np.zeros(3, dtype=float)
         nn = len(m_i)
-        for theta in np.arange(0.0, 2.0*np.pi, 0.01):
-            mm[0][0] = -1.0*nn*np.cos(theta)**2
-            mm[0][1] = nn*np.sin(theta)*np.cos(theta)
-            mm[1][0] = -1.0*nn*np.sin(theta)*np.cos(theta)
-            mm[1][1] = nn*np.sin(theta)**2
 
-            bb_sum = (m_i-l_edd*np.cos(theta)+mbh*np.sin(theta)).sum()
-            bb[0] = np.cos(theta)*bb_sum
-            bb[1] = np.sin(theta)*bb_sum
+        mm[0][0] = (l_edd**2).sum()
+        mm[0][1] = (l_edd*mbh).sum()
+        mm[0][2] = l_edd.sum()
+        mm[1][0] = mm[0][1]
+        mm[1][1] = (mbh**2).sum()
+        mm[1][2] = mbh.sum()
+        mm[2][0] = l_edd.sum()
+        mm[2][1] = mbh.sum()
+        mm[2][2] = nn
 
-            try:
-                vv = np.linalg.solve(mm, bb)
-            except np.linalg.LinAlgError:
-                continue
-            err = ((m_i-np.cos(theta)*(l_edd-vv[0])+np.sin(theta)*(mbh-vv[1]))**2).sum()
-            #print('err %e' % (np.sqrt(err/nn)))
-            if err_best is None or err<err_best:
-                err_best = err
-                theta_best=theta
-                l_edd_0_best = vv[0]
-                mbh_0_best = vv[1]
+        bb[0] = (l_edd*m_i).sum()
+        bb[1] = (mbh*m_i).sum()
+        bb[2] = m_i.sum()
 
-        M_i_from_L_Mass._c_theta = np.cos(theta_best)
-        M_i_from_L_Mass._s_theta = np.sin(theta_best)
-        M_i_from_L_Mass._ledd_0 = l_edd_0_best
-        M_i_from_L_Mass._mbh_0 = mbh_0_best
-        print('err_best %e' % (np.sqrt(err_best/len(l_edd))))
-        print('theta best %e slope %e\n' % (theta_best, np.tan(theta_best)))
+        vv = np.linalg.solve(mm, bb)
+        M_i_from_L_Mass._coeffs = vv
 
-    return (M_i_from_L_Mass._c_theta*(Ledd_ratio-M_i_from_L_Mass._ledd_0) -
-            M_i_from_L_Mass._s_theta*(bhmass-M_i_from_L_Mass._mbh_0))
+    return (M_i_from_L_Mass._coeffs[0]*Ledd_ratio +
+            M_i_from_L_Mass._coeffs[1]*bhmass +
+            M_i_from_L_Mass._coeffs[2])
 
 
 def k_correction(sed_obj, bp, redshift):
