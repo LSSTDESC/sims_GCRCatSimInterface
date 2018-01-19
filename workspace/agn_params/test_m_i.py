@@ -47,6 +47,10 @@ if __name__ == "__main__":
     mbh = np.array(mbh)
     
     mi = M_i_from_L_Mass(ledd, mbh)
+    valid = np.where(ledd>=-2.0)
+    mbh = mbh[valid]
+    ledd = ledd[valid]
+    mi = mi[valid]
     
     plt.figsize = (30,30)
     plt.scatter(mbh, mi, c=ledd,
