@@ -171,12 +171,12 @@ def k_correction(sed_obj, bp, redshift):
 
     d_wavelen = bp.wavelen[1:]-bp.wavelen[:-1]
 
-    restframe_integral = (0.5*(bp.sb[1:]*restframe_fnu[1:]/bp.wavelen[1:] +
-                               bp.sb[:-1]*restframe_fnu[:-1]/bp.wavelen[:-1]) *
+    bf_over_w = bp.sb*restframe_fnu/bp.wavelen
+    restframe_integral = (0.5*(bf_over_w[1:] + bf_over_w[:-1]) *
                               d_wavelen).sum()
 
-    observer_integral = (0.5*(bp.sb[1:]*observed_fnu[1:]/bp.wavelen[1:] +
-                              bp.sb[:-1]*observed_fnu[:-1]/bp.wavelen[:-1]) *
+    bf_over_w = bp.sb*observed_fnu/bp.wavelen
+    observer_integral = (0.5*(bf_over_w[1:] + bf_over_w[:-1]) *
                              d_wavelen).sum()
 
     return -2.5*np.log10((1.0+redshift)*observer_integral/restframe_integral)
