@@ -3,9 +3,15 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 import numpy as np
+import os
+import time
 
 from agn_param_module import M_i_from_L_Mass
 from agn_param_module import log_Eddington_ratio
+from agn_param_module import k_correction
+from lsst.sims.photUtils import BandpassDict, Sed
+from lsst.utils import getPackageDir
+from lsst.sims.photUtils import CosmologyObject
 
 def make_2d_histogram(xx, yy, dx, dy):
     """
@@ -86,16 +92,16 @@ if __name__ == "__main__":
         for ll in ledd_grid:
             mbh.append(mm)
             ledd.append(ll)
-    
+
     ledd = np.array(ledd)
     mbh = np.array(mbh)
-    
+
     mi = M_i_from_L_Mass(ledd, mbh)
     valid = np.where(ledd>=-2.0)
     mbh = mbh[valid]
     ledd = ledd[valid]
     mi = mi[valid]
-    
+
     plt.figsize = (30,30)
     plt.scatter(mbh, mi, c=ledd,
                 cmap=plt.get_cmap('gist_rainbow_r'))
@@ -108,7 +114,9 @@ if __name__ == "__main__":
     plt.savefig('macleod_15_analogy.png')
     plt.close()
 
-    dtype = np.dtype([('bhmass', float), ('accretion_rate', float)])
+    dtype = np.dtype([('bhmass', float), ('accretion_rate', float),
+                      ('redshift', float)])
+
     data = np.genfromtxt('data/proto_dc2_bh_params.txt', dtype=dtype)
     valid = np.where(np.logical_and(data['bhmass']!=0.0,
                                     data['accretion_rate']!=0.0))
@@ -117,6 +125,43 @@ if __name__ == "__main__":
     log_rat = log_Eddington_ratio(data['bhmass'], data['accretion_rate'])
     log_mbh = np.log10(data['bhmass'])
     m_i = M_i_from_L_Mass(log_rat, log_mbh)
+
+    cosmo = CosmologyObject(H0=71.0, Om0=0.265)
+    DM = cosmo.distanceModulus(redshift=data['redshift'])
+
+    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+    bp = bp_dict['i']
+    sed_dir = os.path.join(getPackageDir('sims_sed_library'),
+                           'agnSED')
+    sed_name = os.path.join(sed_dir, 'agn.spec.gz')
+    if not os.path.exists(sed_name):
+        raise RuntimeError('\n\n%s\n\nndoes not exist\n\n' % sed_name)
+    base_sed = Sed()
+    base_sed.readSED_flambda(sed_name)
+    obs_mag = []
+    print('calculating observed mag')
+    t_start = time.time()
+    n_observable = 0
+    #for i_obj in range(len(data)):
+    for i_obj in range(500000):
+       if i_obj>0 and i_obj%10000==0:
+           elapsed =(time.time()-t_start)/3600.0
+           print('    done with %d -- %d %.2e -- %.2e hrs per' %
+                (i_obj,n_observable,n_observable/(i_obj+1),elapsed/i_obj))
+       ss = Sed(flambda=base_sed.flambda, wavelen=base_sed.wavelen)
+       ss.redshiftSED(data['redshift'][i_obj],dimming=True)
+       k_corr = k_correction(ss, bp, data['redshift'][i_obj])
+       local_obs_mag = m_i[i_obj] + DM[i_obj] + k_corr
+       obs_mag.append(local_obs_mag)
+       if local_obs_mag<=24.0:
+           n_observable += 1
+
+    obs_mag = np.array(obs_mag)
+    print('tot mags %d' % len(obs_mag))
+    observable = np.where(obs_mag<=24.0)
+    print('observable mags %d' % len(observable[0]))
+    exit()
+
     valid =np.where(m_i<0.0)
 
     plt.figsize=(30,30)
