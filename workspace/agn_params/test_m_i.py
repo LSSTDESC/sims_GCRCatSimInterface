@@ -139,7 +139,7 @@ if __name__ == "__main__":
         raise RuntimeError('\n\n%s\n\nndoes not exist\n\n' % sed_name)
     base_sed = Sed()
     base_sed.readSED_flambda(sed_name)
-    z_grid = np.arange(0.0, data['redshift'].max(), 0.005)
+    z_grid = np.arange(0.0, data['redshift'].max(), 0.01)
     k_grid = np.zeros(len(z_grid),dtype=float)
 
     for i_z, zz in enumerate(z_grid):
@@ -173,53 +173,54 @@ if __name__ == "__main__":
     plt.savefig('obs_mag_distribution.png')
     plt.close()
 
-    observable = np.where(obs_mag<=24.0)
-    plt.figsize=(30,30)
-    plt.subplot(2,1,1)
-    plot_color_mesh(log_mbh[observable], log_rat[observable], 0.1, 0.1)
-    plt.xlabel('Log10(Mbh/Msun)')
-    plt.ylabel('Log10(L/L_Eddington)')
-    plt.subplot(2,1,2)
-    plot_color_mesh(log_mbh[observable], abs_mag[observable], 0.1, 0.1)
-    plt.xlabel('Log10(Mbh/Msun)')
-    plt.ylabel('M_i')
-    plt.tight_layout()
-    plt.savefig('observable_agn.png')
-    plt.close()
+    for obs_cutoff in ((25.0, 24.5, 24.0, 23.5, 23.0)):
+        observable = np.where(obs_mag<=obs_cutoff)
+        plt.figsize=(30,30)
+        plt.subplot(2,1,1)
+        plot_color_mesh(log_mbh[observable], log_rat[observable], 0.1, 0.1)
+        plt.xlabel('Log10(Mbh/Msun)')
+        plt.ylabel('Log10(L/L_Eddington)')
+        plt.subplot(2,1,2)
+        plot_color_mesh(log_mbh[observable], abs_mag[observable], 0.1, 0.1)
+        plt.xlabel('Log10(Mbh/Msun)')
+        plt.ylabel('M_i')
+        plt.tight_layout()
+        plt.savefig('observable_agn_%.1f.png' % obs_cutoff)
+        plt.close()
 
 
-    plt.figsize=(30,30)
-    plt.subplot(2,1,1)
-    plot_color_mesh(log_mbh[observable], obs_mag[observable], 0.1, 0.1)
-    plt.xlabel('Log10(Mbh/Msun)')
-    plt.ylabel('m_i')
-    plt.subplot(2,1,2)
-    plot_color_mesh(log_rat[observable], obs_mag[observable], 0.1, 0.1)
-    plt.xlabel('Log10(L/L_Eddington)')
-    plt.ylabel('m_i')
-    plt.tight_layout()
-    plt.savefig('observable_agn_obs_mag.png')
-    plt.close()
+        plt.figsize=(30,30)
+        plt.subplot(2,1,1)
+        plot_color_mesh(log_mbh[observable], obs_mag[observable], 0.1, 0.1)
+        plt.xlabel('Log10(Mbh/Msun)')
+        plt.ylabel('m_i')
+        plt.subplot(2,1,2)
+        plot_color_mesh(log_rat[observable], obs_mag[observable], 0.1, 0.1)
+        plt.xlabel('Log10(L/L_Eddington)')
+        plt.ylabel('m_i')
+        plt.tight_layout()
+        plt.savefig('observable_agn_obs_mag_%.1f.png' % obs_cutoff)
+        plt.close()
 
-    plt.figsize = (30,30)
-    plt.scatter(log_mbh[observable], abs_mag[observable],
-                c=log_rat[observable],
-                cmap=plt.get_cmap('gist_rainbow_r'),
-                s=4)
+        plt.figsize = (30,30)
+        plt.scatter(log_mbh[observable], abs_mag[observable],
+                    c=log_rat[observable],
+                    cmap=plt.get_cmap('gist_rainbow_r'),
+                    s=4)
 
-    plt.xlabel('Log10(Mbh/Msun)')
-    plt.ylabel('M_i')
-    #plt.xlim(7.3,11.0)
-    #plt.ylim(-29.4, -22.6)
-    plt.gca().invert_yaxis()
-    plt.colorbar(label='Log10(L/L_Eddington)')
-    plt.savefig('actual_sources.png')
-    plt.close()
+        plt.xlabel('Log10(Mbh/Msun)')
+        plt.ylabel('M_i')
+        #plt.xlim(7.3,11.0)
+        #plt.ylim(-29.4, -22.6)
+        plt.gca().invert_yaxis()
+        plt.colorbar(label='Log10(L/L_Eddington)')
+        plt.savefig('actual_sources_%.1f.png' % obs_cutoff)
+        plt.close()
 
-    macleod = np.where(np.logical_and(log_rat[observable]>=-2.0,
-                                      log_mbh[observable]>=7.3))
+        macleod = np.where(np.logical_and(log_rat[observable]>=-2.0,
+                                          log_mbh[observable]>=7.3))
 
-    print('%d MacLeod-like sources' % len(macleod[0]))
+        print('%d MacLeod-like sources' % len(macleod[0]))
     exit()
 
     valid =np.where(m_i<0.0)
