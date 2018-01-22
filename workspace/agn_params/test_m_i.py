@@ -70,8 +70,13 @@ def make_histogram(xx_in, dmag, cut_off=None, min_val = None, mode=None):
     i_xx = np.round((xx-min_val)/dmag).astype(int)
     unique_ixx, ct = np.unique(i_xx, return_counts=True)
 
+    if cut_off is not None:
+        valid_out = np.where(unique_ixx*dmag+min_val<=cut_off)
+        ct = ct[valid_out]
+        unique_ixx =unique_ixx[valid_out]
+
     if mode == 'normalized':
-        return unique_ixx*dmag+min_val, ct.astype(float)/float(len(xx_in))
+        return unique_ixx*dmag+min_val, ct.astype(float)/float(len(xx))
     elif mode == 'cumulative':
         return unique_ixx*dmag+min_val, np.cumsum(ct.astype(float))
 
