@@ -11,6 +11,7 @@ __all__ = ["DESCQAObject_protoDC2",
            "bulgeDESCQAObject_protoDC2",
            "diskDESCQAObject_protoDC2",
            "knotsDESCQAObject_protoDC2"]
+           "FieldRotator"]
 
 
 _LSST_IS_AVAILABLE = True
