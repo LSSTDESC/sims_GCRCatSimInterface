@@ -9,7 +9,8 @@ from desc.sims.GCRCatSimInterface import deg2rad_double, arcsec2rad
 
 __all__ = ["DESCQAObject_protoDC2",
            "bulgeDESCQAObject_protoDC2",
-           "diskDESCQAObject_protoDC2"]
+           "diskDESCQAObject_protoDC2",
+           "FieldRotator"]
 
 
 _LSST_IS_AVAILABLE = True
