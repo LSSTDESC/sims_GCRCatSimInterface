@@ -104,7 +104,7 @@ if __name__ == "__main__":
     data = data[valid]
     log_rat = log_Eddington_ratio(data['bhmass'], data['accretion_rate'])
     log_mbh = np.log10(data['bhmass'])
-    m_i = M_i_from_L_Mass(log_rat, log_mbh)
+    abs_mag = M_i_from_L_Mass(log_rat, log_mbh)
 
     cosmo = CosmologyObject(H0=71.0, Om0=0.265)
     DM = cosmo.distanceModulus(redshift=data['redshift'])
@@ -118,13 +118,18 @@ if __name__ == "__main__":
         raise RuntimeError('\n\n%s\n\nndoes not exist\n\n' % sed_name)
     base_sed = Sed()
     base_sed.readSED_flambda(sed_name)
-    z_grid = np.arange(0.0, data['redshift'].max(), 0.01)
+    z_grid = np.arange(0.0, data['redshift'].max(), 0.005)
     k_grid = np.zeros(len(z_grid),dtype=float)
+
     for i_z, zz in enumerate(z_grid):
         ss = Sed(flambda=base_sed.flambda, wavelen=base_sed.wavelen)
         ss.redshiftSED(zz, dimming=True)
         k = k_correction(ss, bp, zz)
         k_grid[i_z] = k
+
+    with open('k_corr_grid.txt', 'w') as out_file:
+        for i_z in range(len(z_grid)):
+            out_file.write('%e %e\n' % (z_grid[i_z], k_grid[i_z]))
 
     obs_mag = np.zeros(len(data), dtype=float)
     k_arr = np.interp(data['redshift'], z_grid, k_grid)
@@ -132,12 +137,56 @@ if __name__ == "__main__":
     t_start = time.time()
     n_observable = 0
     for i_obj in range(len(data)):
-       local_obs_mag = m_i[i_obj] + DM[i_obj] + k_arr[i_obj]
+       local_obs_mag = abs_mag[i_obj] + DM[i_obj] + k_arr[i_obj]
        obs_mag[i_obj] = local_obs_mag
 
-    print('tot mags %d' % len(obs_mag))
     observable = np.where(obs_mag<=24.0)
-    print('observable mags %d' % len(observable[0]))
+    plt.figsize=(30,30)
+    plt.subplot(2,1,1)
+    plot_color_mesh(log_mbh[observable], log_rat[observable], 0.1, 0.1)
+    plt.xlabel('log(Mbh/Msun)')
+    plt.ylabel('log(L/L_Edd)')
+    plt.subplot(2,1,2)
+    plot_color_mesh(log_mbh[observable], abs_mag[observable], 0.1, 0.1)
+    plt.xlabel('log(Mbh/Msun)')
+    plt.ylabel('M_i')
+    plt.tight_layout()
+    plt.savefig('observable_agn.png')
+    plt.close()
+
+
+    plt.figsize=(30,30)
+    plt.subplot(2,1,1)
+    plot_color_mesh(log_mbh[observable], obs_mag[observable], 0.1, 0.1)
+    plt.xlabel('log(Mbh/Msun)')
+    plt.ylabel('m_i')
+    plt.subplot(2,1,2)
+    plot_color_mesh(log_rat[observable], obs_mag[observable], 0.1, 0.1)
+    plt.xlabel('log(L/L_Edd)')
+    plt.ylabel('m_i')
+    plt.tight_layout()
+    plt.savefig('observable_agn_obs_mag.png')
+    plt.close()
+
+    plt.figsize = (30,30)
+    plt.scatter(log_mbh[observable], abs_mag[observable],
+                c=log_rat[observable],
+                cmap=plt.get_cmap('gist_rainbow_r'),
+                s=4)
+
+    plt.xlabel('Log(Mbh/Msun)')
+    plt.ylabel('M_i')
+    #plt.xlim(7.3,11.0)
+    #plt.ylim(-29.4, -22.6)
+    plt.gca().invert_yaxis()
+    plt.colorbar()
+    plt.savefig('actual_sources.png')
+    plt.close()
+
+    macleod = np.where(np.logical_and(log_rat[observable]>=-2.0,
+                                      log_mbh[observable]>=7.3))
+
+    print('%d MacLeod-like sources' % len(macleod[0]))
     exit()
 
     valid =np.where(m_i<0.0)
@@ -153,4 +202,5 @@ if __name__ == "__main__":
     plt.ylabel('M_i')
     plt.tight_layout()
     plt.savefig('m_i_distributions.png')
+    plt.close()
 
