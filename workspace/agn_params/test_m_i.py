@@ -187,6 +187,30 @@ if __name__ == "__main__":
     plt.savefig('obs_mag_distribution.png')
     plt.close()
 
+    plt.figsize=(30,30)
+    label_list = []
+    legend_list = []
+
+    with open('mass_v_m_i_dc2.txt', 'w') as out_file:
+        out_file.write('# log(mbh) m_i\n')
+        for i_obj in range(len(log_mbh)):
+            out_file.write('%e %e\n' % (log_mbh[i_obj], obs_mag[i_obj]))
+
+    mass_cut = np.where(log_mbh>7.0)
+    for obs_cutoff in [23.5, 24.0, 24.5, 25.0]:
+        observable = np.where(np.logical_and(obs_mag<=obs_cutoff, log_mbh>7.0))
+        ct_sources = len(observable[0])
+
+        xx, yy = make_histogram(obs_mag[mass_cut], 0.1, cut_off = obs_cutoff,
+                                mode='normalized')
+        ll, = plt.plot(xx,yy)
+        legend_list.append(ll)
+        label_list.append('m_i<=%.1f; %.2e sources' % (obs_cutoff, ct_sources))
+    plt.legend(legend_list, label_list, fontsize=10)
+    plt.xlabel('m_i')
+    plt.ylabel('dN/dm_i (normalized)')
+    plt.savefig('m_i_dist_cutoff.png')
+
     for mass_cut in (True, False):
         for obs_cutoff in ([24.0]):
             if mass_cut:
