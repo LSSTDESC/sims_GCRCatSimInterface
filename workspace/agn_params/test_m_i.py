@@ -50,7 +50,8 @@ def plot_color_mesh(xx, yy, dx, dy, vmin=None, vmax=None):
         z_mesh[iy][ix] += ct
 
     z_mesh = np.ma.masked_where(z_mesh==0,z_mesh)
-    plt.pcolormesh(x_mesh,y_mesh,z_mesh, vmin=vmin, vmax=vmax)
+    plt.pcolormesh(x_mesh,y_mesh,z_mesh, vmin=vmin, vmax=vmax,
+                   cmap=plt.get_cmap('gist_rainbow_r'))
                    #norm=matplotlib.colors.LogNorm(vmin=1.0,
                    #                               vmax=1.2e6))
     plt.colorbar(label='sources per pixel')
@@ -85,8 +86,8 @@ if __name__ == "__main__":
     plt.scatter(mbh, mi, c=ledd,
                 cmap=plt.get_cmap('gist_rainbow_r'),
                 s=3)
-    plt.colorbar()
-    plt.xlabel('Log(Mbh/Msun)')
+    plt.colorbar(label='Log10(L/L_Eddington)')
+    plt.xlabel('Log10(Mbh/Msun)')
     plt.ylabel('M_i')
     plt.xlim(7.3,11.0)
     plt.ylim(-29.4, -22.6)
@@ -144,11 +145,11 @@ if __name__ == "__main__":
     plt.figsize=(30,30)
     plt.subplot(2,1,1)
     plot_color_mesh(log_mbh[observable], log_rat[observable], 0.1, 0.1)
-    plt.xlabel('log(Mbh/Msun)')
-    plt.ylabel('log(L/L_Edd)')
+    plt.xlabel('Log10(Mbh/Msun)')
+    plt.ylabel('Log10(L/L_Eddington)')
     plt.subplot(2,1,2)
     plot_color_mesh(log_mbh[observable], abs_mag[observable], 0.1, 0.1)
-    plt.xlabel('log(Mbh/Msun)')
+    plt.xlabel('Log10(Mbh/Msun)')
     plt.ylabel('M_i')
     plt.tight_layout()
     plt.savefig('observable_agn.png')
@@ -158,11 +159,11 @@ if __name__ == "__main__":
     plt.figsize=(30,30)
     plt.subplot(2,1,1)
     plot_color_mesh(log_mbh[observable], obs_mag[observable], 0.1, 0.1)
-    plt.xlabel('log(Mbh/Msun)')
+    plt.xlabel('Log10(Mbh/Msun)')
     plt.ylabel('m_i')
     plt.subplot(2,1,2)
     plot_color_mesh(log_rat[observable], obs_mag[observable], 0.1, 0.1)
-    plt.xlabel('log(L/L_Edd)')
+    plt.xlabel('Log10(L/L_Eddington)')
     plt.ylabel('m_i')
     plt.tight_layout()
     plt.savefig('observable_agn_obs_mag.png')
@@ -174,12 +175,12 @@ if __name__ == "__main__":
                 cmap=plt.get_cmap('gist_rainbow_r'),
                 s=4)
 
-    plt.xlabel('Log(Mbh/Msun)')
+    plt.xlabel('Log10(Mbh/Msun)')
     plt.ylabel('M_i')
     #plt.xlim(7.3,11.0)
     #plt.ylim(-29.4, -22.6)
     plt.gca().invert_yaxis()
-    plt.colorbar()
+    plt.colorbar(label='Log10(L/L_Eddington)')
     plt.savefig('actual_sources.png')
     plt.close()
 
@@ -194,11 +195,11 @@ if __name__ == "__main__":
     plt.figsize=(30,30)
     plt.subplot(2,1,1)
     plot_color_mesh(log_mbh[valid], m_i[valid], 0.1, 0.1)
-    plt.xlabel('log(Mbh/Msun)')
+    plt.xlabel('Log10(Mbh/Msun)')
     plt.ylabel('M_i')
     plt.subplot(2,1,2)
     plot_color_mesh(log_rat[valid], m_i[valid], 0.1, 0.1)
-    plt.xlabel('log(L/L_Eddington)')
+    plt.xlabel('Log10(L/L_Eddington)')
     plt.ylabel('M_i')
     plt.tight_layout()
     plt.savefig('m_i_distributions.png')
