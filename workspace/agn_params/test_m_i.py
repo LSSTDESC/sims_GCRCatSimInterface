@@ -59,8 +59,8 @@ def plot_color_mesh(xx, yy, dx, dy, vmin=None, vmax=None):
 
 if __name__ == "__main__":
 
-    mbh_grid = np.arange(7.5, 10.5, 0.1)
-    ledd_grid = np.arange(-4.0, 0.5, 0.1)
+    mbh_grid = np.arange(7.5, 10.5, 0.01)
+    ledd_grid = np.arange(-4.0, 0.5, 0.01)
     mbh = []
     ledd = []
     for mm in mbh_grid:
@@ -76,10 +76,15 @@ if __name__ == "__main__":
     mbh = mbh[valid]
     ledd = ledd[valid]
     mi = mi[valid]
+    sorted_dex = np.argsort(ledd)
+    mbh = mbh[sorted_dex]
+    mi = mi[sorted_dex]
+    ledd = ledd[sorted_dex]
 
     plt.figsize = (30,30)
     plt.scatter(mbh, mi, c=ledd,
-                cmap=plt.get_cmap('gist_rainbow_r'))
+                cmap=plt.get_cmap('gist_rainbow_r'),
+                s=3)
     plt.colorbar()
     plt.xlabel('Log(Mbh/Msun)')
     plt.ylabel('M_i')
