@@ -161,9 +161,18 @@ if __name__ == "__main__":
        local_obs_mag = abs_mag[i_obj] + DM[i_obj] + k_arr[i_obj]
        obs_mag[i_obj] = local_obs_mag
 
-    obs_x, obs_y = make_histogram(obs_mag, 0.1, mode='cumulative')
     plt.figsize=(30,30)
-    plt.plot(obs_x, obs_y)
+    obs_x, obs_y = make_histogram(obs_mag, 0.1, mode='cumulative')
+    all, = plt.plot(obs_x, obs_y, color='b')
+
+    mass_dex = np.where(log_mbh>=7.0)
+
+    obs_x, obs_y = make_histogram(obs_mag[mass_dex], 0.1, mode='cumulative')
+    mass_cut, = plt.plot(obs_x, obs_y, color='g')
+
+    plt.legend([all, mass_cut], ['all', 'Log10(Mbh/Msun)>=7'],
+               loc=0)
+
     plt.xlabel('m_i')
     plt.ylabel('cumulative distribution')
     plt.yscale('log')
