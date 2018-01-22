@@ -58,6 +58,26 @@ def plot_color_mesh(xx, yy, dx, dy, vmin=None, vmax=None):
 
     return None
 
+
+def make_histogram(xx_in, dmag, cut_off=None, min_val = None, mode=None):
+    if cut_off is not None:
+        xx = xx_in[np.where(xx_in<=cut_off+dmag)]
+    else:
+        xx = xx_in
+    #print xx.min(),xx.max()
+    if min_val is None:
+        min_val=xx.min()-dmag
+    i_xx = np.round((xx-min_val)/dmag).astype(int)
+    unique_ixx, ct = np.unique(i_xx, return_counts=True)
+
+    if mode == 'normalized':
+        return unique_ixx*dmag+min_val, ct.astype(float)/float(len(xx_in))
+    elif mode == 'cumulative':
+        return unique_ixx*dmag+min_val, np.cumsum(ct.astype(float))
+
+    return unique_ixx*dmag+min_val, ct.astype(int)
+
+
 if __name__ == "__main__":
 
     mbh_grid = np.arange(7.5, 10.5, 0.01)
@@ -140,6 +160,18 @@ if __name__ == "__main__":
     for i_obj in range(len(data)):
        local_obs_mag = abs_mag[i_obj] + DM[i_obj] + k_arr[i_obj]
        obs_mag[i_obj] = local_obs_mag
+
+    obs_x, obs_y = make_histogram(obs_mag, 0.1, mode='cumulative')
+    plt.figsize=(30,30)
+    plt.plot(obs_x, obs_y)
+    plt.xlabel('m_i')
+    plt.ylabel('cumulative distribution')
+    plt.yscale('log')
+    plt.xlim(10.0,30.0)
+    for level in (10.0, 100.0, 1000.0, 10000.0, 100000.0):
+       plt.axhline(level, linestyle='--', color='r')
+    plt.savefig('obs_mag_distribution.png')
+    plt.close()
 
     observable = np.where(obs_mag<=24.0)
     plt.figsize=(30,30)
