@@ -1,5 +1,7 @@
 from lsst.sims.catalogs.definitions import CompoundInstanceCatalog
 
+__all__ = ["CompoundDESCQAInstanceCatalog"]
+
 class CompoundDESCQAInstanceCatalog(CompoundInstanceCatalog):
 
     def areDBObjectsTheSame(self, db1, db2):
