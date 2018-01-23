@@ -45,7 +45,10 @@ class CompoundDESCQAObject(DESCQAObject):
 
         self._dbObjectClassList = catalogDbObjectClassList
         self._validate_input()
-        self.objectTypeId = 119
+        self.objectTypeId = -1  # this is just a placeholder;
+                                # the objectTypeId for the classes in
+                                # self._dbObjectClassList will actually
+                                # be used at runtime
 
         self.columnMap = dict()
         for dbc in self._dbObjectClassList:
