@@ -158,6 +158,7 @@ class DESCQAObject(object):
             _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix] = gc
 
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
+        self._catalog_id = yaml_file_name + self._cat_cache_suffix
         self.columnMap = None
         self._make_column_map()
 
