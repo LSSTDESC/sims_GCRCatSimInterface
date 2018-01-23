@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import numbers
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import Sed, BandpassDict
 
@@ -180,7 +181,7 @@ def k_correction(sed_obj, bp, redshift):
     return -2.5*np.log10((1.0+redshift)*observer_integral/restframe_integral)
 
 
-def tau_from_params(redshift, M_i, mbh):
+def tau_from_params(redshift, M_i, mbh, rng=None):
     """
     Use equation (7) and Table 1 (7th row) of MacLeod et al.
     to get tau from black hole parameters
@@ -194,6 +195,10 @@ def tau_from_params(redshift, M_i, mbh):
 
     mbh is the mass of the blackhole in solar masses
 
+    rng is an option np.random.RandomState instantiation
+    which will introduce scatter into the coefficients
+    of the Macleod et al fit expression
+
     Returns
     -------
     tau -- the characteristic timescale of the AGN light curve
@@ -204,6 +209,16 @@ def tau_from_params(redshift, M_i, mbh):
     BB = 0.17
     CC = 0.01
     DD = 0.12
+
+    if rng is not None:
+        if isinstance(redshift, numbers.Number):
+            n_obj = 1
+        else:
+            n_obj = len(redshift)
+        AA += rng.normal(0.0, 0.1, size=n_obj)
+        BB += rng.normal(0.0, 0.02, size=n_obj)
+        CC += rng.normal(0.0, 0.03, size=n_obj)
+        DD += rng.normal(0.0, 0.04, size=n_obj)
 
     # in Angstroms for i-band
     eff_wavelen = 7690.0/(1.0+redshift)
