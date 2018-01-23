@@ -224,15 +224,18 @@ class DESCQAObject(object):
         used to get it into units expected by CatSim.
         """
         self.columnMap = dict()
+        self.columns = []
 
         for name in self._catalog.list_all_quantities(include_native=True):
             self.columnMap[name] = (name,)
+            self.columns.append((name, name))
 
         if self._columns_need_postfix:
             if not self._postfix:
                 raise ValueError('must specify `_postfix` when `_columns_need_postfix` is not empty')
             for name in self._columns_need_postfix:
                 self.columnMap[name] = (name + self._postfix,)
+                self.columns.append((name, name+self._postfix))
 
 
     def query_columns(self, colnames=None, chunk_size=None,
