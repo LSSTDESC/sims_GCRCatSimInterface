@@ -1,7 +1,7 @@
 from desc.sims.GCRCatSimInterface import CompoundDESCQAInstanceCatalog
 from desc.sims.GCRCatSimInterface import bulgeDESCQAObject
 from desc.sims.GCRCatSimInterface import diskDESCQAObject
-from desc.sims.GCRCatSimInterface import CompoundDESCQACatalogDBObject
+from desc.sims.GCRCatSimInterface import CompoundDESCQAObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.utils import ObservationMetaData
@@ -35,6 +35,6 @@ if __name__ == "__main__":
                                         [bulgeDESCQAObject_test,
                                          diskDESCQAObject_test],
                                         obs_metadata=obs,
-                                        compoundDBclass=CompoundDESCQACatalogDBObject)
+                                        compoundDBclass=CompoundDESCQAObject)
 
     cat.write_catalog('descqa_compound_cat.txt', chunk_size=10000)
