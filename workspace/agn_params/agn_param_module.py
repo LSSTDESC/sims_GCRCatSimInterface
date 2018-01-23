@@ -180,6 +180,39 @@ def k_correction(sed_obj, bp, redshift):
     return -2.5*np.log10((1.0+redshift)*observer_integral/restframe_integral)
 
 
+def tau_from_params(redshift, M_i, mbh):
+    """
+    Use equation (7) and Table 1 (7th row) of MacLeod et al.
+    to get tau from black hole parameters
+
+    Parameters
+    ----------
+    redshift of the black hole (will be used to calculate
+    the rest-frame effective wavelength of the i bandpass)
+
+    M_i is the absolute magnitude of the AGN in the i-band
+
+    mbh is the mass of the blackhole in solar masses
+
+    Returns
+    -------
+    tau -- the characteristic timescale of the AGN light curve
+    in the i-band in days
+    """
+
+    AA = 2.3
+    BB = 0.17
+    CC = 0.01
+    DD = 0.12
+
+    # in Angstroms for i-band
+    eff_wavelen = 7690.0/(1.0+redshift)
+
+    log_tau = AA + BB*np.log10(eff_wavelen/4000.0)
+    log_tau += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
+    return np.power(10.0, log_tau)
+
+
 if __name__ == "__main__":
 
     # below is the code I used to test the log_Eddington_ratio method
