@@ -140,7 +140,8 @@ class DESCQAObject(object):
                                      # self._transform_catalog()
                                      # methods can be loaded simultaneously
 
-    def __init__(self, yaml_file_name=None, config_overwrite=None):
+    def __init__(self, yaml_file_name=None, config_overwrite=None,
+                 connection=None):
         """
         Parameters
         ----------

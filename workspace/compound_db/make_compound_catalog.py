@@ -8,6 +8,10 @@ from lsst.sims.utils import ObservationMetaData
 
 class _testDESCQAObj(object):
     yaml_file_name = 'proto-dc2_v2.1.2'
+    tableid = 'protodc2'
+    raColName = 'ra_true'
+    decColName = 'dec_true'
+    connection = None
 
 class bulgeDESCQAObject_test(_testDESCQAObj, bulgeDESCQAObject):
     objid = 'bulge_descqa'
