@@ -27,7 +27,7 @@ class CompoundDESCQAObject(DESCQAObject):
     of the column, the column will also be returned by its original, un-mangled name.
     """
 
-    def __init__(self, descqaObjectClassList):
+    def __init__(self, catalogDbObjectClassList, connection=None):
         """
         @param [in] descqaObjectClassList is a list of DESCQAObject
         daughter classes (not instantiations of those classes; the classes
@@ -43,18 +43,18 @@ class CompoundDESCQAObject(DESCQAObject):
         passed into descqaObjectClassList.
         """
 
-        self._descqaObjectClassList = descqaObjectClassList
+        self._dbObjectClassList = catalogDbObjectClassList
         self._validate_input()
         self.objectTypeId = 119
 
         self.columnMap = dict()
-        for dbc in self._descqaObjectClassList:
+        for dbc in self._dbObjectClassList:
             sub_cat_name = dbc.objid
             dbo = dbc()
             for col_name in dbo.columnMap:
                 self.columnMap[sub_cat_name+'_'+col_name] = dbo.columnMap[col_name]
 
-        dbo = self._descqaObjectClassList[0]()
+        dbo = self._dbObjectClassList[0]()
         # need to instantiate the first one because sometimes
         # idColKey is not defined until instantiation
         # (see GalaxyTileObj in sims_catUtils/../baseCatalogModels/GalaxyModels.py)
@@ -82,8 +82,8 @@ class CompoundDESCQAObject(DESCQAObject):
         do, indeed, query the same table of the same catalog.
         """
 
-        dbc0 = self._descqaObjectClassList[0]
-        for dbc in self._descqaObjectClassList:
+        dbc0 = self._dbObjectClassList[0]
+        for dbc in self._dbObjectClassList:
             if (dbc.yaml_file_name != dbc0.yaml_file_name or
                 dbc._cat_cache_suffix != dbc0._cat_cache_suffix):
 
