@@ -8,53 +8,39 @@ __all__ = ["CompoundDESCQAObject"]
 
 class CompoundDESCQAObject(DESCQAObject):
     """
-    This is a class for taking several CatalogDBObject daughter classes that
-    query the same table of the same database for the same rows (but different
-    columns; note that the columns can be transformed by the CatalogDBObjects'
-    self.columns member), and combining their queries into one.
+    This is a class for taking several DESCQAObject daughter classes that
+    query the same catalog for the same rows (but different
+    columns), and combining their queries into one.
 
-    You feed the constructor a list of CatalogDBObject daughter classes.  The
-    CompoundCatalogDBObject verifies that they all do, indeed, query the same table
-    of the same database.  It then constructs its own self.columns member (note
-    that CompoundCatalogDBObject is a daughter class of CatalogDBObject) which
+    You feed the constructor a list of DESCQAObject daughter classes.  The
+    CompoundDESCQAObject verifies that they all do, indeed, query the same
+    catalog.  It then constructs its own self.columns member (note
+    that CompoundDESCQAObject is a daughter class of DESQAObject) which
     combines all of the requested data.
 
-    When you call query_columns, a recarray will be returned as in a CatalogDBObject.
+    When you call query_columns, a recarray will be returned as in a DESCQAObject.
     Note, however, that the names of the columns of the recarray will be modified.
-    If the first CatalogDBObject in the list of CatalogDBObjects passed to the constructor
-    asks for a column named 'col1', that will be mapped to 'catName_col1' where 'catName'
-    is the CatalogDBObject's objid member.  'col2' will be mapped to 'catName_col2', etc.
-    In cases where the CatalogDBObject does not change the name of the column, the column
-    will also be returned by its original, un-mangled name.
-
-    In cases where a custom query_columns method must be implemented, this class
-    can be sub-classed and the custom method added as a member method.  In that
-    case, the _table_restriction member variable should be set to a list of table
-    names corresponding to the tables for which this class was designed.  An
-    exception will be raised if the user tries to use the CompoundCatalogDBObject
-    class to query tables for which it was not written.  _table_restriction defaults
-    to None, which means that the class is for use with any table.
+    If the first DESCQAObject class in the list of DESCQAObject classes passed to the
+    constructor asks for a column named 'col1', that will be mapped to 'catName_col1'
+    where 'catName' is the DESCQAObject's objid member.  'col2' will be mapped to
+    'catName_col2', etc.  In cases where the DESCQAObject does not change the name
+    of the column, the column will also be returned by its original, un-mangled name.
     """
 
     def __init__(self, catalogDbObjectClassList, connection=None):
         """
-        @param [in] catalogDbObjectClassList is a list of CatalogDBObject
+        @param [in] descqaObjectClassList is a list of DESCQAObject
         daughter classes (not instantiations of those classes; the classes
-        themselves) that all query the same database table
+        themselves) that all query the same catalog
 
         Note: this is a list of classes, not a list of instantiations of those
-        classes.  The connection to the database is established as soon as
-        you instantiate a CatalogDBObject daughter class.  To avoid creating
-        unnecessary database connections, CompoundCatalogDBObject will
+        classes.  The connection to the catalog is established as soon as
+        you instantiate a DESCQAObject daughter class.  To avoid creating
+        unnecessary connections, CompoundDESCQAObject will
         read in classes without an active connection and establish its
         own connection in this constructor.  This means that all connection
         parameters must be specified in the class definitions of the classes
-        passed into catalogDbObjectClassList.
-
-        @param [in] connection is an optional instantiation of DBConnection
-        representing an active connection to the database required by
-        this CompoundCatalogDBObject (prevents the CompoundCatalogDBObject
-        from opening a redundant connection)
+        passed into descqaObjectClassList.
         """
 
         self._dbObjectClassList = catalogDbObjectClassList
@@ -84,8 +70,8 @@ class CompoundDESCQAObject(DESCQAObject):
 
     def _validate_input(self):
         """
-        Verify that the CatalogDBObjects passed to the constructor
-        do, indeed, query the same table of the same database.
+        Verify that the DESCQAObjects passed to the constructor
+        do, indeed, query the same table of the same catalog.
         """
 
         dbc0 = self._dbObjectClassList[0]
