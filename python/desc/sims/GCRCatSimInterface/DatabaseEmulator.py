@@ -140,13 +140,20 @@ class DESCQAObject(object):
                                      # self._transform_catalog()
                                      # methods can be loaded simultaneously
 
-    def __init__(self, yaml_file_name, config_overwrite=None):
+    def __init__(self, yaml_file_name=None, config_overwrite=None):
         """
         Parameters
         ----------
         yaml_file_name is the name of the yaml file that will tell DESCQA
         how to load the catalog
         """
+
+        if yaml_file_name is None:
+            if not hasattr(self, 'yaml_file_name'):
+                raise RuntimeError('No yaml_file_name specified for '
+                                   'DESCQAObject')
+
+            yaml_file_name = self.yaml_file_name
 
         if not _GCR_IS_AVAILABLE:
             raise RuntimeError("You cannot use DESCQAObject\n"
