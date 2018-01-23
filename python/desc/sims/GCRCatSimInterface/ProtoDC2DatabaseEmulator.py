@@ -135,6 +135,8 @@ class DESCQAObject_protoDC2(DESCQAObject):
     """
 
     _cat_cache_suffix = '_rotated'
+    tableid = 'galaxy'
+    database = 'LSSTCATSIM'
 
     def _rotate_to_correct_field(self, ra_rad, dec_rad):
         """

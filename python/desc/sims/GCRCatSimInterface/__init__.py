@@ -3,4 +3,5 @@ from .CatalogClasses import *
 from .DatabaseEmulator import *
 from .ProtoDC2DatabaseEmulator import *
 from .InstanceCatalogWriter import *
+from .TwinklesCatalogWriter import *
 from .SedFitter import *
