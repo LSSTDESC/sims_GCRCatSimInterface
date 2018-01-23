@@ -68,7 +68,6 @@ if __name__ == "__main__":
        obs_mag[i_obj] = local_obs_mag
 
     observable = np.where(obs_mag<=24.0)
-    observable = np.where(np.logical_and(abs_mag<-26.0, abs_mag>-27.0))
     rng = np.random.RandomState(8812)
     tau = tau_from_params(data['redshift'], abs_mag, data['bhmass'], rng=rng)
 
