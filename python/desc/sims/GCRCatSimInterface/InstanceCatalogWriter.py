@@ -49,6 +49,10 @@ class InstanceCatalogWriter(object):
             Flag to enable application of proper motion to stars.
         imsim_catalog: bool [False]
             Flag to write an imsim-style object catalog.
+        protoDC2_ra: float [0]
+            Desired RA (J2000 degrees) of protoDC2 center.
+        protoDC2_dec: float [0]
+            Desired Dec (J2000 degrees) of protoDC2 center.
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
