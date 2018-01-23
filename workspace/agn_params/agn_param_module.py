@@ -272,7 +272,7 @@ def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
         AA += rng.normal(0.0, 0.01, size=n_obj)
         BB += rng.normal(0.0, 0.005, size=n_obj)
         CC += rng.normal(0.0, 0.005, size=n_obj)
-        DD += rng.normal(0.0, 0.005, size=n_obj)
+        DD += rng.normal(0.0, 0.02, size=n_obj)
 
     eff_wavelen_rest = eff_wavelen/(1.0+redshift)
 
