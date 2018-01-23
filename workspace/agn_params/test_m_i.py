@@ -124,6 +124,7 @@ if __name__ == "__main__":
                       ('redshift', float)])
 
     data = np.genfromtxt('data/proto_dc2_bh_params.txt', dtype=dtype)
+    print('max z  %e' % data['redshift'].max())
     valid = np.where(np.logical_and(data['bhmass']!=0.0,
                                     data['accretion_rate']!=0.0))
 
@@ -191,10 +192,14 @@ if __name__ == "__main__":
     label_list = []
     legend_list = []
 
+    assert len(log_mbh) == len(data['redshift'])
     with open('mass_v_m_i_dc2.txt', 'w') as out_file:
-        out_file.write('# log(mbh) m_i\n')
+        out_file.write('# log(mbh) m_i M_i z\n')
         for i_obj in range(len(log_mbh)):
-            out_file.write('%e %e\n' % (log_mbh[i_obj], obs_mag[i_obj]))
+            out_file.write('%e %e %e %e\n' %
+                           (log_mbh[i_obj], obs_mag[i_obj], abs_mag[i_obj],
+                            data['redshift'][i_obj]))
+
 
     mass_cut = np.where(log_mbh>7.0)
     for obs_cutoff in [23.5, 24.0, 24.5, 25.0]:
