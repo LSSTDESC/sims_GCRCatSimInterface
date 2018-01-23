@@ -19,19 +19,28 @@ class diskDESCQAObject_test(_testDESCQAObj, diskDESCQAObject_protoDC2):
     objid = 'disk_descqa'
 
 class CatForBulge(InstanceCatalog):
-    column_outputs = ['uniqueId', 'raJ2000', 'decJ2000',
+    column_outputs = ['uniqueId', 'objid', 'galaxy_id', 'raJ2000', 'decJ2000',
                       'minorAxis', 'majorAxis']
     transformations = {'minorAxis': arcsecFromRadians,
                        'majorAxis': arcsecFromRadians,
                        'raJ2000': np.degrees,
                        'decJ2000': np.degrees}
 
+    def get_objid(self):
+        return np.array([self.db_obj.objectTypeId]*len(self.column_by_name('raJ2000')))
+
 class CatForDisk(InstanceCatalog):
-    column_outputs = ['uniqueId', 'raJ2000', 'decJ2000',
+    column_outputs = ['uniqueId', 'objid', 'galaxy_id', 'raJ2000', 'decJ2000',
                       'minorAxis']
     transformations = {'minorAxis': arcsecFromRadians,
                        'raJ2000': np.degrees,
                        'decJ2000': np.degrees}
+
+
+    def get_objid(self):
+        return np.array([self.db_obj.objectTypeId]*len(self.column_by_name('raJ2000')))
+
+
 
 if __name__ == "__main__":
 
