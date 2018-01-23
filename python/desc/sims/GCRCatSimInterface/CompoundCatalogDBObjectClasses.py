@@ -4,12 +4,6 @@ __all__ = ["CompoundDESCQACatalogDBObject"]
 
 class CompoundDESCQACatalogDBObject(CompoundCatalogDBObject):
 
-    def _make_dbTypeMap(self):
-        pass
-
-    def _make_dbDefaultValues(self):
-        pass
-
     def _validate_input(self):
         """
         Verify that CatalogDBObject classes passed to the constructor
