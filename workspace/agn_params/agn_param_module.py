@@ -233,6 +233,55 @@ def tau_from_params(redshift, M_i, mbh, rng=None):
     return np.power(10.0, log_tau)
 
 
+def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
+    """
+    Use equation (7) and Table 1 (2nd row) of MacLeod et al.
+    to get the structure function from black hole parameters
+
+    Parameters
+    ----------
+    redshift of the black hole (will be used to calculate
+    the rest-frame effective wavelength of the i bandpass)
+
+    M_i is the absolute magnitude of the AGN in the i-band
+
+    mbh is the mass of the blackhole in solar masses
+
+    eff_wavelen is the observer-frame effective
+    wavelength of the band in Angstroms
+
+    rng is an option np.random.RandomState instantiation
+    which will introduce scatter into the coefficients
+    of the Macleod et al fit expression
+
+    Returns
+    -------
+    SF -- the structure function of the light curve at infinite
+    time lag of at the effective wavelength specified
+    """
+    AA = -0.56
+    BB = -0.479
+    CC = 0.111
+    DD = 0.11
+
+    if rng is not None:
+        if isinstance(redshift, numbers.Number):
+            n_obj = 1
+        else:
+            n_obj = len(redshift)
+        AA += rng.normal(0.0, 0.01, size=n_obj)
+        BB += rng.normal(0.0, 0.005, size=n_obj)
+        CC += rng.normal(0.0, 0.005, size=n_obj)
+        DD += rng.normal(0.0, 0.005, size=n_obj)
+
+    eff_wavelen_rest = eff_wavelen/(1.0+redshift)
+
+    log_sf = AA + BB*np.log10(eff_wavelen_rest/4000.0)
+    log_sf += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
+
+    return np.power(10.0, log_sf)
+
+
 if __name__ == "__main__":
 
     # below is the code I used to test the log_Eddington_ratio method
