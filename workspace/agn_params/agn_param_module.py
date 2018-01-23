@@ -205,6 +205,11 @@ def tau_from_params(redshift, M_i, mbh, rng=None):
     in the i-band in days
     """
 
+    if not hasattr(tau_from_params, '_eff_wavelen_i'):
+        bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+        eff_wav_nm = bp_dict['i'].calcEffWavelen()
+        tau_from_params._eff_wavelen_i = 10.0*eff_wav_nm[0]  # use phi; not sb
+
     AA = 2.3
     BB = 0.17
     CC = 0.01
@@ -221,7 +226,7 @@ def tau_from_params(redshift, M_i, mbh, rng=None):
         DD += rng.normal(0.0, 0.04, size=n_obj)
 
     # in Angstroms for i-band
-    eff_wavelen = 7690.0/(1.0+redshift)
+    eff_wavelen = tau_from_params._eff_wavelen_i/(1.0+redshift)
 
     log_tau = AA + BB*np.log10(eff_wavelen/4000.0)
     log_tau += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
