@@ -10,6 +10,7 @@ from agn_param_module import M_i_from_L_Mass
 from agn_param_module import log_Eddington_ratio
 from agn_param_module import k_correction
 from agn_param_module import tau_from_params
+from agn_param_module import SF_from_params
 from lsst.sims.photUtils import BandpassDict, Sed
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import CosmologyObject
@@ -71,6 +72,13 @@ if __name__ == "__main__":
     rng = np.random.RandomState(8812)
     tau = tau_from_params(data['redshift'], abs_mag, data['bhmass'], rng=rng)
 
+    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+    eff_wavelen_tuple = bp_dict['i'].calcEffWavelen()
+    eff_wavelen = 10.0*eff_wavelen_tuple[0]
+
+    sfi = SF_from_params(data['redshift'], abs_mag, data['bhmass'], eff_wavelen,
+                         rng=rng)
+
     xx, yy = make_histogram(np.log10(tau[observable]), 0.01,
                             mode='normalized')
 
@@ -79,5 +87,26 @@ if __name__ == "__main__":
     plt.xlabel('log10(tau in days)')
     plt.ylabel('dN/dlog10(tau)')
     plt.savefig('tau_distribution.png')
+    plt.close()
+
+    xx, yy = make_histogram(sfi[observable], 0.01,
+                            mode='normalized')
+
+    plt.figsize=(30,30)
+    plt.plot(xx,yy)
+    plt.xlabel('SF(i)')
+    plt.ylabel('dN/dlog10(SF)')
+    plt.savefig('sf_distribution.png')
+    plt.close()
+
     print(len(tau))
     print(len(tau[observable]))
+    exit()
+
+    with open('tau_sf_data_dc2.txt', 'w') as out_file:
+        out_file.write('# m_i M_i bhmass log(L/L_Edd) z tau sfi\n')
+        for i_obj in range(len(tau)):
+            out_file.write('%e %e %e %e %e %e %e\n' %
+            (obs_mag[i_obj], abs_mag[i_obj], data['bhmass'][i_obj],
+             log_rat[i_obj], data['redshift'][i_obj],
+             tau[i_obj], sfi[i_obj]))
