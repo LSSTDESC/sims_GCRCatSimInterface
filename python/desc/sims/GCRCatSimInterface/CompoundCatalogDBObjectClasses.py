@@ -66,6 +66,14 @@ class CompoundDESCQAObject(DESCQAObject):
         super(CompoundDESCQAObject, self).__init__()
 
     def _make_column_map(self):
+        """
+        This dummy method is needed because the call to
+        super(CompoundDESCQAObject, self).__init__() in
+        this class's __init__ will try to call
+        self._make_column_map().  We have already done
+        the column map construciton in self.__init__()
+        and thus, do not want to do anything more.
+        """
         pass
 
     def _validate_input(self):
