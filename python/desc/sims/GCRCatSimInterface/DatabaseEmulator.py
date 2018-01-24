@@ -166,7 +166,7 @@ class DESCQAObject(object):
 
     epoch = 2000.0
     idColKey = 'galaxy_id'
-    descqaDefaultValues = {'varParamStr': ('None', (str, 500))}
+    descqaDefaultValues = {'varParamStr': (None, (str, 500))}
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')
     _postfix = None
     _cat_cache_suffix = '_standard'  # so that different DESCQAObject
