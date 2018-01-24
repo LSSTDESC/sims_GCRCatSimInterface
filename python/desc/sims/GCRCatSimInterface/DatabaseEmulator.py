@@ -2,6 +2,7 @@
 This script will define classes that enable CatSim to interface with GCR
 """
 import numpy as np
+import time
 
 __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject",
            "deg2rad_double", "arcsec2rad"]
@@ -113,23 +114,25 @@ class DESCQAChunkIterator(object):
                 break
 
         if need_to_append_defaults:
-            default_names = [name
-                             for name in self._colnames
-                             if not descqa_catalog.has_quantity(self._column_map[name][0])]
+            t_start = time.time()
+            print('appending')
 
-            default_values = [[self._default_values[name][0]]*len(chunk)
-                              for name in self._colnames
-                              if not descqa_catalog.has_quantity(self._column_map[name][0])]
 
-            default_dtypes = [np.dtype(self._default_values[name][1])
-                                  for name in self._colnames
-                                  if not descqa_catalog.has_quantity(self._column_map[name][0])]
+            default_values = tuple(self._default_values[name][0] for
+                                   name in self._colnames
+                                   if not descqa_catalog.has_quantity(self._column_map[name][0]))
 
-            chunk = np.lib.recfunctions.append_fields(chunk,
-                                                      default_names,
-                                                      default_values,
-                                                      dtypes=default_dtypes,
-                                                      usemask=False)
+            dtype_list = [(name, chunk.dtype[name]) for name in chunk.dtype.names]
+            for name in self._colnames:
+                if not descqa_catalog.has_quantity(self._column_map[name][0]):
+                    dtype_list.append((name, self._default_values[name][1]))
+
+            new_dtype = np.dtype(dtype_list)
+            new_chunk = np.rec.fromrecords([tuple(xx) + default_values
+                                            for xx in chunk], dtype=new_dtype)
+
+            chunk = new_chunk
+            print('appending took %.4f' % (time.time()-t_start))
 
         return self._descqa_obj._postprocess_results(chunk)
 
