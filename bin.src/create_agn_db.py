@@ -140,7 +140,7 @@ if __name__ == "__main__":
     galaxy_id = galaxy_id[sorted_dex]
 
     log_edd_ratio = log_Eddington_ratio(bhm, accretion_rate)
-    abs_mag_i = M_i_from_L_mass(log_edd_ratio, np.log10(bhm))
+    abs_mag_i = M_i_from_L_Mass(log_edd_ratio, np.log10(bhm))
 
     if args.m_i_cut is not None:
         valid = apply_m_i_cut(abs_mag_i, redshift, args.m_i_cut)
