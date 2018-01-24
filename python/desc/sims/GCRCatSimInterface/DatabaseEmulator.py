@@ -203,7 +203,7 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('sindex::disk', gc.get_quantity_modifier('sersic_disk'))
         gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
 
-        additional_postfix = (,)
+        additional_postfix = ()
         # Test for random walk specific addon
         if isinstance(gc, AlphaQAddonCatalog):
             # Very hacky solution, the number of knots replaces the sersic index, keeping the rest
