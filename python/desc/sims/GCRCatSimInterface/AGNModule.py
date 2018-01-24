@@ -4,6 +4,9 @@ import numbers
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import Sed, BandpassDict
 
+__all__ = ["log_Eddington_ratio", "M_i_from_L_Mass", "k_correction",
+           "tau_from_params", "SF_from_params"]
+
 def log_Eddington_ratio(bhmass, accretion_rate):
     """
     Parameters
@@ -280,36 +283,3 @@ def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
     log_sf += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
 
     return np.power(10.0, log_sf)
-
-
-if __name__ == "__main__":
-
-    # below is the code I used to test the log_Eddington_ratio method
-    #################################################################
-    """
-    dtype = np.dtype([('bhmass', float), ('accretion_rate', float)])
-    data = np.genfromtxt('data/proto_dc2_bh_params.txt', dtype=dtype)
-    valid = np.where(np.logical_and(data['bhmass']!=0.0,
-                                    data['accretion_rate']!=0.0))
-
-    data = data[valid]
-    log_rat = log_Eddington_ratio(data['bhmass'], data['accretion_rate'])
-
-    #valid = np.where(np.logical_not(np.isinf(log_rat)))
-    #log_rat = log_rat[valid]
-    print(len(log_rat),
-          len(np.where(np.isnan(log_rat))[0]),
-          len(np.where(np.isinf(log_rat))[0]))
-
-    sorted_dex = np.argsort(log_rat)
-    log_rat = log_rat[sorted_dex]
-    data = data[sorted_dex]
-    n_rat = len(log_rat)
-    print(log_rat[0])
-    print(log_rat[n_rat//4])
-    print(log_rat[n_rat//2])
-    print(log_rat[(3*n_rat)//4])
-    print(log_rat[-1])
-    print(n_rat, len(np.where(log_rat>-2.0)[0]))
-    """
-    print(M_i_from_L_Mass(-0.5, 8.7))
