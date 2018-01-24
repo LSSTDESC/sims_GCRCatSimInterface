@@ -6,3 +6,4 @@ from .InstanceCatalogWriter import *
 from .SedFitter import *
 from .CompoundCatalogDBObjectClasses import *
 from .CompoundInstanceCatalogClasses import *
+from .AGNModule import *
