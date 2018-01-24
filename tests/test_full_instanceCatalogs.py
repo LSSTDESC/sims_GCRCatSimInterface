@@ -20,11 +20,12 @@ class BulgePhoSimCatalogTestCase(unittest.TestCase):
         cls.out_dir = tempfile.mkdtemp(prefix='full_instanceCatalog')
 
     @classmethod
-    def tearDown(cls):
-        list_of_files = os.listdir(cls.out_dir)
-        for file_name in list_of_files:
-            os.unlink(os.path.join(cls.out_dir, file_name))
-        shutil.rmtree(cls.out_dir)
+    def tearDownClass(cls):
+        if os.path.exists(cls.out_dir):
+            list_of_files = os.listdir(cls.out_dir)
+            for file_name in list_of_files:
+                os.unlink(os.path.join(cls.out_dir, file_name))
+            shutil.rmtree(cls.out_dir)
 
     @unittest.skipIf(not os.path.exists(mag_grid),
                      'Have not created SED magnitude grid, yet')
