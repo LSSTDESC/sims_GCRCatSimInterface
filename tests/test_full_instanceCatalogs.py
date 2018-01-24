@@ -27,7 +27,7 @@ class BulgePhoSimCatalogTestCase(unittest.TestCase):
 
     @unittest.skipIf(not os.path.exists(mag_grid),
                      'Have not created SED magnitude grid, yet')
-    def test_dummy_disk_catalog(self):
+    def test_disk_phosim_catalog(self):
         """
         Just try producing a PhoSim InstanceCatalog from a fake
         ObservationMetaData, using protoDC2 (to make sure we don't
