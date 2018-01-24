@@ -30,7 +30,7 @@ def create_k_corr_grid():
         raise RuntimeError('\n\n%s\n\nndoes not exist\n\n' % sed_name)
     base_sed = Sed()
     base_sed.readSED_flambda(sed_name)
-    z_grid = np.arange(0.0, dc2_data['redshift'].max(), 0.01)
+    z_grid = np.arange(0.0, redshift.max(), 0.01)
     k_grid = np.zeros(len(z_grid),dtype=float)
 
     for i_z, zz in enumerate(z_grid):
