@@ -105,11 +105,26 @@ if __name__ == "__main__":
     xx2, yy2 = make_histogram(dc2_obs_mag_i, 0.05, mode='normalized')
     fig_name = os.path.join(fig_dir,'obs_mag_dist.png')
 
+    plt.subplot(2,1,1)
     l1, = plt.plot(xx1,yy1)
     l2, = plt.plot(xx2,yy2)
     plt.legend([l1,l2],['DC1','DC2'])
     plt.xlabel('m_i')
     plt.ylabel('dN/dm_i')
+    plt.yticks(fontsize=10)
+    plt.xticks(fontsize=10)
+
+    plt.subplot(2,1,2)
+    l1, = plt.plot(xx1,yy1)
+    l2, = plt.plot(xx2,yy2)
+    plt.legend([l1,l2],['DC1','DC2'])
+    #plt.xlabel('m_i')
+    #plt.ylabel('dN/dm_i')
+    plt.yticks(fontsize=10)
+    plt.xticks(fontsize=10)
+    plt.xlim(15.0,30.0)
+    plt.title('zoom in', fontsize=10)
+    plt.tight_layout()
     plt.savefig(fig_name)
     plt.close()
 
@@ -125,8 +140,10 @@ if __name__ == "__main__":
     dc1_data = dc1_data[dc1_obs_mag_cut]
     """
 
-    M_i_max = (24.0, 26.0, 28.0)
-    M_i_min = (22.0, 24.0, 26.0)
+    M_i_max = (22.0, 23.0, 25.0, 27.0)
+    M_i_min = (21.0, 22.0, 23.0, 25.0)
+    plt.figsize = (30,30)
+    fig_name = os.path.join(fig_dir,'agn_tau_dist.png')
     for i_bound in range(len(M_i_max)):
         mmin = M_i_min[i_bound]
         mmax = M_i_max[i_bound]
@@ -136,11 +153,9 @@ if __name__ == "__main__":
         dc2_valid = np.where(np.logical_and(dc2_obs_mag_i<=mmax,
                                             dc2_obs_mag_i>=mmin))
 
-        plt.figsize = (30,30)
-        fig_name = os.path.join(fig_dir,'agn_param_dist_%.2f_%.2f_obs.png' %
-                                (np.abs(mmax), np.abs(mmin)))
 
-        plt.subplot(2,1,1)
+
+        plt.subplot(2,2,i_bound+1)
         xx1, yy1 = make_histogram(np.log10(dc1_data['tau'][dc1_valid]),0.05,
                                   mode='normalized')
 
@@ -152,22 +167,44 @@ if __name__ == "__main__":
         plt.legend([l1,l2],['DC1','DC2'])
         plt.xlabel('log10(tau in days)')
         plt.ylabel('dN/dlog10(tau)')
-        plt.title('%.2f <= m_i <= %.2f' % (mmin, mmax))
+        plt.title('%.2f <= m_i <= %.2f' % (mmin, mmax), fontsize=10)
 
-        plt.subplot(2,1,2)
-        xx1, yy1 = make_histogram(dc1_data['sfi'][dc1_valid],0.05,
-                                  mode='normalized')
+    plt.tight_layout()
+    plt.savefig(fig_name)
+    plt.close
 
-        xx2, yy2 = make_histogram(dc2_sf['i'][dc2_valid], 0.05,
-                                  mode='normalized')
+    for i_bound in range(len(M_i_max)):
+        mmin = M_i_min[i_bound]
+        mmax = M_i_max[i_bound]
+        dc1_valid = np.where(np.logical_and(dc1_data['obs_m_i']<=mmax,
+                                            dc1_data['obs_m_i']>=mmin))
 
-        l1, = plt.plot(xx1,yy1)
-        l2, = plt.plot(xx2,yy2)
-        plt.legend([l1,l2],['DC1','DC2'])
-        plt.xlabel('SF_i (magnitudes)')
-        plt.ylabel('dN/dSF_i')
-        plt.title('%.2e DC1 objects; %.2e DC2 objects' %
-                  (len(dc1_valid[0]), len(dc2_valid[0])))
+        dc2_valid = np.where(np.logical_and(dc2_obs_mag_i<=mmax,
+                                            dc2_obs_mag_i>=mmin))
+
+        fig_name = os.path.join(fig_dir,
+                                'agn_SF_dist_%.1f_%.1f.png' %
+                                (np.abs(mmax), np.abs(mmin)))
+
+        for i_bp, bp in enumerate(('u', 'g', 'r', 'i', 'z', 'y')):
+            plt.subplot(3,2,i_bp+1)
+            xx1, yy1 = make_histogram(dc1_data['sf%s' % bp][dc1_valid],0.05,
+                                      mode='normalized')
+
+            xx2, yy2 = make_histogram(dc2_sf[bp][dc2_valid], 0.05,
+                                      mode='normalized')
+
+            l1, = plt.plot(xx1,yy1)
+            l2, = plt.plot(xx2,yy2)
+            plt.legend([l1,l2],['DC1','DC2'])
+            plt.xlabel('SF_%s (magnitudes)' % bp)
+            plt.ylabel('dN/dSF_%s' % bp)
+            if i_bp == 1:
+                plt.title('%.2e DC1 objects; %.2e DC2 objects' %
+                          (len(dc1_valid[0]), len(dc2_valid[0])),fontsize=10)
+            elif i_bp == 0:
+                plt.title('%.2f <= m_i <= %.2f' % (mmin, mmax), fontsize=10)
+
         plt.tight_layout()
         plt.savefig(fig_name)
         plt.close()
