@@ -216,7 +216,10 @@ class DESCQAObject(object):
             add_postfix = []
             for name in gc.list_all_native_quantities():
                 if 'SEDs/diskLuminositiesStellar:SED' in name:
-                    gc.add_modifier_on_derived_quantities(name+'::disk', lambda x,y: x*(1-y), name, 'knots_flux_ratio')
+                    # The epsilon value is to keep the disk component, so that
+                    # the random sequence in extinction parameters is preserved
+                    eps = np.finfo(np.float32).tiny
+                    gc.add_modifier_on_derived_quantities(name+'::disk', lambda x,y: np.clip(x*(1-y), eps, None), name, 'knots_flux_ratio')
                     gc.add_modifier_on_derived_quantities(name+'::knots', lambda x,y: x*y, name, 'knots_flux_ratio')
                     add_postfix.append(name)
             # Registering these columns for postfix filtering
