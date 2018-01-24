@@ -1,11 +1,17 @@
 import unittest
 import os
 
+from lsst.utils import getPackageDir
 from desc.sims.GCRCatSimInterface import diskDESCQAObject_protoDC2
 from desc.sims.GCRCatSimInterface import PhoSimDESCQA
 from lsst.sims.utils import ObservationMetaData
 
+mag_grid = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data',
+                        'CatSimMagGrid.txt')
 
+
+@unittest.skipIf(not os.path.exists(mag_grid),
+                 'Have not created SED magnitude grid, yet')
 class BulgePhoSimCatalogTestCase(unittest.TestCase):
 
     def setUp(self):
