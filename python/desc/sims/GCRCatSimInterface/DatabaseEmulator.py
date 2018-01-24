@@ -115,19 +115,19 @@ class DESCQAChunkIterator(object):
             t_start = time.time()
             print('appending')
 
-
-            default_values = tuple(self._default_values[name][0] for
-                                   name in self._colnames
-                                   if not descqa_catalog.has_quantity(self._column_map[name][0]))
-
             dtype_list = [(name, chunk.dtype[name]) for name in chunk.dtype.names]
             for name in self._colnames:
                 if not descqa_catalog.has_quantity(self._column_map[name][0]):
                     dtype_list.append((name, self._default_values[name][1]))
 
             new_dtype = np.dtype(dtype_list)
-            new_chunk = np.rec.fromrecords([tuple(xx) + default_values
-                                            for xx in chunk], dtype=new_dtype)
+
+            new_chunk = np.zeros(len(chunk), dtype=new_dtype)
+            for name in self._colnames:
+                if name in chunk.dtype.names:
+                    new_chunk[name] = chunk[name]
+                else:
+                    new_chunk[name] = self._default_values[name][0]
 
             chunk = new_chunk
             print('appending took %.4f' % (time.time()-t_start))
