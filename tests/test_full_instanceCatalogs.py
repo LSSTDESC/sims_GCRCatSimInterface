@@ -12,8 +12,6 @@ mag_grid = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data',
                         'CatSimMagGrid.txt')
 
 
-@unittest.skipIf(not os.path.exists(mag_grid),
-                 'Have not created SED magnitude grid, yet')
 class BulgePhoSimCatalogTestCase(unittest.TestCase):
 
     @classmethod
@@ -27,6 +25,8 @@ class BulgePhoSimCatalogTestCase(unittest.TestCase):
             os.unlink(os.path.join(cls.out_dir, file_name))
         shutil.rmtree(cls.out_dir)
 
+    @unittest.skipIf(not os.path.exists(mag_grid),
+                     'Have not created SED magnitude grid, yet')
     def test_dummy_disk_catalog(self):
         """
         Just try producing a PhoSim InstanceCatalog from a fake
