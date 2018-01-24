@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
         seed_arr = rng.randint(1,high=10000000, size=len(tau))
 
-        vals = ((ii, '{"m": "applyAgn", '
+        vals = ((int(ii), '{"m": "applyAgn", '
                       + '"p": {"seed": %d, "agn_tau": %.ee, "agn_sfu": %.3e, ' % (ss, tt, sfu)
                       + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
                       + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
