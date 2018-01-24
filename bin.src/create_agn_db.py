@@ -177,7 +177,7 @@ if __name__ == "__main__":
                       + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
                       + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
                  for ii, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
-                 zip(galaxy_id, tau, sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
+                 zip(galaxy_id, seed_arr, tau, sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
                      sf_dict['z'], sf_dict['y']))
 
         cursor.executemany('INSERT INTO agn_params VALUES(?, ?)', vals)
