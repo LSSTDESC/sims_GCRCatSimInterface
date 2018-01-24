@@ -19,9 +19,9 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, bulgeDESCQAObject_protoDC2, diskDESCQAObject_protoDC2, \
-    bulgeDESCQAObject, diskDESCQAObject
+    bulgeDESCQAObject, diskDESCQAObject, TwinklesCompoundInstanceCatalog_DC2
 from desc.twinkles.twinklesCatalogDefs import (TwinklesCatalogZPoint, TwinklesCatalogPoint,
-                                  TwinklesCatalogSersic2D, TwinklesCatalogSN)
+                                      TwinklesCatalogSersic2D, TwinklesCatalogSN)
 from desc.twinkles import (TwinklesDiskObj, TwinklesBulgeObj,
                            TwinklesAgnObj, GalaxyCacheSprinklerObj,
                            create_galaxy_cache,
@@ -119,7 +119,7 @@ class TwinklesCatalogWriter(object):
 
         # self.compoundGalICList = [self.instcats.DESCQACat, self.instcats.DESCQACat,
         self.compoundGalICList = [TwinklesCatalogSersic2D, TwinklesCatalogSersic2D,
-                          self.instcats.TwinklesCatalogZPoint]
+                                  self.instcats.TwinklesCatalogZPoint]
         # self.compoundGalDBList = [bulgeDESCQAObject,
         #                           diskDESCQAObject,
         self.compoundGalDBList = [TwinklesDiskObj, TwinklesBulgeObj, TwinklesAgnObj]
@@ -145,23 +145,24 @@ class TwinklesCatalogWriter(object):
         # cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
         #                   write_mode='a', write_header=False)
 
-        cat = self.instcats.TwinklesCatalogZPoint(self.galaxy_agn_obj,
-                                       obs_metadata=obs_md)#,
-        #                               #cannot_be_null=['hasDisk'])
-        #print(cat._methodRegistry) 
-        cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                           write_mode='a', write_header=False)
+        # cat = self.instcats.TwinklesCatalogZPoint(self.galaxy_agn_obj,
+        #                                obs_metadata=obs_md)#,
+        # #                               #cannot_be_null=['hasDisk'])
+        # #print(cat._methodRegistry) 
+        # cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+        #                    write_mode='a', write_header=False)
 
-        # gal_cat = CompoundInstanceCatalog(self.compoundGalICList,
-        #                                   self.compoundGalDBList,
-        #                                   obs_metadata=obs_md,
-        #                                   compoundDBclass=sprinklerCompound)
+        print(obs_md.mjd.TAI)
 
-        # gal_cat._active_connections += [self.galaxy_agn_obj.connection]
-        # print(gal_cat._active_connections)
+        gal_cat = TwinklesCompoundInstanceCatalog_DC2(self.compoundGalICList,
+                                          self.compoundGalDBList,
+                                          obs_metadata=obs_md,
+                                          compoundDBclass=sprinklerCompound)
+
+        gal_cat._active_connections += [self.galaxy_agn_obj.connection]
         
-        # gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-        #                       write_header=False)
+        gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                              write_header=False)
 
         # snphosim = PhoSimCatalogSN(self.sn_obj, obs_metadata=obs_md)
         
