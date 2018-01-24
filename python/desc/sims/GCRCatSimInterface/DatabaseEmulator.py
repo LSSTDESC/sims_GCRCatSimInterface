@@ -2,7 +2,6 @@
 This script will define classes that enable CatSim to interface with GCR
 """
 import numpy as np
-import time
 
 __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject",
            "deg2rad_double", "arcsec2rad"]
@@ -112,8 +111,6 @@ class DESCQAChunkIterator(object):
                 break
 
         if need_to_append_defaults:
-            t_start = time.time()
-            print('appending')
 
             dtype_list = [(name, chunk.dtype[name]) for name in chunk.dtype.names]
             for name in self._colnames:
@@ -130,7 +127,6 @@ class DESCQAChunkIterator(object):
                     new_chunk[name] = self._default_values[name][0]
 
             chunk = new_chunk
-            print('appending took %.4f' % (time.time()-t_start))
 
         return self._descqa_obj._postprocess_results(chunk)
 
