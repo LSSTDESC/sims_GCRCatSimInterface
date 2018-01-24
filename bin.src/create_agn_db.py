@@ -167,7 +167,7 @@ if __name__ == "__main__":
         cursor.execute('''CREATE TABLE agn_params
                           (galaxy_id, varParamStr text)''')
 
-        cursor.exectue('PRAGMA journal_mode=WAL;')
+        cursor.execute('PRAGMA journal_mode=WAL;')
         connection.commit()
 
         seed_arr = rng.randint(1,high=10000000, size=len(tau))
