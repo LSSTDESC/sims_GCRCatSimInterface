@@ -53,7 +53,7 @@ def apply_m_i_cut(abs_mag_i, redshift, m_i_cut):
     k_corr = np.interp(redshift, z_grid, k_grid)
 
     dc2_cosmo = CosmologyObject(H0=71.0, Om0=0.265)
-    distance_modulus = dc2_cosmo.distanceModulsu(redshift=redshift)
+    distance_modulus = dc2_cosmo.distanceModulus(redshift=redshift)
     obs_mag_i = abs_mag_i + distance_modulus + k_corr
     return np.where(obs_mag_i <= m_i_cut)
 
