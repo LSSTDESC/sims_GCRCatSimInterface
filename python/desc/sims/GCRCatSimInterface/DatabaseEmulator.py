@@ -38,6 +38,7 @@ def arcsec2rad(x):
 # the same catalog will need to be queried twice
 # go get bulges and disks from the same galaxy
 _CATALOG_CACHE = {}
+_ADDITIONAL_POSTFIX_CACHE = {}
 
 
 class DESCQAChunkIterator(object):
@@ -155,10 +156,13 @@ class DESCQAObject(object):
 
         if yaml_file_name + self._cat_cache_suffix not in _CATALOG_CACHE:
             gc = GCRCatalogs.load_catalog(yaml_file_name, config_overwrite)
-            self._transform_catalog(gc)
+            additional_postfix = self._transform_catalog(gc)
             _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix] = gc
+            _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix] = \
+                                      additional_postfix
 
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
+        self._columns_need_postfix += _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix]
         self.columnMap = None
         self._make_column_map()
 
@@ -199,6 +203,7 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('sindex::disk', gc.get_quantity_modifier('sersic_disk'))
         gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
 
+        additional_postfix = (,)
         # Test for random walk specific addon
         if isinstance(gc, AlphaQAddonCatalog):
             # Very hacky solution, the number of knots replaces the sersic index, keeping the rest
@@ -215,9 +220,9 @@ class DESCQAObject(object):
                     gc.add_modifier_on_derived_quantities(name+'::knots', lambda x,y: x*y, name, 'knots_flux_ratio')
                     add_postfix.append(name)
             # Registering these columns for postfix filtering
-            self._columns_need_postfix += tuple(add_postfix)
+            additional_postfix += tuple(add_postfix)
 
-        return None
+        return additional_postfix
 
     def getIdColKey(self):
         return self.idColKey
