@@ -4,12 +4,17 @@ import os
 import numpy as np
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import Sed, BandpassDict
-from agn_param_module import k_correction
-from agn_param_module import M_i_from_L_Mass
+from desc.sims.GCRCatSimInterface import k_correction
+from desc.sims.GCRCatSimInterface import M_i_from_L_Mass
 
 class M_i_test_case(unittest.TestCase):
 
     def test_m_i_abs(self):
+        """
+        Test the relationship between black hole mass,
+        L/L_Eddington, and M_i by comparing to data points
+        read off from MacLeod et al. 2010 Fig 15
+        """
         l_edd = [-0.5, -0.5, -0.5,
                   0.15, 0.15, 0.1,
                  -0.9, -0.9, -0.9, -0.9,
@@ -39,7 +44,10 @@ class M_i_test_case(unittest.TestCase):
 class K_correction_test_case(unittest.TestCase):
 
     def test_k_correction(self):
-
+        """
+        Test that the K correction correctly converts absolute magnitude
+        to observed magnitude.
+        """
         bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
         rng = np.random.RandomState(41321)
         sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
