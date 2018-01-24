@@ -69,7 +69,9 @@ class DESCQAChunkIterator(object):
         mapping and columns defined the
         DESCQAObject.dbDefaultValues
 
-        default_values is ignored.
+        default_values is a dict of default values to be used
+        in the event that a quantity is missing from the
+        catalog.
 
         chunk_size is an integer (or None) defining the number
         of rows to be returned at a time.
@@ -78,6 +80,7 @@ class DESCQAChunkIterator(object):
         self._column_map = column_map
         self._obs_metadata = obs_metadata
         self._colnames = colnames
+        self._default_values = default_values
         self._chunk_size = int(chunk_size) if chunk_size else None
         self._data_indices = None
 
@@ -88,6 +91,8 @@ class DESCQAChunkIterator(object):
         if self._data_indices is None:
             self._init_data_indices()
 
+        descqa_catalog = self._descqa_obj._catalog
+
         data_indices_this = self._data_indices[:self._chunk_size]
 
         if not data_indices_this.size:
@@ -95,7 +100,34 @@ class DESCQAChunkIterator(object):
 
         self._data_indices = self._data_indices[self._chunk_size:]
 
-        chunk = dict_to_numpy_array({name: self._descqa_obj._catalog[self._column_map[name][0]][data_indices_this] for name in self._colnames})
+        chunk = dict_to_numpy_array({name: self._descqa_obj._catalog[self._column_map[name][0]][data_indices_this]
+                                    for name in self._colnames
+                                    if descqa_catalog.has_quantity(self._column_map[name][0])})
+
+        need_to_append_defaults = False
+        for name in self._colnames:
+            if not descqa_catalog.has_quantity(self._column_map[name][0]):
+                need_to_append_defaults = True
+                break
+
+        if need_to_append_defaults:
+            default_names = [name
+                             for name in self._colnames
+                             if not descqa_catalog.has_quantity(self._column_map[name][0])]
+
+            default_values = [[self._default_values[name][0]]*len(chunk)
+                              for name in self._colnames
+                              if not descqa_catalog.has_quantity(self._column_map[name][0])]
+
+            default_dtypes = [np.dtype(self._default_values[name][1])
+                                  for name in self._colnames
+                                  if not descqa_catalog.has_quantity(self._column_map[name][0])]
+
+            chunk = np.lib.recfunctions.append_fields(chunk,
+                                                      default_names,
+                                                      default_values,
+                                                      dtypes=default_dtypes,
+                                                      usemask=False)
 
         return self._descqa_obj._postprocess_results(chunk)
 
@@ -135,6 +167,7 @@ class DESCQAObject(object):
 
     epoch = 2000.0
     idColKey = 'galaxy_id'
+    descqaDefaultValues = {'varParamStr': ('None', (str, 500))}
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')
     _postfix = None
     _cat_cache_suffix = '_standard'  # so that different DESCQAObject
@@ -238,6 +271,10 @@ class DESCQAObject(object):
                 self.columnMap[name] = (name + self._postfix,)
                 self.columns.append((name, name+self._postfix))
 
+        if hasattr(self, 'descqaDefaultValues'):
+            for col_name in self.descqaDefaultValues:
+                self.columnMap[col_name] = (col_name,)
+
     def _postprocess_results(self, chunk):
         """
         A method to add optional data before passing the results
@@ -276,7 +313,8 @@ class DESCQAObject(object):
         limit is ignored, but needs to be here to preserve the API
         """
         return DESCQAChunkIterator(self, self.columnMap, obs_metadata,
-                                   colnames or list(self.columnMap), None,
+                                   colnames or list(self.columnMap),
+                                   self.descqaDefaultValues,
                                    chunk_size)
 
 
