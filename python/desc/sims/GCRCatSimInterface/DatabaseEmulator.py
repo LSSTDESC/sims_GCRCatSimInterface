@@ -53,7 +53,7 @@ class DESCQAChunkIterator(object):
         """
         Parameters
         ----------
-        descqa_obj is the DESCQA catalog being queried
+        descqa_obj is the DESCQAObject querying the catalog
 
         column_map is the columnMap defined in DESCQAObject
         which controls the mapping between DESCQA columns
@@ -97,14 +97,16 @@ class DESCQAChunkIterator(object):
 
         self._data_indices = self._data_indices[self._chunk_size:]
 
-        return dict_to_numpy_array({name: self._descqa_obj[self._column_map[name][0]][data_indices_this] for name in self._colnames})
+        chunk = dict_to_numpy_array({name: self._descqa_obj._catalog[self._column_map[name][0]][data_indices_this] for name in self._colnames})
+
+        return self._descqa_obj._postprocess_results(chunk)
 
     next = __next__
 
     def _init_data_indices(self):
 
         if self._obs_metadata is None or self._obs_metadata._boundLength is None:
-            self._data_indices = np.arange(self._descqa_obj['raJ2000'].size)
+            self._data_indices = np.arange(self._descqa_obj._catalog['raJ2000'].size)
 
         else:
             try:
@@ -113,8 +115,8 @@ class DESCQAChunkIterator(object):
             except (TypeError, IndexError):
                 radius_rad = self._obs_metadata._boundLength
 
-            ra = self._descqa_obj['raJ2000']
-            dec = self._descqa_obj['decJ2000']
+            ra = self._descqa_obj._catalog['raJ2000']
+            dec = self._descqa_obj._catalog['decJ2000']
 
             self._data_indices = np.where(_angularSeparation(ra, dec, \
                     self._obs_metadata._pointingRA, \
@@ -290,6 +292,25 @@ class DESCQAObject(object):
                 self.columnMap[name] = (name + self._postfix,)
                 self.columns.append((name, name+self._postfix))
 
+    def _postprocess_results(self, chunk):
+        """
+        A method to add optional data before passing the results
+        to the InstanceCatalog class
+
+        This is included to preserve similarity to the API of
+        lsst.sims.catalogs.db.CatalogDBObject
+        """
+        return self._final_pass(chunk)
+
+    def _final_pass(self, chunk):
+        """
+        Last chance to inject data into the query results before
+        passing to the InstanceCatalog class
+
+        This is included to preserve similiarity to the API of
+        lsst.sims.catalogs.db.CatalogDBObject
+        """
+        return chunk
 
     def query_columns(self, colnames=None, chunk_size=None,
                       obs_metadata=None, constraint=None, limit=None):
@@ -308,7 +329,7 @@ class DESCQAObject(object):
 
         limit is ignored, but needs to be here to preserve the API
         """
-        return DESCQAChunkIterator(self._catalog, self.columnMap, obs_metadata,
+        return DESCQAChunkIterator(self, self.columnMap, obs_metadata,
                                    colnames or list(self.columnMap), None,
                                    chunk_size)
 
