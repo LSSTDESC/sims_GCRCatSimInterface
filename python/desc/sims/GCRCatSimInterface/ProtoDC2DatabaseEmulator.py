@@ -10,6 +10,7 @@ from desc.sims.GCRCatSimInterface import deg2rad_double, arcsec2rad
 __all__ = ["DESCQAObject_protoDC2",
            "bulgeDESCQAObject_protoDC2",
            "diskDESCQAObject_protoDC2",
+           "agnDESCQAObject_protoDC2",
            "FieldRotator"]
 
 
@@ -248,3 +249,17 @@ class bulgeDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 class diskDESCQAObject_protoDC2(DESCQAObject_protoDC2):
     objectTypeId = 107
     _postfix = '::disk'
+
+
+class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
+    objectyTypeId = 117
+    _columns_need_postfix = False
+
+    agn_params_db = None
+
+    def _postprocess_results(self, chunk):
+        """
+        query the database specified by agn_params_db to
+        find the AGN varParamStr associated with each AGN
+        """
+        return(chunk)
