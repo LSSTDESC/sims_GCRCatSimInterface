@@ -35,4 +35,4 @@ if __name__ == "__main__":
                               boundLength=1.0)
 
     cat = VarParCat(db, obs_metadata=obs)
-    cat.write_catalog('agn_junk.txt', chunk_size=1000)
+    cat.write_catalog('agn_junk.txt', chunk_size=1000000)
