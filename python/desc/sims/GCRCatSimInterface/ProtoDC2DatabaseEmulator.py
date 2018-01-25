@@ -262,9 +262,6 @@ class AGN_postprocessing_mixin(object):
         find the AGN varParamStr associated with each AGN
         """
 
-        print('calling agn post processor')
-        print(self.agn_params_db)
-
         if self.agn_objid is None:
             gid_name = 'galaxy_id'
             varpar_name = 'varParamStr'
