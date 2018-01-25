@@ -14,6 +14,7 @@ __all__ = ["DESCQAObject_protoDC2",
            "diskDESCQAObject_protoDC2",
            "knotsDESCQAObject_protoDC2"]
            "agnDESCQAObject_protoDC2",
+           "AGN_postprocessing_mixin",
            "FieldRotator"]
 
 
@@ -264,7 +265,7 @@ class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
     _postfix = '::knots'
 
 
-class AGN_post_processing_mixin(object):
+class AGN_postprocessing_mixin(object):
 
     def _postprocess_results(self, master_chunk):
         """
@@ -336,7 +337,7 @@ class AGN_post_processing_mixin(object):
         return master_chunk
 
 
-class agnDESCQAObject_protoDC2(AGN_post_processing_mixin, DESCQAObject_protoDC2):
+class agnDESCQAObject_protoDC2(AGN_postprocessing_mixin, DESCQAObject_protoDC2):
     objectTypeId = 117
     objid = 'agn_descqa'
     _columns_need_postfix = False
