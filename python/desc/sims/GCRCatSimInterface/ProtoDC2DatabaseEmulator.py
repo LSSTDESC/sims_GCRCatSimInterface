@@ -12,7 +12,7 @@ from lsst.sims.catalogs.db import DBObject
 __all__ = ["DESCQAObject_protoDC2",
            "bulgeDESCQAObject_protoDC2",
            "diskDESCQAObject_protoDC2",
-           "knotsDESCQAObject_protoDC2"]
+           "knotsDESCQAObject_protoDC2",
            "agnDESCQAObject_protoDC2",
            "AGN_postprocessing_mixin",
            "FieldRotator"]

@@ -13,7 +13,7 @@ __all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN"]
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
 
-class PhoSimDESCQA(_PhoSimDESCQA_mixin, PhoSimCatalogSersic2D, EBVmixin):
+class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     # default values used if the database does not provide information
     default_columns = [('raOffset', 0.0, float), ('decOffset', 0.0, float),
