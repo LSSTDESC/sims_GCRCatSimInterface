@@ -255,6 +255,7 @@ class diskDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
     objectTypeId = 117
+    objid = 'agn_descqa'
     _columns_need_postfix = False
 
     descqaDefaultValues = {'varParamStr': (None, (str, 500)),
