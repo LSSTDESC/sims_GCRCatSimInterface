@@ -292,7 +292,7 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
         agn_data_iter = self._agn_dbo.get_arbitrary_chunk_iterator(query,
                                                         dtype=self._agn_dtype,
-                                                        chunk_size=100000)
+                                                        chunk_size=1000000)
 
 
         m_sorted_dex = np.argsort(master_chunk['galaxy_id'])
