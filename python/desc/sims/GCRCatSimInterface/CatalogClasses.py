@@ -43,7 +43,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_hasKnots(self):
-        return self.get_hasDisk()
+        return self.column_by_name('hasDisk')
 
     @cached
     def get_hasBulge(self):

@@ -142,13 +142,20 @@ class DESCQAObject(object):
                                      # self._transform_catalog()
                                      # methods can be loaded simultaneously
 
-    def __init__(self, yaml_file_name, config_overwrite=None):
+    def __init__(self, yaml_file_name=None, config_overwrite=None):
         """
         Parameters
         ----------
         yaml_file_name is the name of the yaml file that will tell DESCQA
         how to load the catalog
         """
+
+        if yaml_file_name is None:
+            if not hasattr(self, 'yaml_file_name'):
+                raise RuntimeError('No yaml_file_name specified for '
+                                   'DESCQAObject')
+
+            yaml_file_name = self.yaml_file_name
 
         if not _GCR_IS_AVAILABLE:
             raise RuntimeError("You cannot use DESCQAObject\n"
@@ -163,7 +170,7 @@ class DESCQAObject(object):
 
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
         self._columns_need_postfix += _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix]
-        self.columnMap = None
+        self._catalog_id = yaml_file_name + self._cat_cache_suffix
         self._make_column_map()
 
         if self.objectTypeId is None:
@@ -176,12 +183,20 @@ class DESCQAObject(object):
         """
         Accept a GCR catalog object and add transformations to the
         columns in order to get the quantities expected by the CatSim
-        code
+        code.
+        In case these quantities require additional postfix filters, as is the
+        case for the GCR knots add-on, this function returns the column names
 
         Parameters
         ----------
         gc -- a GCRCatalog object;
               the result of calling GCRCatalogs.load_catalog()
+
+        Returns
+        -------
+        additional_postfix -- tuple of string;
+            Additional column names, if any, to process through the postfix
+            filter, besides the default fields already specified in _columns_need_postfix.
         """
 
         gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
@@ -204,28 +219,47 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
 
         additional_postfix = ()
+
         # Test for random walk specific addon
         if isinstance(gc, AlphaQAddonCatalog):
-            # Very hacky solution, the number of knots replaces the sersic index, keeping the rest
-            # of the sersic
-            gc.add_modifier_on_derived_quantities('sindex::knots', lambda x:x, 'n_knots')
-            gc.add_modifier_on_derived_quantities('majorAxis::knots', arcsec2rad, 'size_disk_true')
-            gc.add_modifier_on_derived_quantities('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
-
-            # Apply flux correction for the random walk
-            add_postfix = []
-            for name in gc.list_all_native_quantities():
-                if 'SEDs/diskLuminositiesStellar:SED' in name:
-                    # The epsilon value is to keep the disk component, so that
-                    # the random sequence in extinction parameters is preserved
-                    eps = np.finfo(np.float32).eps
-                    gc.add_modifier_on_derived_quantities(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
-                    gc.add_modifier_on_derived_quantities(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
-                    add_postfix.append(name)
-            # Registering these columns for postfix filtering
-            additional_postfix += tuple(add_postfix)
+            additional_postfix += self._transform_knots(gc)
 
         return additional_postfix
+
+    def _transform_knots(self, gc):
+        """
+        Accepts a GCR catalog object and add transformations to the
+        columns in order to get the parameters for the knots component.
+
+        Parameters
+        ----------
+        gc -- a GCRCatalog object;
+              the result of calling GCRCatalogs.load_catalog()
+
+        Returns
+        -------
+        additional_postfix -- list of string;
+            Additional column names, if any, to process through the postfix filter.
+        """
+        # Hacky solution, the number of knots replaces the sersic index,
+        # keeping the rest of the sersic parameters, which are directly applicable
+        gc.add_modifier_on_derived_quantities('sindex::knots', lambda x:x, 'n_knots')
+        gc.add_modifier_on_derived_quantities('majorAxis::knots', arcsec2rad, 'size_disk_true')
+        gc.add_modifier_on_derived_quantities('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
+
+        # Apply flux correction for the random walk
+        add_postfix = []
+        for name in gc.list_all_native_quantities():
+            if 'SEDs/diskLuminositiesStellar:SED' in name:
+                # The epsilon value is to keep the disk component, so that
+                # the random sequence in extinction parameters is preserved
+                eps = np.finfo(np.float32).eps
+                gc.add_modifier_on_derived_quantities(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
+                gc.add_modifier_on_derived_quantities(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
+                add_postfix.append(name)
+
+        # Returning these columns so that they can be registered for postfix filtering
+        return tuple(add_postfix)
 
     def getIdColKey(self):
         return self.idColKey
@@ -243,15 +277,18 @@ class DESCQAObject(object):
         used to get it into units expected by CatSim.
         """
         self.columnMap = dict()
+        self.columns = []
 
         for name in self._catalog.list_all_quantities(include_native=True):
             self.columnMap[name] = (name,)
+            self.columns.append((name, name))
 
         if self._columns_need_postfix:
             if not self._postfix:
                 raise ValueError('must specify `_postfix` when `_columns_need_postfix` is not empty')
             for name in self._columns_need_postfix:
                 self.columnMap[name] = (name + self._postfix,)
+                self.columns.append((name, name+self._postfix))
 
 
     def query_columns(self, colnames=None, chunk_size=None,
