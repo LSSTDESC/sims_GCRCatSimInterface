@@ -253,15 +253,7 @@ class diskDESCQAObject_protoDC2(DESCQAObject_protoDC2):
     _postfix = '::disk'
 
 
-class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
-    objectTypeId = 117
-    objid = 'agn_descqa'
-    _columns_need_postfix = False
-
-    descqaDefaultValues = {'varParamStr': (None, (str, 500)),
-                           'magNorm': (np.NaN, np.float)}
-
-    agn_params_db = None
+class AGN_post_processing_mixin(object):
 
     def _postprocess_results(self, master_chunk):
         """
@@ -271,6 +263,15 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
         print('calling agn post processor')
         print(self.agn_params_db)
+
+        if self.agn_objid is None:
+            gid_name = 'galaxy_id'
+            varpar_name = 'varParamStr'
+            magnorm_name = 'magNorm'
+        else:
+            gid_name = self.agn_objid + '_' + 'galaxy_id'
+            varpar_name = self.agn_objid + '_' + 'varParamStr'
+            magnorm_name = self.agn_objid + '_' + 'magNorm'
 
         if self.agn_params_db is None:
             return(master_chunk)
@@ -286,8 +287,10 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
                                         ('magNorm', float),
                                         ('varParamStr', str, 500)])
 
-        gid_min = master_chunk['galaxy_id'].min()
-        gid_max = master_chunk['galaxy_id'].max()
+        gid_arr = master_chunk[gid_name].astype(float)
+
+        gid_min = np.nanmin(gid_arr)
+        gid_max = np.nanmax(gid_arr)
 
         query = 'SELECT galaxy_id, magNorm, varParamStr '
         query += 'FROM agn_params '
@@ -299,8 +302,8 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
                                                         chunk_size=1000000)
 
 
-        m_sorted_dex = np.argsort(master_chunk['galaxy_id'])
-        m_sorted_id = master_chunk['galaxy_id'][m_sorted_dex]
+        m_sorted_dex = np.argsort(gid_arr)
+        m_sorted_id = gid_arr[m_sorted_dex]
         for agn_chunk in agn_data_iter:
 
             # find the indices of the elements in master_chunk
@@ -314,9 +317,21 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
             # make sure we have matched elements correctly
             np.testing.assert_array_equal(agn_chunk['galaxy_id'][a_dex],
-                                          master_chunk['galaxy_id'][m_dex])
+                                          master_chunk[gid_name][m_dex])
 
-            master_chunk['varParamStr'][m_dex] = agn_chunk['varParamStr'][a_dex]
-            master_chunk['magNorm'][m_dex] = agn_chunk['magNorm'][a_dex]
+            master_chunk[varpar_name][m_dex] = agn_chunk['varParamStr'][a_dex]
+            master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
 
         return master_chunk
+
+
+class agnDESCQAObject_protoDC2(AGN_post_processing_mixin, DESCQAObject_protoDC2):
+    objectTypeId = 117
+    objid = 'agn_descqa'
+    _columns_need_postfix = False
+
+    descqaDefaultValues = {'varParamStr': (None, (str, 500)),
+                           'magNorm': (np.NaN, np.float)}
+
+    agn_params_db = None
+    agn_objid = None
