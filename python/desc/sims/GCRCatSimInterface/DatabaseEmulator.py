@@ -168,7 +168,17 @@ class DESCQAObject(object):
 
     epoch = 2000.0
     idColKey = 'galaxy_id'
+
+    # The descqaDefaultValues set the values of columns that
+    # are needed but are not in the underlying catalog.
+    # The keys are the names of the columns.  The values are
+    # tuples.  The first element of the tuple is the actual
+    # default value. The second element of the tuple is
+    # the dtype of the value (i.e. the argument that gets
+    # passed to np.dtype())
     descqaDefaultValues = {'varParamStr': (None, (str, 500))}
+
+
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')
     _postfix = None
     _cat_cache_suffix = '_standard'  # so that different DESCQAObject
