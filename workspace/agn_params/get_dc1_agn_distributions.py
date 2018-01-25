@@ -1,3 +1,9 @@
+"""
+This script queries all of the AGN on fatboy in the protoDC2 field
+of view and writes their variability parameters to a text file
+expected by plot_params.py
+"""
+
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.photUtils import BandpassDict, Sed, getImsimFluxNorm
 import os
