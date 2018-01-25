@@ -320,8 +320,11 @@ class AGN_postprocessing_mixin(object):
             np.testing.assert_array_equal(agn_chunk['galaxy_id'][a_dex],
                                           master_chunk[gid_name][m_dex])
 
-            master_chunk[varpar_name][m_dex] = agn_chunk['varParamStr'][a_dex]
-            master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
+            if varpar_name in master_chunk.dtype.names:
+                master_chunk[varpar_name][m_dex] = agn_chunk['varParamStr'][a_dex]
+
+            if magnorm_name in master_chunk.dtype.names:
+                master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
 
         return master_chunk
 
