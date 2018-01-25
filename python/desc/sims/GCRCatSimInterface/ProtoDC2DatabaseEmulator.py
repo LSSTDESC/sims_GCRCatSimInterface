@@ -296,9 +296,6 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
         gid_min = master_chunk['galaxy_id'].min()
         gid_max = master_chunk['galaxy_id'].max()
 
-        print('iterating over %d %d' % (gid_min, gid_max))
-        ct = 0
-
         query = 'SELECT galaxy_id, magNorm, varParamStr '
         query += 'FROM agn_params '
         query += 'WHERE galaxy_id BETWEEN %d AND %d ' % (gid_min, gid_max)
@@ -328,8 +325,5 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
             master_chunk['varParamStr'][m_dex] = agn_chunk['varParamStr'][a_dex]
             master_chunk['magNorm'][m_dex] = agn_chunk['magNorm'][a_dex]
-
-            ct += len(a_dex)
-            print('    ct %d' % ct)
 
         return master_chunk
