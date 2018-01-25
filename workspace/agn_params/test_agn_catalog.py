@@ -11,8 +11,8 @@ class VarParCat(InstanceCatalog):
 
     cannot_be_null = ['magNorm']
 
-    transformation = {'raJ2000': np.degrees,
-                      'decJ2000': np.degrees}
+    transformations = {'raJ2000': np.degrees,
+                       'decJ2000': np.degrees}
 
 if __name__ == "__main__":
 
