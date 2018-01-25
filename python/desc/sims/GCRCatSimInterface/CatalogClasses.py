@@ -3,10 +3,12 @@ import numpy as np
 from .SedFitter import sed_from_galacticus_mags
 from lsst.utils import getPackageDir
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
+from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
+from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 
-__all__ = ["PhoSimDESCQA"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
@@ -144,3 +146,10 @@ class PhoSimDESCQA(_PhoSimDESCQA_mixin, PhoSimCatalogSersic2D, EBVmixin):
         """
         return self.column_by_name('fittedMagNorm')
 
+
+class PhoSimDESCQA_AGN(_PhoSimDESCQA_mixin, PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
+
+    @cached
+    def get_sedFileName(self):
+        n_obj = len(self.column_by_name('galaxy_id'))
+        return np.array(['agn.spec.gz']*n_obj)
