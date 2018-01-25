@@ -159,7 +159,7 @@ class TwinklesCatalogWriter(object):
                                           obs_metadata=obs_md,
                                           compoundDBclass=sprinklerCompound)
 
-        gal_cat._active_connections += [self.galaxy_agn_obj.connection]
+#        gal_cat._active_connections += [self.galaxy_agn_obj.connection]
         
         gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_header=False)
