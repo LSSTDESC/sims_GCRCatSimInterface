@@ -9,7 +9,9 @@ from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.utils import ObservationMetaData
 import numpy as np
 
-global_agn_params_db = os.path.join(os.environ['SCRATCH'], 'proto_dc2_agn', 'test_agn.db')
+global_agn_params_db = os.path.join('/global/cscratch1/sd/danielsf/',
+                                    'proto_dc2_agn', 'test_agn.db')
+
 assert os.path.exists(global_agn_params_db)
 
 class _testDESCQAObj(object):
