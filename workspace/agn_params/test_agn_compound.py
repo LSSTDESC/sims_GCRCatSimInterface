@@ -3,7 +3,7 @@ from desc.sims.GCRCatSimInterface import CompoundDESCQAInstanceCatalog
 from desc.sims.GCRCatSimInterface import bulgeDESCQAObject_protoDC2
 from desc.sims.GCRCatSimInterface import diskDESCQAObject_protoDC2
 from desc.sims.GCRCatSimInterface import agnDESCQAObject_protoDC2
-from desc.sims.GCRCatSimInterface import CompoundDESCQAObject
+from desc.sims.GCRCatSimInterface import GalaxyCompoundDESCQAObject
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.utils import ObservationMetaData
@@ -25,7 +25,6 @@ class diskDESCQAObject_test(_testDESCQAObj, diskDESCQAObject_protoDC2):
 
 class agnDESCQAObject_test(_testDESCQAObj, agnDESCQAObject_protoDC2):
     objid = 'agn_descqa'
-    agn_params_db = global_agn_params_db
 
 class CatForBulge(InstanceCatalog):
     column_outputs = ['uniqueId', 'objid', 'galaxy_id', 'raJ2000', 'decJ2000',
@@ -50,7 +49,8 @@ class CatForDisk(InstanceCatalog):
         return np.array([self.db_obj.objectTypeId]*len(self.column_by_name('raJ2000')))
 
 class CatForAgn(InstanceCatalog):
-    column_outputs = ['uniqueId', 'objid', 'galaxy_id', 'raJ2000', 'decJ2000', 'magNorm']
+    column_outputs = ['uniqueId', 'objid', 'galaxy_id', 'raJ2000', 'decJ2000', 'varParamStr',
+                      'magNorm']
 
     transformations = {'raJ2000': np.degrees,
                        'decJ2000': np.degrees}
@@ -60,6 +60,9 @@ class CatForAgn(InstanceCatalog):
         return np.array([self.db_obj.objectTypeId]*len(self.column_by_name('raJ2000')))
 
 
+class LocalGalaxyDESCQAObject(GalaxyCompoundDESCQAObject):
+    agn_params_db = global_agn_params_db
+    agn_objid = 'agn_descqa'
 
 if __name__ == "__main__":
 
@@ -71,6 +74,6 @@ if __name__ == "__main__":
                                          diskDESCQAObject_test,
                                          agnDESCQAObject_test],
                                         obs_metadata=obs,
-                                        compoundDBclass=CompoundDESCQAObject)
+                                        compoundDBclass=LocalGalaxyDESCQAObject)
 
     cat.write_catalog('descqa_compound_cat.txt', chunk_size=10000)
