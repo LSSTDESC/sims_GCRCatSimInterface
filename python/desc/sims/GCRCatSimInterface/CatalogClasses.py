@@ -13,7 +13,8 @@ __all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN"]
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
 
-class _PhoSimDESCQA_mixin(object):
+
+class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     # default values used if the database does not provide information
     default_columns = [('raOffset', 0.0, float), ('decOffset', 0.0, float),
@@ -22,6 +23,17 @@ class _PhoSimDESCQA_mixin(object):
                        ('internalRv', 3.1, float),
                        ('galacticExtinctionModel', 'CCM', str, 3),
                        ('galacticRv', 3.1, float)]
+
+    # below are defined getter methods used to define CatSim value-added columns
+    @cached
+    def get_hasDisk(self):
+        output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
+        return output
+
+    @cached
+    def get_hasBulge(self):
+        output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
+        return output
 
     @compound('internalAv', 'internalRv')
     def get_internalDustParams(self):
@@ -69,21 +81,6 @@ class _PhoSimDESCQA_mixin(object):
         rv_list[offensive_rv] = self._dust_rng.random_sample(len(offensive_rv[0]))*4.0+1.0
 
         return np.array([av_list, rv_list])
-
-
-
-class PhoSimDESCQA(_PhoSimDESCQA_mixin, PhoSimCatalogSersic2D, EBVmixin):
-
-    # below are defined getter methods used to define CatSim value-added columns
-    @cached
-    def get_hasDisk(self):
-        output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
-        return output
-
-    @cached
-    def get_hasBulge(self):
-        output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
-        return output
 
     @compound('sedFilename', 'fittedMagNorm')
     def get_fittedSedAndNorm(self):
@@ -147,7 +144,7 @@ class PhoSimDESCQA(_PhoSimDESCQA_mixin, PhoSimCatalogSersic2D, EBVmixin):
         return self.column_by_name('fittedMagNorm')
 
 
-class PhoSimDESCQA_AGN(_PhoSimDESCQA_mixin, PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
+class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
     cannot_be_null = ['sedFilepath', 'magNorm']
 
