@@ -3,14 +3,15 @@ import numpy as np
 from .SedFitter import sed_from_galacticus_mags
 from lsst.utils import getPackageDir
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
+from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
+from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 
-__all__ = ["PhoSimDESCQA"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
-
 
 class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
@@ -22,7 +23,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                        ('galacticExtinctionModel', 'CCM', str, 3),
                        ('galacticRv', 3.1, float)]
 
-
     def __init__(self, *args, **kwargs):
         # Update the spatial model if knots are requested, for knots, the sersic
         # parameter actually contains the number of knots
@@ -33,7 +33,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                 kwargs['cannot_be_null'].append('hasDisk')
 
         super(PhoSimDESCQA, self).__init__(*args, **kwargs)
-
 
     # below are defined getter methods used to define CatSim value-added columns
     @cached
@@ -98,6 +97,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         return np.array([av_list, rv_list])
 
+
     @compound('sedFilename', 'fittedMagNorm')
     def get_fittedSedAndNorm(self):
 
@@ -158,3 +158,13 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         in the base PhoSim InstanceCatalog classes
         """
         return self.column_by_name('fittedMagNorm')
+
+
+class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
+
+    cannot_be_null = ['sedFilepath', 'magNorm']
+
+    @cached
+    def get_sedFilename(self):
+        n_obj = len(self.column_by_name('galaxy_id'))
+        return np.array(['agn.spec']*n_obj)
