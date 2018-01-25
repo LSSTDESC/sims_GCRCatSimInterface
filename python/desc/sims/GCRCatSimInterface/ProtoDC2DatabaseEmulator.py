@@ -293,7 +293,7 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
         query += 'WHERE galaxy_id BETWEEN %d AND %d ' % (gid_min, gid_max)
         query += 'ORDER BY galaxy_id'
 
-        agn_data_iter = self._agn_dbo.get_arbitary_chunk_iterator(query,
+        agn_data_iter = self._agn_dbo.get_arbitrary_chunk_iterator(query,
                                                         dtype=self._agn_dtype,
                                                         chunk_size=100000)
 
