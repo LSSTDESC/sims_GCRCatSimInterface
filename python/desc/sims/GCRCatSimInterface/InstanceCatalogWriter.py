@@ -18,7 +18,9 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
-from . import PhoSimDESCQA, bulgeDESCQAObject, diskDESCQAObject
+from . import PhoSimDESCQA#, bulgeDESCQAObject, diskDESCQAObject
+from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
+    diskDESCQAObject_protoDC2 as diskDESCQAObject
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
@@ -29,7 +31,7 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-                 imsim_catalog=False):
+                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0):
         """
         Parameters
         ----------
@@ -47,6 +49,10 @@ class InstanceCatalogWriter(object):
             Flag to enable application of proper motion to stars.
         imsim_catalog: bool [False]
             Flag to write an imsim-style object catalog.
+        protoDC2_ra: float [0]
+            Desired RA (J2000 degrees) of protoDC2 center.
+        protoDC2_dec: float [0]
+            Desired Dec (J2000 degrees) of protoDC2 center.
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
@@ -57,6 +63,8 @@ class InstanceCatalogWriter(object):
         self.minsource = minsource
         self.proper_motion = proper_motion
         self.imsim_catalog = imsim_catalog
+        self.protoDC2_ra = protoDC2_ra
+        self.protoDC2_dec = protoDC2_dec
 
         self.obs_gen = ObservationMetaDataGenerator(database=opsimdb,
                                                     driver='sqlite')
@@ -97,8 +105,7 @@ class InstanceCatalogWriter(object):
                             imsim_catalog=self.imsim_catalog,
                             object_catalogs=(star_name, gal_name))
 
-        star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md,
-                                             cannot_be_null=['inProtoDc2'])
+        star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
         star_cat.disable_proper_motion = not self.proper_motion
 
@@ -111,14 +118,18 @@ class InstanceCatalogWriter(object):
                     os.path.join(out_dir, bright_star_name): bright_cat}
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
 
-        cat = self.instcats.DESCQACat(bulgeDESCQAObject(self.descqa_catalog),
-                                      obs_metadata=obs_md,
+        bulge_db = bulgeDESCQAObject(self.descqa_catalog)
+        bulge_db.field_ra = self.protoDC2_ra
+        bulge_db.field_dec = self.protoDC2_dec
+        cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
                                       cannot_be_null=['hasBulge'])
         cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                           write_header=False)
 
-        cat = self.instcats.DESCQACat(diskDESCQAObject(self.descqa_catalog),
-                                      obs_metadata=obs_md,
+        disk_db = diskDESCQAObject(self.descqa_catalog)
+        disk_db.field_ra = self.protoDC2_ra
+        disk_db.field_dec = self.protoDC2_dec
+        cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
                                       cannot_be_null=['hasDisk'])
         cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                           write_mode='a', write_header=False)
