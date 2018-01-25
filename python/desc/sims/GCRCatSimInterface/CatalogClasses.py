@@ -22,11 +22,28 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                        ('galacticExtinctionModel', 'CCM', str, 3),
                        ('galacticRv', 3.1, float)]
 
+
+    def __init__(self, *args, **kwargs):
+        # Update the spatial model if knots are requested, for knots, the sersic
+        # parameter actually contains the number of knots
+        if 'hasKnots' in kwargs['cannot_be_null']:
+            self.catalog_type = 'phoSim_catalog_KNOTS'
+            self.spatialModel = 'knots'
+            if 'hasDisk' not in kwargs['cannot_be_null']:
+                kwargs['cannot_be_null'].append('hasDisk')
+
+        super(PhoSimDESCQA, self).__init__(*args, **kwargs)
+
+
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
         output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
         return output
+
+    @cached
+    def get_hasKnots(self):
+        return self.column_by_name('hasDisk')
 
     @cached
     def get_hasBulge(self):
@@ -72,6 +89,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             self._dust_rng = np.random.RandomState(182314)
 
         offensive_av = np.where(np.logical_or(av_list<0.001, av_list>3.1))
+
         av_list[offensive_av] = self._dust_rng.random_sample(len(offensive_av[0]))*3.1+0.001
 
         offensive_rv = np.where(np.logical_or(np.isnan(rv_list),
@@ -140,4 +158,3 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         in the base PhoSim InstanceCatalog classes
         """
         return self.column_by_name('fittedMagNorm')
-

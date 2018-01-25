@@ -3,7 +3,7 @@ This script will define classes that enable CatSim to interface with GCR
 """
 import numpy as np
 
-__all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject",
+__all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject",
            "deg2rad_double", "arcsec2rad"]
 
 
@@ -11,6 +11,7 @@ _GCR_IS_AVAILABLE = True
 try:
     from GCR import dict_to_numpy_array
     import GCRCatalogs
+    from GCRCatalogs.alphaq_addon import AlphaQAddonCatalog
 except ImportError:
     _GCR_IS_AVAILABLE = False
 
@@ -37,6 +38,7 @@ def arcsec2rad(x):
 # the same catalog will need to be queried twice
 # go get bulges and disks from the same galaxy
 _CATALOG_CACHE = {}
+_ADDITIONAL_POSTFIX_CACHE = {}
 
 
 class DESCQAChunkIterator(object):
@@ -161,10 +163,13 @@ class DESCQAObject(object):
 
         if yaml_file_name + self._cat_cache_suffix not in _CATALOG_CACHE:
             gc = GCRCatalogs.load_catalog(yaml_file_name, config_overwrite)
-            self._transform_catalog(gc)
+            additional_postfix = self._transform_catalog(gc)
             _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix] = gc
+            _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix] = \
+                                      additional_postfix
 
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
+        self._columns_need_postfix += _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix]
         self._catalog_id = yaml_file_name + self._cat_cache_suffix
         self._make_column_map()
 
@@ -178,12 +183,20 @@ class DESCQAObject(object):
         """
         Accept a GCR catalog object and add transformations to the
         columns in order to get the quantities expected by the CatSim
-        code
+        code.
+        In case these quantities require additional postfix filters, as is the
+        case for the GCR knots add-on, this function returns the column names
 
         Parameters
         ----------
         gc -- a GCRCatalog object;
               the result of calling GCRCatalogs.load_catalog()
+
+        Returns
+        -------
+        additional_postfix -- tuple of string;
+            Additional column names, if any, to process through the postfix
+            filter, besides the default fields already specified in _columns_need_postfix.
         """
 
         gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
@@ -205,7 +218,48 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('sindex::disk', gc.get_quantity_modifier('sersic_disk'))
         gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
 
-        return None
+        additional_postfix = ()
+
+        # Test for random walk specific addon
+        if isinstance(gc, AlphaQAddonCatalog):
+            additional_postfix += self._transform_knots(gc)
+
+        return additional_postfix
+
+    def _transform_knots(self, gc):
+        """
+        Accepts a GCR catalog object and add transformations to the
+        columns in order to get the parameters for the knots component.
+
+        Parameters
+        ----------
+        gc -- a GCRCatalog object;
+              the result of calling GCRCatalogs.load_catalog()
+
+        Returns
+        -------
+        additional_postfix -- list of string;
+            Additional column names, if any, to process through the postfix filter.
+        """
+        # Hacky solution, the number of knots replaces the sersic index,
+        # keeping the rest of the sersic parameters, which are directly applicable
+        gc.add_modifier_on_derived_quantities('sindex::knots', lambda x:x, 'n_knots')
+        gc.add_modifier_on_derived_quantities('majorAxis::knots', arcsec2rad, 'size_disk_true')
+        gc.add_modifier_on_derived_quantities('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
+
+        # Apply flux correction for the random walk
+        add_postfix = []
+        for name in gc.list_all_native_quantities():
+            if 'SEDs/diskLuminositiesStellar:SED' in name:
+                # The epsilon value is to keep the disk component, so that
+                # the random sequence in extinction parameters is preserved
+                eps = np.finfo(np.float32).eps
+                gc.add_modifier_on_derived_quantities(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
+                gc.add_modifier_on_derived_quantities(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
+                add_postfix.append(name)
+
+        # Returning these columns so that they can be registered for postfix filtering
+        return tuple(add_postfix)
 
     def getIdColKey(self):
         return self.idColKey
@@ -275,3 +329,8 @@ class bulgeDESCQAObject(DESCQAObject):
 class diskDESCQAObject(DESCQAObject):
     objectTypeId = 87
     _postfix = '::disk'
+
+
+class knotsDESCQAObject(DESCQAObject):
+    objectTypeId = 95
+    _postfix = '::knots'

@@ -20,7 +20,8 @@ from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA#, bulgeDESCQAObject, diskDESCQAObject
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
-    diskDESCQAObject_protoDC2 as diskDESCQAObject
+    diskDESCQAObject_protoDC2 as diskDESCQAObject, \
+    knotsDESCQAObject_protoDC2 as knotsDESCQAObject
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
@@ -98,6 +99,7 @@ class InstanceCatalogWriter(object):
         star_name = 'star_cat_%d.txt' % obsHistID
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
+        knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
         make_instcat_header(self.star_db, obs_md,
@@ -118,6 +120,19 @@ class InstanceCatalogWriter(object):
                     os.path.join(out_dir, bright_star_name): bright_cat}
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
 
+        # TODO: Find a better way of checking for catalog type
+        if 'knots' in self.descqa_catalog:
+            knots_db =  knotsDESCQAObject(self.descqa_catalog)
+            knots_db.field_ra = self.protoDC2_ra
+            knots_db.field_dec = self.protoDC2_dec
+            cat = self.instcats.DESCQACat(knots_db, obs_metadata=obs_md,
+                                          cannot_be_null=['hasKnots'])
+            cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
+                              write_header=False)
+        else:
+            # Creating empty knots component
+            subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
+
         bulge_db = bulgeDESCQAObject(self.descqa_catalog)
         bulge_db.field_ra = self.protoDC2_ra
         bulge_db.field_dec = self.protoDC2_dec
@@ -135,8 +150,9 @@ class InstanceCatalogWriter(object):
                           write_mode='a', write_header=False)
 
         if self.imsim_catalog:
+
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
-            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s > %(imsim_cat)s' % locals()
+            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
             subprocess.check_call(command, shell=True)
 
         # gzip the object files.
