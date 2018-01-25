@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     assert os.path.exists(agn_db_name)
 
-    db.agn_param_db = agn_db_name
+    db.agn_params_db = agn_db_name
     db.field_ra = ra
     db.field_dec = dec
 
