@@ -2,8 +2,10 @@ from builtins import zip
 from builtins import str
 from builtins import range
 from desc.sims.GCRCatSimInterface import DESCQAObject
+from desc.sims.GCRCatSimInterface import AGN_postprocessing_mixin
 
-__all__ = ["CompoundDESCQAObject"]
+__all__ = ["CompoundDESCQAObject",
+           "GalaxyCompoundDESCQAObject"]
 
 
 class CompoundDESCQAObject(DESCQAObject):
@@ -100,3 +102,8 @@ class CompoundDESCQAObject(DESCQAObject):
                 raise RuntimeError("Not all DESCQAObject classes "
                                    "passed to CompoundDESCQAObject "
                                    "reference the same catalog")
+
+
+class GalaxyCompoundDESCQAObject(AGN_postprocessing_mixin, CompoundDESCQAObject):
+    agn_params_db = None
+    agn_objid = None
