@@ -269,6 +269,9 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
         find the AGN varParamStr associated with each AGN
         """
 
+        print('calling agn post processor')
+        print(self.agn_params_db)
+
         if self.agn_params_db is None:
             return(master_chunk)
 
