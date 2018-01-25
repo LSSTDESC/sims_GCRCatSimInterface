@@ -11,9 +11,16 @@ _GCR_IS_AVAILABLE = True
 try:
     from GCR import dict_to_numpy_array
     import GCRCatalogs
-    from GCRCatalogs.alphaq_addon import AlphaQAddonCatalog
 except ImportError:
     _GCR_IS_AVAILABLE = False
+
+
+_ALPHA_Q_ADD_ON_IS_AVAILABLE = True
+try:
+    from GCRCatalogs.alphaq_addon import AlphaQAddonCatalog
+except ImportError:
+    _ALPHA_Q_ADD_ON_IS_AVAILABLE = False
+
 
 _LSST_IS_AVAILABLE = True
 try:
@@ -266,8 +273,9 @@ class DESCQAObject(object):
         additional_postfix = ()
 
         # Test for random walk specific addon
-        if isinstance(gc, AlphaQAddonCatalog):
-            additional_postfix += self._transform_knots(gc)
+        if _ALPHA_Q_ADD_ON_IS_AVAILABLE:
+            if isinstance(gc, AlphaQAddonCatalog):
+                additional_postfix += self._transform_knots(gc)
 
         return additional_postfix
 

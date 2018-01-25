@@ -18,6 +18,14 @@ __all__ = ["DESCQAObject_protoDC2",
            "FieldRotator"]
 
 
+_ALPHA_Q_ADD_ON_IS_AVAILABLE = True
+try:
+    from GCRCatalogs.alphaq_addon import AlphaQAddonCatalog
+except ImportError:
+    _ALPHA_Q_ADD_ON_IS_AVAILABLE = False
+
+
+
 _LSST_IS_AVAILABLE = True
 try:
     from lsst.sims.utils import rotationMatrixFromVectors
@@ -237,8 +245,9 @@ class DESCQAObject_protoDC2(DESCQAObject):
         additional_postfix = ()
 
         # Test for random walk specific addon
-        if isinstance(gc, AlphaQAddonCatalog):
-            additional_postfix += self._transform_knots(gc)
+        if _ALPHA_Q_ADD_ON_IS_AVAILABLE:
+            if isinstance(gc, AlphaQAddonCatalog):
+                additional_postfix += self._transform_knots(gc)
 
         return additional_postfix
 
