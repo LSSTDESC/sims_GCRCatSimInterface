@@ -9,7 +9,6 @@ class VarParCat(InstanceCatalog):
     column_outputs = ['galaxy_id', 'raJ2000', 'decJ2000',
                       'magNorm', 'varParamStr']
 
-    cannot_be_null = ['magNorm']
 
     transformations = {'raJ2000': np.degrees,
                        'decJ2000': np.degrees}
