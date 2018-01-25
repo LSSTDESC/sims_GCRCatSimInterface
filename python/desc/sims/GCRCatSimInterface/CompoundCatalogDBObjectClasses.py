@@ -2,8 +2,10 @@ from builtins import zip
 from builtins import str
 from builtins import range
 from desc.sims.GCRCatSimInterface import DESCQAObject
+from desc.sims.GCRCatSimInterface import AGN_postprocessing_mixin
 
-__all__ = ["CompoundDESCQAObject"]
+__all__ = ["CompoundDESCQAObject",
+           "GalaxyCompoundDESCQAObject"]
 
 
 class CompoundDESCQAObject(DESCQAObject):
@@ -51,11 +53,15 @@ class CompoundDESCQAObject(DESCQAObject):
                                 # be used at runtime
 
         self.columnMap = dict()
+        self._descqaDefaultValues = dict()
         for dbc in self._dbObjectClassList:
             sub_cat_name = dbc.objid
             dbo = dbc()
             for col_name in dbo.columnMap:
                 self.columnMap[sub_cat_name+'_'+col_name] = dbo.columnMap[col_name]
+
+            for col_name in dbo.descqaDefaultValues:
+                self._descqaDefaultValues[sub_cat_name+'_'+col_name] = dbo.descqaDefaultValues[col_name]
 
         dbo = self._dbObjectClassList[0]()
         # need to instantiate the first one because sometimes
@@ -67,6 +73,9 @@ class CompoundDESCQAObject(DESCQAObject):
         self._cat_cache_suffix = dbo._cat_cache_suffix
 
         super(CompoundDESCQAObject, self).__init__()
+
+    def _make_default_values(self):
+        pass
 
     def _make_column_map(self):
         """
@@ -93,3 +102,8 @@ class CompoundDESCQAObject(DESCQAObject):
                 raise RuntimeError("Not all DESCQAObject classes "
                                    "passed to CompoundDESCQAObject "
                                    "reference the same catalog")
+
+
+class GalaxyCompoundDESCQAObject(AGN_postprocessing_mixin, CompoundDESCQAObject):
+    agn_params_db = None
+    agn_objid = None
