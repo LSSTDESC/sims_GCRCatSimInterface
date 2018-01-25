@@ -14,6 +14,7 @@ from desc.sims.GCRCatSimInterface import SF_from_params
 
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import Sed, BandpassDict, CosmologyObject
+from lsst.sims.photUtils import Bandpass
 
 def create_k_corr_grid():
     """
@@ -42,12 +43,11 @@ def create_k_corr_grid():
     return z_grid, k_grid
 
 
-def apply_m_i_cut(abs_mag_i, redshift, m_i_cut):
+def get_m_i(abs_mag_i, redshift):
     """
     Take numpy arrays of absolute i-band magnitude and
-    cosmological redshift.  Return a np.where() result
-    that indicates only those sources with observed
-    i-band magnitude <= m_i_cut
+    cosmological redshift.  Return a numpy array of
+    observed i-band magnitudes
     """
     z_grid, k_grid = create_k_corr_grid()
     k_corr = np.interp(redshift, z_grid, k_grid)
@@ -55,7 +55,7 @@ def apply_m_i_cut(abs_mag_i, redshift, m_i_cut):
     dc2_cosmo = CosmologyObject(H0=71.0, Om0=0.265)
     distance_modulus = dc2_cosmo.distanceModulus(redshift=redshift)
     obs_mag_i = abs_mag_i + distance_modulus + k_corr
-    return np.where(obs_mag_i <= m_i_cut)
+    return obs_mag_i
 
 if __name__ == "__main__":
 
@@ -142,13 +142,16 @@ if __name__ == "__main__":
     log_edd_ratio = log_Eddington_ratio(bhm, accretion_rate)
     abs_mag_i = M_i_from_L_Mass(log_edd_ratio, np.log10(bhm))
 
+    obs_mag_i = get_m_i(abs_mag_i, redshift)
+
     if args.m_i_cut is not None:
-        valid = apply_m_i_cut(abs_mag_i, redshift, args.m_i_cut)
+        valid = np.where(obs_mag_i <= args.m_i_cut)
         redshift = redshift[valid]
         bhm = bhm[valid]
         log_edd_ratio = log_edd_ratio[valid]
         abs_mag_i = abs_mag_i[valid]
         galaxy_id = galaxy_id[valid]
+        obs_mag_i = obs_mag_i[valid]
 
     tau = tau_from_params(redshift,
                           abs_mag_i,
@@ -162,25 +165,50 @@ if __name__ == "__main__":
                                      bhm, eff_wavelen,
                                      rng=rng)
 
+    sed_dir = os.path.join(getPackageDir('sims_sed_library'),
+                           'agnSED')
+    sed_name = os.path.join(sed_dir, 'agn.spec.gz')
+    if not os.path.exists(sed_name):
+        raise RuntimeError('\n\n%s\n\nndoes not exist\n\n' % sed_name)
+    base_sed = Sed()
+    base_sed.readSED_flambda(sed_name)
+
+    imsimband = Bandpass()
+    imsimband.imsimBandpass()
+
+    z_grid = np.arange(0.0, redshift.max(), 0.01)
+    m_i_grid = np.zeros(len(z_grid), dtype=float)
+    mag_norm_grid = np.zeros(len(z_grid), dtype=float)
+    for i_z, zz in enumerate(z_grid):
+        ss = Sed(wavelen=base_sed.wavelen, flambda=base_sed.flambda)
+        ss.redshiftSED(zz, dimming=True)
+        m_i_grid[i_z] = ss.calcMag(bp_dict['i'])
+        mag_norm_grid[i_z] = ss.calcMag(imsimband)
+
+    interpolated_m_i = np.interp(redshift, z_grid, m_i_grid)
+    interpolated_mag_norm = np.interp(redshift, z_grid, mag_norm_grid)
+    mag_norm = interpolated_mag_norm + (obs_mag_i - interpolated_m_i)
+
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
-                          (galaxy_id, varParamStr text)''')
+                          (galaxy_id, magNorm real, varParamStr text)''')
 
         cursor.execute('PRAGMA journal_mode=WAL;')
         connection.commit()
 
         seed_arr = rng.randint(1,high=10000000, size=len(tau))
 
-        vals = ((int(ii), '{"m": "applyAgn", '
+        vals = ((int(ii), mm, '{"m": "applyAgn", '
                       + '"p": {"seed": %d, "agn_tau": %.3e, "agn_sfu": %.3e, ' % (ss, tt, sfu)
                       + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
                       + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
-                 for ii, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
-                 zip(galaxy_id, seed_arr, tau, sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
+                 for ii, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
+                 zip(galaxy_id, mag_norm, seed_arr, tau,
+                     sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
                      sf_dict['z'], sf_dict['y']))
 
-        cursor.executemany('INSERT INTO agn_params VALUES(?, ?)', vals)
+        cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?)', vals)
         connection.commit()
 
         cursor.execute('CREATE INDEX gal_id ON agn_params (galaxy_id)')
