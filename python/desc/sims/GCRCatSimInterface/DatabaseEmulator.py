@@ -113,9 +113,16 @@ class DESCQAChunkIterator(object):
         if need_to_append_defaults:
 
             dtype_list = [(name, chunk.dtype[name]) for name in chunk.dtype.names]
-            for name in self._colnames:
-                if not descqa_catalog.has_quantity(self._column_map[name][0]):
-                    dtype_list.append((name, self._default_values[name][1]))
+
+            try:
+                for name in self._colnames:
+                    if not descqa_catalog.has_quantity(self._column_map[name][0]):
+                        dtype_list.append((name, self._default_values[name][1]))
+
+            except KeyError:
+                print('\n\nindividual column_map\n')
+                print(self._column_map)
+                raise
 
             new_dtype = np.dtype(dtype_list)
 
