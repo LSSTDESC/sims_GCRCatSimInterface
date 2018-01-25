@@ -1,3 +1,11 @@
+"""
+This script will generate the figures comparing distribution of
+DC1 and DC2 AGN variability parameters in different m_i bins
+
+Requires that get_dc1_agn_distributions.py has already been run,
+and that the BH parameters from DC2 are in the data/ dir
+"""
+
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
