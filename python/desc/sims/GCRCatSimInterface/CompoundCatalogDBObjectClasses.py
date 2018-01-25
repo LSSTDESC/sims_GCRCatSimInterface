@@ -57,9 +57,6 @@ class CompoundDESCQAObject(DESCQAObject):
             for col_name in dbo.columnMap:
                 self.columnMap[sub_cat_name+'_'+col_name] = dbo.columnMap[col_name]
 
-        print('compound column map')
-        print(self.columnMap)
-
         dbo = self._dbObjectClassList[0]()
         # need to instantiate the first one because sometimes
         # idColKey is not defined until instantiation
