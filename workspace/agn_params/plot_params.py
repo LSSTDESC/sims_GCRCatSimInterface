@@ -2,21 +2,44 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from agn_param_module import M_i_from_L_Mass
-from agn_param_module import log_Eddington_ratio
-from agn_param_module import k_correction
-from agn_param_module import tau_from_params
-from agn_param_module import SF_from_params
+from desc.sims.GCRCatSimInterface import M_i_from_L_Mass
+from desc.sims.GCRCatSimInterface import log_Eddington_ratio
+from desc.sims.GCRCatSimInterface import k_correction
+from desc.sims.GCRCatSimInterface import tau_from_params
+from desc.sims.GCRCatSimInterface import SF_from_params
 
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import CosmologyObject
 from lsst.sims.photUtils import Sed, BandpassDict
 
-from test_m_i import make_histogram
-
 import numpy as np
 import os
 import time
+
+
+def make_histogram(xx_in, dmag, cut_off=None, min_val = None, mode=None):
+    if cut_off is not None:
+        xx = xx_in[np.where(xx_in<=cut_off+dmag)]
+    else:
+        xx = xx_in
+    #print xx.min(),xx.max()
+    if min_val is None:
+        min_val=xx.min()-dmag
+    i_xx = np.round((xx-min_val)/dmag).astype(int)
+    unique_ixx, ct = np.unique(i_xx, return_counts=True)
+
+    if cut_off is not None:
+        valid_out = np.where(unique_ixx*dmag+min_val<=cut_off)
+        ct = ct[valid_out]
+        unique_ixx =unique_ixx[valid_out]
+
+    if mode == 'normalized':
+        return unique_ixx*dmag+min_val, ct.astype(float)/float(len(xx))
+    elif mode == 'cumulative':
+        return unique_ixx*dmag+min_val, np.cumsum(ct.astype(float))
+
+    return unique_ixx*dmag+min_val, ct.astype(int)
+
 
 if __name__ == "__main__":
 
