@@ -154,4 +154,4 @@ class PhoSimDESCQA_AGN(_PhoSimDESCQA_mixin, PhoSimCatalogZPoint, EBVmixin, Varia
     @cached
     def get_sedFilename(self):
         n_obj = len(self.column_by_name('galaxy_id'))
-        return np.array(['agn.spec.gz']*n_obj)
+        return np.array(['agn.spec']*n_obj)
