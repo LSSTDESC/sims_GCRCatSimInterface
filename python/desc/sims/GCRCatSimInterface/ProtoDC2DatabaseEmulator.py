@@ -299,7 +299,7 @@ class agnDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 
         m_sorted_dex = np.argsort(master_chunk['galaxy_id'])
-        m_sorted_id = master_chunk['galaxy_id'][master_sorted_dex]
+        m_sorted_id = master_chunk['galaxy_id'][m_sorted_dex]
         for agn_chunk in agn_data_iter:
 
             # find the indices of the elements in master_chunk
