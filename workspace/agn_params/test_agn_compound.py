@@ -1,3 +1,4 @@
+import os
 from desc.sims.GCRCatSimInterface import CompoundDESCQAInstanceCatalog
 from desc.sims.GCRCatSimInterface import bulgeDESCQAObject_protoDC2
 from desc.sims.GCRCatSimInterface import diskDESCQAObject_protoDC2
@@ -7,6 +8,9 @@ from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.utils import ObservationMetaData
 import numpy as np
+
+global_agn_params_db = os.path.join(os.environ['SCRATCH'], 'proto_dc2_agn', 'test_agn.db')
+assert os.path.exists(global_agn_params_db)
 
 class _testDESCQAObj(object):
     yaml_file_name = 'proto-dc2_v2.1.2'
@@ -21,6 +25,7 @@ class diskDESCQAObject_test(_testDESCQAObj, diskDESCQAObject_protoDC2):
 
 class agnDESCQAObject_test(_testDESCQAObj, agnDESCQAObject_protoDC2):
     objid = 'agn_descqa'
+    agn_params_db = global_agn_params_db
 
 class CatForBulge(InstanceCatalog):
     column_outputs = ['uniqueId', 'objid', 'galaxy_id', 'raJ2000', 'decJ2000',
