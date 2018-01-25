@@ -211,6 +211,7 @@ class DESCQAObject(object):
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
         self._catalog_id = yaml_file_name + self._cat_cache_suffix
         self._make_column_map()
+        self._make_default_values()
 
         if self.objectTypeId is None:
             raise RuntimeError("Need to define objectTypeId for your DESCQAObject")
@@ -256,6 +257,13 @@ class DESCQAObject(object):
 
     def getObjectTypeId(self):
         return self.objectTypeId
+
+    def _make_default_values(self):
+        """
+        Create the self._descqaDefaultValues member that will
+        ultimately be passed to the DESCQAChunkIterator
+        """
+        self._descqaDefaultValues = self.descqaDefaultValues
 
     def _make_column_map(self):
         """
@@ -323,7 +331,7 @@ class DESCQAObject(object):
         """
         return DESCQAChunkIterator(self, self.columnMap, obs_metadata,
                                    colnames or list(self.columnMap),
-                                   self.descqaDefaultValues,
+                                   self._descqaDefaultValues,
                                    chunk_size)
 
 
