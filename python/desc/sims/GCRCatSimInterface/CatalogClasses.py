@@ -3,6 +3,8 @@ import numpy as np
 from .SedFitter import sed_from_galacticus_mags
 from lsst.utils import getPackageDir
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
+from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
+from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 from desc.twinkles.twinklesVariabilityMixins import VariabilityTwinkles
@@ -15,7 +17,7 @@ twinkles_sn_sed_dir = 'spectra_files'
 twinkles_spec_map = psmp
 twinkles_spec_map.subdir_map['(^specFile_)'] = twinkles_sn_sed_dir
 
-__all__ = ["PhoSimDESCQA", "TwinklesCompoundInstanceCatalog_DC2"]
+__all__ = ["PhoSimDESCQA", "TwinklesCompoundInstanceCatalog_DC2", "PhoSimDESCQA_AGN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
@@ -133,11 +135,26 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                        ('galacticExtinctionModel', 'CCM', str, 3),
                        ('galacticRv', 3.1, float)]
 
+    def __init__(self, *args, **kwargs):
+        # Update the spatial model if knots are requested, for knots, the sersic
+        # parameter actually contains the number of knots
+        if 'hasKnots' in kwargs['cannot_be_null']:
+            self.catalog_type = 'phoSim_catalog_KNOTS'
+            self.spatialModel = 'knots'
+            if 'hasDisk' not in kwargs['cannot_be_null']:
+                kwargs['cannot_be_null'].append('hasDisk')
+
+        super(PhoSimDESCQA, self).__init__(*args, **kwargs)
+
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
         output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
         return output
+
+    @cached
+    def get_hasKnots(self):
+        return self.column_by_name('hasDisk')
 
     @cached
     def get_hasBulge(self):
@@ -183,6 +200,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             self._dust_rng = np.random.RandomState(182314)
 
         offensive_av = np.where(np.logical_or(av_list<0.001, av_list>3.1))
+
         av_list[offensive_av] = self._dust_rng.random_sample(len(offensive_av[0]))*3.1+0.001
 
         offensive_rv = np.where(np.logical_or(np.isnan(rv_list),
@@ -190,6 +208,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         rv_list[offensive_rv] = self._dust_rng.random_sample(len(offensive_rv[0]))*4.0+1.0
 
         return np.array([av_list, rv_list])
+
 
     @compound('sedFilename', 'fittedMagNorm')
     def get_fittedSedAndNorm(self):
@@ -252,3 +271,12 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         """
         return self.column_by_name('fittedMagNorm')
 
+
+class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
+
+    cannot_be_null = ['sedFilepath', 'magNorm']
+
+    @cached
+    def get_sedFilename(self):
+        n_obj = len(self.column_by_name('galaxy_id'))
+        return np.array(['agn.spec']*n_obj)
