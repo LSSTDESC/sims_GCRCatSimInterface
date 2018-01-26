@@ -272,7 +272,7 @@ class diskDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 
 class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
-    objectTypeId = 117
+    objectTypeId = 127
     _postfix = '::knots'
 
 
