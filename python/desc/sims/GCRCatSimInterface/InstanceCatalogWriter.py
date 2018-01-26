@@ -18,10 +18,16 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
-from . import PhoSimDESCQA#, bulgeDESCQAObject, diskDESCQAObject
+from . import PhoSimDESCQA, PhoSimDESCQA_AGN
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
-    knotsDESCQAObject_protoDC2 as knotsDESCQAObject
+    knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
+    agnDESCQAObject_protoDC2 as agnDESCQAObject, \
+    TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
+    sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
+    TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
+
+from lsst.sims.utils import ObservationMetaData
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
@@ -32,7 +38,8 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0):
+                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
+                 sprinkler=False):
         """
         Parameters
         ----------
@@ -73,6 +80,8 @@ class InstanceCatalogWriter(object):
         self.star_db = StarObj(database='LSSTCATSIM',
                                host='fatboy.phys.washington.edu',
                                port=1433, driver='mssql+pymssql')
+
+        self.sprinkler = sprinkler
 
         self.instcats = get_instance_catalogs(imsim_catalog)
 
@@ -133,21 +142,45 @@ class InstanceCatalogWriter(object):
             # Creating empty knots component
             subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
-        bulge_db = bulgeDESCQAObject(self.descqa_catalog)
-        bulge_db.field_ra = self.protoDC2_ra
-        bulge_db.field_dec = self.protoDC2_dec
-        cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
-                                      cannot_be_null=['hasBulge'])
-        cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                          write_header=False)
+        if self.sprinkler is False:
 
-        disk_db = diskDESCQAObject(self.descqa_catalog)
-        disk_db.field_ra = self.protoDC2_ra
-        disk_db.field_dec = self.protoDC2_dec
-        cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
-                                      cannot_be_null=['hasDisk'])
-        cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                          write_mode='a', write_header=False)
+            bulge_db = bulgeDESCQAObject(self.descqa_catalog)
+            bulge_db.field_ra = self.protoDC2_ra
+            bulge_db.field_dec = self.protoDC2_dec
+            cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
+                                          cannot_be_null=['hasBulge'])
+            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                              write_header=False)
+
+            disk_db = diskDESCQAObject(self.descqa_catalog)
+            disk_db.field_ra = self.protoDC2_ra
+            disk_db.field_dec = self.protoDC2_dec
+            cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
+                                          cannot_be_null=['hasDisk'])
+            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                              write_mode='a', write_header=False)
+            
+        else:
+
+            self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
+                                      self.instcats.DESCQACat_Twinkles]
+            self.compoundGalDBList = [bulgeDESCQAObject,
+                                      diskDESCQAObject,
+                                      agnDESCQAObject]
+
+            obs_md = ObservationMetaData(pointingRA=53.125, pointingDec=-28.1,
+                                         boundType='circle', boundLength=0.05, mjd=59900.,
+                                         bandpassName='i', rotSkyPos=0.)
+            
+            gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
+                                                   self.compoundGalDBList,
+                                                   obs_metadata=obs_md,
+                                                   compoundDBclass=sprinklerDESCQACompoundObject,
+                                                   field_ra=self.protoDC2_ra,
+                                                   field_dec=self.protoDC2_dec)
+
+            gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                                  write_header=False)
 
         if self.imsim_catalog:
 
@@ -250,13 +283,24 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
 
 def get_instance_catalogs(imsim_catalog=False):
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
-                                       'DESCQACat'])
+                                       'DESCQACat', 'DESCQACat_Bulge',
+                                       'DESCQACat_Disk', 'DESCQACat_Agn',
+                                       'DESCQACat_Twinkles'])
     if imsim_catalog:
         return InstCats(MaskedPhoSimCatalogPoint_ICRS, BrightStarCatalog_ICRS,
                         PhoSimDESCQA_ICRS)
-    return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
-                    PhoSimDESCQA)
 
+    return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
+                    PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
+                    PhoSimDESCQA_AGN, DESCQACat_Twinkles)
+
+class DESCQACat_Bulge(PhoSimDESCQA):
+
+    cannot_be_null=['hasBulge']
+
+class DESCQACat_Disk(PhoSimDESCQA):
+
+    cannot_be_null=['hasDisk']
 
 class MaskedPhoSimCatalogPoint(PhoSimCatalogPoint):
     disable_proper_motion = False
