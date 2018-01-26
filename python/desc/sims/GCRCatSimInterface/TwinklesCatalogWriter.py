@@ -19,7 +19,8 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, bulgeDESCQAObject_protoDC2, diskDESCQAObject_protoDC2, \
-    bulgeDESCQAObject, diskDESCQAObject, TwinklesCompoundInstanceCatalog_DC2
+    bulgeDESCQAObject, diskDESCQAObject, TwinklesCompoundInstanceCatalog_DC2, \
+    sprinklerCompound_DC2
 from desc.twinkles.twinklesCatalogDefs import (TwinklesCatalogZPoint, TwinklesCatalogPoint,
                                       TwinklesCatalogSersic2D, TwinklesCatalogSN)
 from desc.twinkles import (TwinklesDiskObj, TwinklesBulgeObj,
@@ -72,13 +73,9 @@ class TwinklesCatalogWriter(object):
                                host='fatboy.phys.washington.edu',
                                port=1433, driver='mssql+pymssql')
 
-        self.galaxy_agn_obj = GalaxyAgnObj(database='LSSTCATSIM',
-                               host='fatboy.phys.washington.edu',
-                               port=1433, driver='mssql+pymssql')
-
-#        self.sn_obj = SNDBObj(database='LSSTCATSIM',
-#                              host='fatboy.phys.washington.edu',
-#                              port=1433, driver='mssql+pymssql')
+#        self.galaxy_agn_obj = GalaxyAgnObj(database='LSSTCATSIM',
+#                               host='fatboy.phys.washington.edu',
+#                               port=1433, driver='mssql+pymssql')
 
         self.instcats = get_instance_catalogs(imsim_catalog)
 
@@ -155,21 +152,14 @@ class TwinklesCatalogWriter(object):
         print(obs_md.mjd.TAI)
 
         gal_cat = TwinklesCompoundInstanceCatalog_DC2(self.compoundGalICList,
-                                          self.compoundGalDBList,
-                                          obs_metadata=obs_md,
-                                          compoundDBclass=sprinklerCompound)
-
-#        gal_cat._active_connections += [self.galaxy_agn_obj.connection]
+                                                      self.compoundGalDBList,
+                                                      obs_metadata=obs_md,
+                                                      compoundDBclass=sprinklerCompound_DC2)
 
         gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_header=False)
 
-        # snphosim = PhoSimCatalogSN(self.sn_obj, obs_metadata=obs_md)
-
-        # snphosim.writeSedFile = True
-        # snphosim.suppressDimSN = True
-        # snphosim.sn_sedfile_prefix = 'spectra_files/specFile_'
-        # snphosim.write_catalog('sn_visit_111.txt', chunk_size=100000, write_header=False)
+#        gal_cat = TwinklesCompoundInstanceCatalog_DC2(s
 
         if self.imsim_catalog:
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
