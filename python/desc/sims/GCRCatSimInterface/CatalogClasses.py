@@ -24,30 +24,30 @@ __all__ = ["PhoSimDESCQA", "TwinklesCompoundInstanceCatalog_DC2"]
 class TwinklesCompoundInstanceCatalog_DC2(CompoundInstanceCatalog):
 
     def write_catalog(self, filename, chunk_size=None, write_header=True, write_mode='w'):
-        """                                                                                                                                                    
-        Write the stored list of InstanceCatalogs to a single ASCII output catalog.                                                                            
-        @param [in] filename is the name of the file to be written                                                                                             
-        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog                                                                    
-        to query the database in manageable chunks (in case returning the whole catalog                                                                        
-        takes too much memory)                                                                                                                                 
-        @param [in] write_header a boolean specifying whether or not to add a header                                                                           
-        to the output catalog (Note: only one header will be written; there will not be                                                                        
-        a header for each InstanceCatalog in the CompoundInstanceCatalog; default True)                                                                        
-        @param [in] write_mode is 'w' if you want to overwrite the output file or                                                                              
-        'a' if you want to append to an existing output file (default: 'w')                                                                                    
+        """
+        Write the stored list of InstanceCatalogs to a single ASCII output catalog.
+        @param [in] filename is the name of the file to be written
+        @param [in] chunk_size is an optional parameter telling the CompoundInstanceCatalog
+        to query the database in manageable chunks (in case returning the whole catalog
+        takes too much memory)
+        @param [in] write_header a boolean specifying whether or not to add a header
+        to the output catalog (Note: only one header will be written; there will not be
+        a header for each InstanceCatalog in the CompoundInstanceCatalog; default True)
+        @param [in] write_mode is 'w' if you want to overwrite the output file or
+        'a' if you want to append to an existing output file (default: 'w')
         """
 
         instantiated_ic_list = [None]*len(self._ic_list)
 
-        # first, loop over all of the InstanceCatalog and CatalogDBObject classes, pre-processing                                                              
-        # them (i.e. verifying that they have access to all of the columns they need)                                                                   
+        # first, loop over all of the InstanceCatalog and CatalogDBObject classes, pre-processing
+        # them (i.e. verifying that they have access to all of the columns they need)
         for ix, (icClass, dboClass) in enumerate(zip(self._ic_list, self._dbo_list)):
             dbo = dboClass()
 
             ic = icClass(dbo, obs_metadata=self._obs_metadata)
 
-            # assign all non-private member variables of the CompoundInstanceCatalog                                                 
-            # to the instantiated InstanceCatalogs                                                                                                      
+            # assign all non-private member variables of the CompoundInstanceCatalog
+            # to the instantiated InstanceCatalogs
             for kk in self.__dict__:
                 if kk[0] != '_' and not hasattr(self.__dict__[kk], '__call__'):
                     setattr(ic, kk, self.__dict__[kk])
@@ -92,7 +92,7 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundInstanceCatalog):
                 if self._compoundDBclass is None:
                     compound_dbo = CompoundCatalogDBObject(dbObjClassList)
                 elif not hasattr(self._compoundDBclass, '__getitem__'):
-                    # if self._compoundDBclass is not a list                                                                                                    
+                    # if self._compoundDBclass is not a list
                     try:
                         compound_dbo = self._compoundDBclass(dbObjClassList)
                     except:

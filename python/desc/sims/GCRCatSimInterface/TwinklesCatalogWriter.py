@@ -148,7 +148,7 @@ class TwinklesCatalogWriter(object):
         # cat = self.instcats.TwinklesCatalogZPoint(self.galaxy_agn_obj,
         #                                obs_metadata=obs_md)#,
         # #                               #cannot_be_null=['hasDisk'])
-        # #print(cat._methodRegistry) 
+        # #print(cat._methodRegistry)
         # cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
         #                    write_mode='a', write_header=False)
 
@@ -160,12 +160,12 @@ class TwinklesCatalogWriter(object):
                                           compoundDBclass=sprinklerCompound)
 
 #        gal_cat._active_connections += [self.galaxy_agn_obj.connection]
-        
+
         gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_header=False)
 
         # snphosim = PhoSimCatalogSN(self.sn_obj, obs_metadata=obs_md)
-        
+
         # snphosim.writeSedFile = True
         # snphosim.suppressDimSN = True
         # snphosim.sn_sedfile_prefix = 'spectra_files/specFile_'
