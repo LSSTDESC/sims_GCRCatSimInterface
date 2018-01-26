@@ -19,13 +19,14 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, bulgeDESCQAObject_protoDC2, diskDESCQAObject_protoDC2, \
-    bulgeDESCQAObject, diskDESCQAObject, TwinklesCompoundInstanceCatalog_DC2, \
-    sprinklerCompound_DC2
-from desc.twinkles.twinklesCatalogDefs import (TwinklesCatalogZPoint, TwinklesCatalogPoint,
-                                      TwinklesCatalogSersic2D, TwinklesCatalogSN)
+              agnDESCQAObject_protoDC2, TwinklesCompoundInstanceCatalog_DC2, \
+              sprinklerCompound_DC2, TwinklesCatalogSersic2D_DC2, TwinklesCatalogZPoint_DC2, \
+              knotsDESCQAObject_protoDC2 as knotsDESCQAObject
+#from desc.twinkles.twinklesCatalogDefs import (TwinklesCatalogZPoint, TwinklesCatalogPoint,
+#                                      TwinklesCatalogSersic2D, TwinklesCatalogSN)
 from desc.twinkles import (TwinklesDiskObj, TwinklesBulgeObj,
                            TwinklesAgnObj, GalaxyCacheSprinklerObj,
-                           create_galaxy_cache,
+#                           create_galaxy_cache,
                            _galaxy_cache_db_name, sprinklerCompound)
 
 __all__ = ['TwinklesCatalogWriter', 'make_twinkles_cat_header', 'get_twinkles_obs_md']
@@ -102,6 +103,7 @@ class TwinklesCatalogWriter(object):
         star_name = 'star_cat_%d.txt' % obsHistID
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
+        knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
         make_twinkles_cat_header(self.star_db, obs_md,
@@ -114,12 +116,14 @@ class TwinklesCatalogWriter(object):
         star_cat.min_mag = self.min_mag
         star_cat.disable_proper_motion = not self.proper_motion
 
-        # self.compoundGalICList = [self.instcats.DESCQACat, self.instcats.DESCQACat,
-        self.compoundGalICList = [TwinklesCatalogSersic2D, TwinklesCatalogSersic2D,
-                                  self.instcats.TwinklesCatalogZPoint]
-        # self.compoundGalDBList = [bulgeDESCQAObject,
-        #                           diskDESCQAObject,
-        self.compoundGalDBList = [TwinklesDiskObj, TwinklesBulgeObj, TwinklesAgnObj]
+        self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
+        # self.compoundGalICList = [TwinklesCatalogSersic2D, TwinklesCatalogSersic2D,
+                                  self.instcats.TwinklesCatalogZPoint_DC2]
+        self.compoundGalDBList = [bulgeDESCQAObject_protoDC2,
+                                  diskDESCQAObject_protoDC2,
+                                  agnDESCQAObject_protoDC2]
+        # self.compoundGalDBList = [TwinklesDiskObj, TwinklesBulgeObj, 
+        # TwinklesAgnObj]
 
         bright_cat \
             = self.instcats.BrightStarInstCat(self.star_db, obs_metadata=obs_md,
@@ -129,6 +133,19 @@ class TwinklesCatalogWriter(object):
         cat_dict = {os.path.join(out_dir, star_name): star_cat,
                     os.path.join(out_dir, bright_star_name): bright_cat}
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
+
+        # TODO: Find a better way of checking for catalog type
+        if 'knots' in self.descqa_catalog:
+            knots_db =  knotsDESCQAObject(self.descqa_catalog)
+            knots_db.field_ra = self.protoDC2_ra
+            knots_db.field_dec = self.protoDC2_dec
+            cat = self.instcats.DESCQACat(knots_db, obs_metadata=obs_md,
+                                          cannot_be_null=['hasKnots'])
+            cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
+                              write_header=False)
+        else:
+            # Creating empty knots component
+            subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
         # cat = self.instcats.DESCQACat(bulgeDESCQAObject(self.descqa_catalog),
         #                               obs_metadata=obs_md,
@@ -263,13 +280,22 @@ def get_instance_catalogs(imsim_catalog=False):
 #    InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
 #                                       'DESCQACat'])
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
-                                       'TwinklesCatalogZPoint', 'DESCQACat'])
+                                       'TwinklesCatalogZPoint_DC2', 
+                                       'DESCQACat_Bulge', 'DESCQACat_Disk'])
 
     if imsim_catalog:
         return InstCats(TwinklesMaskedPhoSimCatalogPoint_ICRS, TwinklesBrightStarCatalog_ICRS,
                         TwinklesCatalogZPoint_ICRS, TwinklesPhoSimDESCQA_ICRS)
-    return InstCats(TwinklesMaskedPhoSimCatalogPoint, TwinklesBrightStarCatalog, TwinklesCatalogZPoint, 
-                    PhoSimDESCQA)
+    return InstCats(TwinklesMaskedPhoSimCatalogPoint, TwinklesBrightStarCatalog, TwinklesCatalogZPoint_DC2, 
+                    DESCQACat_Bulge, DESCQACat_Disk)
+
+class DESCQACat_Bulge(PhoSimDESCQA):
+
+    cannot_be_null=['hasBulge']
+
+class DESCQACat_Disk(PhoSimDESCQA):
+
+    cannot_be_null=['hasDisk']
 
 
 class TwinklesMaskedPhoSimCatalogPoint(PhoSimCatalogPoint):
@@ -363,7 +389,7 @@ class TwinklesBrightStarCatalog_ICRS(TwinklesBrightStarCatalog):
     transformations = {'raJ2000': np.degrees,
                        'decJ2000': np.degrees}
 
-class TwinklesCatalogZPoint_ICRS(TwinklesCatalogZPoint):
+class TwinklesCatalogZPoint_ICRS(TwinklesCatalogZPoint_DC2):
 
     catalog_type = 'twinkles_catalog_z_point_ICRS'
 

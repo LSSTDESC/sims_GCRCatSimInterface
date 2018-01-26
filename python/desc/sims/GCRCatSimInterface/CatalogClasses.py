@@ -7,27 +7,12 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
 from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
-from desc.twinkles.twinklesVariabilityMixins import VariabilityTwinkles
-from desc.twinkles import sprinklerCompound
-from lsst.sims.catUtils.exampleCatalogDefinitions.phoSimCatalogExamples import PhoSimSpecMap as psmp
-from lsst.sims.catalogs.db import CompoundCatalogDBObject
-from desc.twinkles import TwinklesCompoundInstanceCatalog
 
-
-twinkles_sn_sed_dir = 'spectra_files'
-twinkles_spec_map = psmp
-twinkles_spec_map.subdir_map['(^specFile_)'] = twinkles_sn_sed_dir
-
-__all__ = ["PhoSimDESCQA", "TwinklesCompoundInstanceCatalog_DC2", "PhoSimDESCQA_AGN",
-           "sprinklerCompound_DC2"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
 
-
-class TwinklesCompoundInstanceCatalog_DC2(TwinklesCompoundInstanceCatalog):
-
-    use_spec_map = twinkles_spec_map
 
 class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
@@ -42,11 +27,12 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     def __init__(self, *args, **kwargs):
         # Update the spatial model if knots are requested, for knots, the sersic
         # parameter actually contains the number of knots
-        if 'hasKnots' in kwargs['cannot_be_null']:
-            self.catalog_type = 'phoSim_catalog_KNOTS'
-            self.spatialModel = 'knots'
-            if 'hasDisk' not in kwargs['cannot_be_null']:
-                kwargs['cannot_be_null'].append('hasDisk')
+        if 'cannot_be_null' in kwargs.keys():
+            if 'hasKnots' in kwargs['cannot_be_null']:
+                self.catalog_type = 'phoSim_catalog_KNOTS'
+                self.spatialModel = 'knots'
+                if 'hasDisk' not in kwargs['cannot_be_null']:
+                    kwargs['cannot_be_null'].append('hasDisk')
 
         super(PhoSimDESCQA, self).__init__(*args, **kwargs)
 
@@ -183,11 +169,3 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
     def get_sedFilename(self):
         n_obj = len(self.column_by_name('galaxy_id'))
         return np.array(['agn.spec']*n_obj)
-
-class sprinklerCompound_DC2(sprinklerCompound):
-    objid = 'sprinklerCompound_DC2'
-    objectTypeId = 166
-    cached_sprinkling = True
-    agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'test_agn_galtile_cache.csv')#None
-    sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'test_sne_galtile_cache.csv')#None
-
