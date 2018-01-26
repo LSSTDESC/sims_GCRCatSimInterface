@@ -349,7 +349,7 @@ class AGN_postprocessing_mixin(object):
             if magnorm_name in master_chunk.dtype.names:
                 master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
 
-        return master_chunk
+        return self._final_pass(master_chunk)
 
 
 class agnDESCQAObject_protoDC2(AGN_postprocessing_mixin, DESCQAObject_protoDC2):

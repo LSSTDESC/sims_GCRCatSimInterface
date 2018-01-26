@@ -17,7 +17,7 @@ from lsst.sims.catUtils.baseCatalogModels import StarObj, GalaxyAgnObj, GalaxyDi
 from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap, PhoSimCatalogZPoint, PhoSimCatalogSN
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
-from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
+from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos, ObservationMetaData
 from . import PhoSimDESCQA, bulgeDESCQAObject_protoDC2, diskDESCQAObject_protoDC2, \
               agnDESCQAObject_protoDC2, TwinklesCompoundInstanceCatalog_DC2, \
               sprinklerCompound_DC2, TwinklesCatalogSersic2D_DC2, TwinklesCatalogZPoint_DC2, \
@@ -38,7 +38,7 @@ class TwinklesCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-                 imsim_catalog=False):
+                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0):
         """
         Parameters
         ----------
@@ -66,6 +66,8 @@ class TwinklesCatalogWriter(object):
         self.minsource = minsource
         self.proper_motion = proper_motion
         self.imsim_catalog = imsim_catalog
+        self.protoDC2_ra = protoDC2_ra
+        self.protoDC2_dec = protoDC2_dec
 
         self.obs_gen = ObservationMetaDataGenerator(database=opsimdb,
                                                     driver='sqlite')
@@ -73,10 +75,6 @@ class TwinklesCatalogWriter(object):
         self.star_db = StarObj(database='LSSTCATSIM',
                                host='fatboy.phys.washington.edu',
                                port=1433, driver='mssql+pymssql')
-
-#        self.galaxy_agn_obj = GalaxyAgnObj(database='LSSTCATSIM',
-#                               host='fatboy.phys.washington.edu',
-#                               port=1433, driver='mssql+pymssql')
 
         self.instcats = get_instance_catalogs(imsim_catalog)
 
@@ -97,7 +95,10 @@ class TwinklesCatalogWriter(object):
         if not os.path.exists(out_dir):
             os.mkdir(out_dir)
 
-        obs_md = get_twinkles_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
+        #obs_md = get_twinkles_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
+        obs_md = ObservationMetaData(pointingRA=53.125, pointingDec=-28.1,
+                                     boundType='circle', boundLength=0.05, mjd=59900.,
+                                     bandpassName='i', rotSkyPos=0.)
 
         cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
@@ -171,7 +172,9 @@ class TwinklesCatalogWriter(object):
         gal_cat = TwinklesCompoundInstanceCatalog_DC2(self.compoundGalICList,
                                                       self.compoundGalDBList,
                                                       obs_metadata=obs_md,
-                                                      compoundDBclass=sprinklerCompound_DC2)
+                                                      compoundDBclass=sprinklerCompound_DC2,
+                                                      field_ra=self.protoDC2_ra,
+                                                      field_dec=self.protoDC2_dec)
 
         gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_header=False)
