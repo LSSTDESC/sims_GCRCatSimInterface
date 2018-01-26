@@ -1,3 +1,6 @@
-## InstanceCatalog generation
+==========================
+InstanceCatalog generation
+==========================
 
-# Before generating InstanceCatalogs
+Before generating InstanceCatalogs
+----------------------------------
