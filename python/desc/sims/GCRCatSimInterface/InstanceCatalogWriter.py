@@ -303,7 +303,8 @@ def get_instance_catalogs(imsim_catalog=False):
                                        'DESCQACat_Twinkles'])
     if imsim_catalog:
         return InstCats(MaskedPhoSimCatalogPoint_ICRS, BrightStarCatalog_ICRS,
-                        PhoSimDESCQA_ICRS)
+                        PhoSimDESCQA_ICRS, DESCQACat_Bulge_ICRS, DESCQACat_Disk_ICRS,
+                        DESCQACat_Agn_ICRS, DESCQACat_Twinkles_ICRS)
 
     return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
                     PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
@@ -378,6 +379,46 @@ class PhoSimDESCQA_ICRS(PhoSimDESCQA):
                        'positionAngle': np.degrees,
                        'majorAxis': arcsecFromRadians,
                        'minorAxis': arcsecFromRadians}
+
+class DESCQACat_Disk_ICRS(PhoSimDESCQA_ICRS):
+
+    cannot_be_null=['hasDisk']
+
+class DESCQACat_Bulge_ICRS(PhoSimDESCQA_ICRS):
+
+    cannot_be_null=['hasBulge']
+
+class DESCQACat_Agn_ICRS(PhoSimDESCQA_AGN):
+    catalog_type = 'phoSim_catalog_DESCQA_AGN_ICRS'
+
+    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
+                      'phoSimMagNorm', 'sedFilepath',
+                      'redshift', 'gamma1', 'gamma2', 'kappa',
+                      'raOffset', 'decOffset',
+                      'spatialmodel', 
+                      'positionAngle', 
+                      'internalExtinctionModel',
+                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
+
+    transformations = {'raJ2000': np.degrees,
+                       'decJ2000': np.degrees,
+                       'positionAngle': np.degrees}
+
+class DESCQACat_Twinkles_ICRS(DESCQACat_Twinkles):
+    catalog_type = 'phoSim_catalog_DESCQA_Twinkles_ICRS'
+
+    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
+                      'phoSimMagNorm', 'sedFilepath',
+                      'redshift', 'gamma1', 'gamma2', 'kappa',
+                      'raOffset', 'decOffset',
+                      'spatialmodel', 
+                      'positionAngle',
+                      'internalExtinctionModel', 
+                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
+
+    transformations = {'raJ2000': np.degrees,
+                       'decJ2000': np.degrees,
+                       'positionAngle': np.degrees}
 
 
 class MaskedPhoSimCatalogPoint_ICRS(MaskedPhoSimCatalogPoint):
