@@ -23,6 +23,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                        ('galacticExtinctionModel', 'CCM', str, 3),
                        ('galacticRv', 3.1, float)]
 
+    cannot_be_null = ['magNorm']
+
     def __init__(self, *args, **kwargs):
         # Update the spatial model if knots are requested, for knots, the sersic
         # parameter actually contains the number of knots
@@ -156,7 +158,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     def get_magNorm(self):
         raw_magnorm = self.column_by_name('magNorm_dc2')
         fitted_magnorm = self.column_by_name('magNorm_fitted')
-        return np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
+        preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
+        return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
 
     @cached
     def get_sedFilename(self):
