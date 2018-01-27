@@ -81,6 +81,12 @@ class InstanceCatalogWriter(object):
                                host='fatboy.phys.washington.edu',
                                port=1433, driver='mssql+pymssql')
 
+        self.agn_db_name = os.path.join(os.environ['SCRATCH'], 'proto_dc2_agn',
+                                        'test_agn.db')
+        
+        assert os.path.exists(self.agn_db_name)
+
+
         self.sprinkler = sprinkler
 
         self.instcats = get_instance_catalogs(imsim_catalog)
@@ -157,6 +163,14 @@ class InstanceCatalogWriter(object):
             disk_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasDisk'])
+            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                              write_mode='a', write_header=False)
+
+            agn_db = agnDESCQAObject(self.descqa_catalog)
+            agn_db.field_ra = self.protoDC2_ra
+            agn_db.field_dec = self.protoDC2_dec
+            agn_db.agn_params_db = self.agn_db_name
+            cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_mode='a', write_header=False)
             
