@@ -51,7 +51,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
         return output
 
-    @compound('internalAv', 'internalRv')
+    @compound('internalAv_fitted', 'internalRv_fitted')
     def get_internalDustParams(self):
         if ('hasDisk' in self._cannot_be_null and
             'hasBulge' in self._cannot_be_null):
@@ -100,7 +100,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         return np.array([av_list, rv_list])
 
 
-    @compound('sedFilename', 'fittedMagNorm')
+    @compound('sedFilename_fitted', 'magNorm_fitted')
     def get_fittedSedAndNorm(self):
 
         if not hasattr(self, '_disk_flux_names'):
@@ -154,12 +154,38 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                                         redshift_array)
         return np.array([sed_names, mag_norms])
 
+    @cached
+    def get_magNorm(self):
+        raw_magnorm = self.column_by_name('magNorm_dc2')
+        fitted_magnorm = self.column_by_name('magNorm_fitted')
+        return np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
+
+    @cached
+    def get_sedFilename(self):
+        raw_filename = self.column_by_name('sedFilename_dc2')
+        fitted_filename = self.column_by_name('sedFilename_fitted')
+        return np.where(np.char.find(raw_filename.astype('str'), 'None')==0,
+                        fitted_filename, raw_filename)
+
+    @cached
+    def get_internalRv(self):
+        raw_rv = self.column_by_name('internalRv_dc2')
+        fitted_rv = self.column_by_name('internalRv_fitted')
+        return np.where(np.isnan(raw_rv), fitted_rv, raw_rv)
+
+
+    @cached
+    def get_internalAv(self):
+        raw_av = self.column_by_name('internalAv_dc2')
+        fitted_av = self.column_by_name('internalAv_fitted')
+        return np.where(np.isnan(raw_av), fitted_av, raw_av)
+
     def get_phoSimMagNorm(self):
         """
         Need to leave this method here to overload the get_phoSimMagNorm
         in the base PhoSim InstanceCatalog classes
         """
-        return self.column_by_name('fittedMagNorm')
+        return self.column_by_name('magNorm')
 
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
