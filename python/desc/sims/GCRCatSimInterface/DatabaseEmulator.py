@@ -183,8 +183,11 @@ class DESCQAObject(object):
     # default value. The second element of the tuple is
     # the dtype of the value (i.e. the argument that gets
     # passed to np.dtype())
-    descqaDefaultValues = {'varParamStr': (None, (str, 500))}
-
+    descqaDefaultValues = {'internalRv_dc2': (np.NaN, float),
+                           'internalAv_dc2': (np.NaN, float),
+                           'sedFilename_dc2': (None, (str, 200)),
+                           'magNorm_dc2': (np.NaN, float),
+                           'varParamStr': (None, (str, 500))}
 
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')
     _postfix = None
