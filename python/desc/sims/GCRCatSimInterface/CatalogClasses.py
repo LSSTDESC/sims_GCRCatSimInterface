@@ -192,8 +192,3 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
     cannot_be_null = ['sedFilepath', 'magNorm']
-
-    @cached
-    def get_sedFilename(self):
-        n_obj = len(self.column_by_name('galaxy_id'))
-        return np.array(['agn.spec']*n_obj)

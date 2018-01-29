@@ -353,7 +353,7 @@ class agnDESCQAObject_protoDC2(AGN_postprocessing_mixin, DESCQAObject_protoDC2):
 
     descqaDefaultValues = {'varParamStr': (None, (str, 500)),
                            'magNorm': (np.NaN, np.float),
-                           'sedFileName': (None, (str, 500))}
+                           'sedFileName': ('agn.spec', (str, 500))}
 
     agn_params_db = None
     agn_objid = None
