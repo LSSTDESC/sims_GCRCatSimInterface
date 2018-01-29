@@ -5,6 +5,11 @@ InstanceCatalog generation
 Before generating InstanceCatalogs
 ----------------------------------
 
+- Before generating InstanceCatalogs, go into the `data/` directory
+  of this repo and run the `get_sed_mags.py` script.  That will generate
+  the `data/CatSimMagGrid.txt` file, which contains the data necessary
+  to fit protoDC2 galaxies to SEDs from the CatSim library.
+
 - Before generating InstanceCatalogs, you need to run the script
   ``bin.src/create_agn_db.py``.  This will create a ``sqlite`` database
   of AGN variability parameters associated with the protoDC2 galaxies.
