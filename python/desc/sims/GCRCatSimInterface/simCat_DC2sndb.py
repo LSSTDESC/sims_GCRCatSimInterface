@@ -3,7 +3,7 @@ A module for classes that read in the protoDC2 catalog and assign SN to hosts
 
 """
 from __future__ import division, print_function, absolute_import
-__all__ = [ 'HostingSN']
+__all__ =  ['DC2SN']
 import numpy as np
 import pandas as pd
 import snsims
