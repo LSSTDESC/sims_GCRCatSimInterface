@@ -281,11 +281,11 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
                                             boundLength=fov)[0]
     if dither:
         obs_md.pointingRA \
-            = np.degrees(obs_md.OpsimMetaData['randomDitherFieldPerVisitRA'])
+            = np.degrees(obs_md.OpsimMetaData['descDitheredRA'])
         obs_md.pointingDec \
-            = np.degrees(obs_md.OpsimMetaData['randomDitherFieldPerVisitDec'])
+            = np.degrees(obs_md.OpsimMetaData['descDitheredDec'])
         obs_md.OpsimMetaData['rotTelPos'] \
-            = obs_md.OpsimMetaData['ditheredRotTelPos']
+            = obs_md.OpsimMetaData['descDitheredRotTelPos']
         obs_md.rotSkyPos \
             = np.degrees(_getRotSkyPos(obs_md._pointingRA, obs_md._pointingDec,
                                        obs_md, obs_md.OpsimMetaData['rotTelPos']))
