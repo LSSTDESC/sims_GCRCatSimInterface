@@ -7,7 +7,7 @@ from lsst.sims.catalogs.db import CompoundCatalogDBObject
 from desc.twinkles import TwinklesCompoundInstanceCatalog, sprinkler
 from . import CompoundDESCQAInstanceCatalog, GalaxyCompoundDESCQAObject, PhoSimDESCQA, PhoSimDESCQA_AGN
 
-
+### This following line is the location you would like to save the SNe SEDs that will be created.
 twinkles_sn_sed_dir = 'spectra_files'
 twinkles_spec_map = psmp
 twinkles_spec_map.subdir_map['(^specFile_)'] = twinkles_sn_sed_dir
@@ -16,6 +16,8 @@ _twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_defs
 
 _agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_agn_cache.csv')
 _sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_sne_cache.csv')
+
+### This is where the agn database you created for DC2 resides.
 global_agn_params_db = os.path.join('/global/cscratch1/sd/brycek/',
                                     'proto_dc2_agn', 'test_agn.db')
 
@@ -28,8 +30,7 @@ __all__ = ["TwinklesCompoundInstanceCatalog_DC2",
            "TwinklesCatalogZPoint_DC2"]
 
 
-#class sprinklerCompound_DC2(sprinklerCompound, GalaxyCompoundDESCQAObject):
-class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):#, sprinklerCompound):
+class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     objid = 'sprinklerCompound_DC2'
     objectTypeId = 166
     cached_sprinkling = True
