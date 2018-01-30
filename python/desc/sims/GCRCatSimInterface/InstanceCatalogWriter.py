@@ -173,7 +173,6 @@ class InstanceCatalogWriter(object):
             cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_mode='a', write_header=False)
-            
         else:
 
             self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
@@ -181,7 +180,7 @@ class InstanceCatalogWriter(object):
             self.compoundGalDBList = [bulgeDESCQAObject,
                                       diskDESCQAObject,
                                       agnDESCQAObject]
-            
+
             gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
                                                    self.compoundGalDBList,
                                                    obs_metadata=obs_md,
@@ -391,8 +390,8 @@ class DESCQACat_Agn_ICRS(PhoSimDESCQA_AGN):
                       'phoSimMagNorm', 'sedFilepath',
                       'redshift', 'gamma1', 'gamma2', 'kappa',
                       'raOffset', 'decOffset',
-                      'spatialmodel', 
-                      'positionAngle', 
+                      'spatialmodel',
+                      'positionAngle',
                       'internalExtinctionModel',
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
 
@@ -407,9 +406,9 @@ class DESCQACat_Twinkles_ICRS(DESCQACat_Twinkles):
                       'phoSimMagNorm', 'sedFilepath',
                       'redshift', 'gamma1', 'gamma2', 'kappa',
                       'raOffset', 'decOffset',
-                      'spatialmodel', 
+                      'spatialmodel',
                       'positionAngle',
-                      'internalExtinctionModel', 
+                      'internalExtinctionModel',
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
 
     transformations = {'raJ2000': np.degrees,
