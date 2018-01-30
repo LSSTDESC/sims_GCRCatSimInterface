@@ -27,8 +27,6 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
     TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
 
-# For testing sprinkler only
-from lsst.sims.utils import ObservationMetaData
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
@@ -182,10 +180,6 @@ class InstanceCatalogWriter(object):
             self.compoundGalDBList = [bulgeDESCQAObject,
                                       diskDESCQAObject,
                                       agnDESCQAObject]
-            # For testing sprinkler only
-            obs_md = ObservationMetaData(pointingRA=53.125, pointingDec=-28.1,
-                                         boundType='circle', boundLength=0.05, mjd=59900.,
-                                         bandpassName='i', rotSkyPos=0.)
             
             gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
                                                    self.compoundGalDBList,

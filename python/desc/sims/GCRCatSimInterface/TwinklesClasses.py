@@ -14,8 +14,8 @@ twinkles_spec_map.subdir_map['(^specFile_)'] = twinkles_sn_sed_dir
 
 _twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_defs.csv')
 
-_agn_cache_file = os.path.join(os.environ['HOME'], 'dc2_agn_cache.csv')
-_sne_cache_file = os.path.join(os.environ['HOME'], 'dc2_sne_cache.csv')
+_agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_agn_cache.csv')
+_sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_sne_cache.csv')
 global_agn_params_db = os.path.join('/global/cscratch1/sd/brycek/',
                                     'proto_dc2_agn', 'test_agn.db')
 
