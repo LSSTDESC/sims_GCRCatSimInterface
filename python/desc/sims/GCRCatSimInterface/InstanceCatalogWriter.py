@@ -27,7 +27,6 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
     TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
 
-
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
 class InstanceCatalogWriter(object):
@@ -38,7 +37,7 @@ class InstanceCatalogWriter(object):
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
                  imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
-                 sprinkler=False):
+                 agn_db_name=None, sprinkler=False):
         """
         Parameters
         ----------
@@ -80,11 +79,13 @@ class InstanceCatalogWriter(object):
                                host='fatboy.phys.washington.edu',
                                port=1433, driver='mssql+pymssql')
 
-        self.agn_db_name = os.path.join(os.environ['SCRATCH'], 'proto_dc2_agn',
-                                        'test_agn.db')
-        
-        assert os.path.exists(self.agn_db_name)
-
+        if agn_db_name is None:
+            raise IOError("Need to specify an Proto DC2 AGN database.")
+        else:
+            if os.path.exists(agn_db_name):
+                self.agn_db_name = agn_db_name
+            else:
+                raise IOError("Path to Proto DC2 AGN database does not exist.")
 
         self.sprinkler = sprinkler
 
@@ -186,7 +187,8 @@ class InstanceCatalogWriter(object):
                                                    obs_metadata=obs_md,
                                                    compoundDBclass=sprinklerDESCQACompoundObject,
                                                    field_ra=self.protoDC2_ra,
-                                                   field_dec=self.protoDC2_dec)
+                                                   field_dec=self.protoDC2_dec,
+                                                   agn_params_db=self.agn_db_name)
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)

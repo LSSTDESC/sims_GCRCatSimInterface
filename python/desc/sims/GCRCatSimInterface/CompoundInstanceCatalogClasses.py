@@ -6,7 +6,7 @@ class CompoundDESCQAInstanceCatalog(CompoundInstanceCatalog):
 
     def __init__(self, instanceCatalogClassList, catalogDBObjectClassList,
                  obs_metadata=None, constraint=None, compoundDBclass = None,
-                 field_ra=0., field_dec=0.):
+                 field_ra=0., field_dec=0., agn_params_db=None):
         """
         @param [in] instanceCatalogClassList is a list of the InstanceCatalog
         classes to be combined into one output catalog.
@@ -37,6 +37,7 @@ class CompoundDESCQAInstanceCatalog(CompoundInstanceCatalog):
         self._constraint = constraint
         self._field_ra = field_ra
         self._field_dec = field_dec
+        self._agn_params_db = agn_params_db
 
         assigned = [False]*len(self._dbo_list)
         self._dbObjectGroupList = []

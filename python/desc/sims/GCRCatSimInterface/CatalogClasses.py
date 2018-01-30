@@ -161,7 +161,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         raw_magnorm = self.column_by_name('magNorm_dc2')
         fitted_magnorm = self.column_by_name('magNorm_fitted')
         preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
-        preliminary_output = np.array(preliminary_output, dtype=np.float)
+        preliminary_output = np.array(preliminary_output).astype(float)
         return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
 
     @cached

@@ -17,11 +17,6 @@ _twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_defs
 _agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_agn_cache.csv')
 _sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_sne_cache.csv')
 
-### This is where the agn database you created for DC2 resides.
-global_agn_params_db = os.path.join('/global/cscratch1/sd/brycek/',
-                                    'proto_dc2_agn', 'test_agn.db')
-
-assert os.path.exists(global_agn_params_db)
 assert os.path.exists(_agn_cache_file)
 assert os.path.exists(_sne_cache_file)
 
@@ -38,7 +33,6 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     sne_cache_file = _sne_cache_file
     defs_file = _twinkles_defs_file
 
-    agn_params_db = global_agn_params_db
     agn_objid = 'agn_descqa'
 
     def _final_pass(self, results):
@@ -46,17 +40,6 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
         for name in results.dtype.fields:
             if 'raJ2000' in name or 'decJ2000' in name:
                 results[name] = np.radians(results[name])
-
-        # the stored procedure on fatboy that queries the galaxies
-        # constructs galtileid by taking
-        #
-        # tileid*10^8 + galid
-        #
-        # this causes galtileid to be so large that the uniqueIDs in the
-        # Twinkles InstanceCatalogs are too large for PhoSim to handle.
-        # Since Twinkles is only focused on one tile on the sky, we will remove
-        # the factor of 10^8, making the uniqueIDs a more manageable size
-        # results['galtileid'] = results['galtileid']#%100000000
 
         #Use Sprinkler now
         sp = sprinkler(results, self.mjd, self.specFileMap, density_param=1.0,
@@ -72,13 +55,6 @@ class TwinklesCatalogSersic2D_DC2(PhoSimDESCQA):
 
     specFileMap = twinkles_spec_map
 
-#    column_outputs = ['prefix', 'uniqueId', 'raPhoSim', 'decPhoSim', 'phoSimMagNorm', 'sedFilepath',
-#                      'redshift', 'gamma1', 'gamma2', 'kappa', 'raOffset', 'decOffset',
-#                      'spatialmodel', 'majorAxis', 'minorAxis', 'positionAngle', 'sindex',
-#                      'internalExtinctionModel', 'internalAv', 'internalRv',
-#                      'galacticExtinctionModel', 'galacticAv', 'galacticRv']
-
-
 class TwinklesCatalogZPoint_DC2(PhoSimDESCQA_AGN, VariabilityTwinkles):
     """
     PhoSim Instance Catalog Class for strongly lensed (and therefore time-delayed)
@@ -88,12 +64,6 @@ class TwinklesCatalogZPoint_DC2(PhoSimDESCQA_AGN, VariabilityTwinkles):
     specFileMap = twinkles_spec_map
 
     catalog_type = 'twinkles_catalog_ZPOINT_DC2'
-
-#    column_outputs = ['prefix', 'uniqueId', 'raPhoSim', 'decPhoSim', 'phoSimMagNorm', 'sedFilepath',
-#                      'redshift', 'gamma1', 'gamma2', 'kappa', 'raOffset', 'decOffset',
-#                      'spatialmodel', 'internalExtinctionModel',
-#                      'galacticExtinctionModel', 'galacticAv', 'galacticRv']
-
 
 class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
 
@@ -120,6 +90,7 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
         for ix, (icClass, dboClass) in enumerate(zip(self._ic_list, self._dbo_list)):
             dbo = dboClass()
 
+            # These are added to set the field rotation for Proto DC2 catalog
             dbo.field_ra = self._field_ra
             dbo.field_dec = self._field_dec
 
@@ -193,6 +164,11 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
                     if compound_dbo is None:
                         compound_dbo = default_compound_dbo(dbObjClassList)
 
+                # These are added here to tell the sprinkler the time so that it
+                # can properly create SEDs for supernovae and the spec_map
+                # is set to tell the sprinkler where to save those SEDs.
+                # There is also a line to set the location of the Proto DC2 AGN DB
+                compound_dbo.agn_params_db = self._agn_params_db
                 compound_dbo.mjd = self._obs_metadata.mjd.TAI
                 compound_dbo.specFileMap = twinkles_spec_map
 
