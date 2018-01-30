@@ -172,6 +172,7 @@ class DESCQAObject(object):
 
     objectTypeId = None
     verbose = False
+    database = 'LSSTCATSIM'
 
     epoch = 2000.0
     idColKey = 'galaxy_id'

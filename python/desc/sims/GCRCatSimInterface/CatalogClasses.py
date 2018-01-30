@@ -13,6 +13,7 @@ __all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN"]
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
 
+
 class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     # default values used if the database does not provide information
@@ -28,11 +29,12 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     def __init__(self, *args, **kwargs):
         # Update the spatial model if knots are requested, for knots, the sersic
         # parameter actually contains the number of knots
-        if 'hasKnots' in kwargs['cannot_be_null']:
-            self.catalog_type = 'phoSim_catalog_KNOTS'
-            self.spatialModel = 'knots'
-            if 'hasDisk' not in kwargs['cannot_be_null']:
-                kwargs['cannot_be_null'].append('hasDisk')
+        if 'cannot_be_null' in kwargs.keys():
+            if 'hasKnots' in kwargs['cannot_be_null']:
+                self.catalog_type = 'phoSim_catalog_KNOTS'
+                self.spatialModel = 'knots'
+                if 'hasDisk' not in kwargs['cannot_be_null']:
+                    kwargs['cannot_be_null'].append('hasDisk')
 
         super(PhoSimDESCQA, self).__init__(*args, **kwargs)
 
@@ -159,6 +161,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         raw_magnorm = self.column_by_name('magNorm_dc2')
         fitted_magnorm = self.column_by_name('magNorm_fitted')
         preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
+        preliminary_output = np.array(preliminary_output).astype(float)
         return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
 
     @cached
@@ -187,7 +190,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         in the base PhoSim InstanceCatalog classes
         """
         return self.column_by_name('magNorm')
-
 
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 

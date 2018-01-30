@@ -149,6 +149,9 @@ class DESCQAObject_protoDC2(DESCQAObject):
     """
 
     _cat_cache_suffix = '_rotated'
+    tableid = 'galaxy'
+    database = 'LSSTCATSIM'
+    yaml_file_name = 'proto-dc2_v2.1.2'
 
     def _rotate_to_correct_field(self, ra_rad, dec_rad):
         """
@@ -259,6 +262,7 @@ class bulgeDESCQAObject_protoDC2(DESCQAObject_protoDC2):
     # different uniqueIds, even though they
     # share a uniqueId in the source catalog
     objectTypeId = 97
+    objid = 'bulge_descqa'
 
     # some column names require an additional postfix
     _postfix = '::bulge'
@@ -266,11 +270,13 @@ class bulgeDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 class diskDESCQAObject_protoDC2(DESCQAObject_protoDC2):
     objectTypeId = 107
+    objid = 'disk_descqa'
     _postfix = '::disk'
 
 
 class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
-    objectTypeId = 117
+    objectTypeId = 127
+    objid = 'knots_descqa'
     _postfix = '::knots'
 
 
@@ -343,7 +349,7 @@ class AGN_postprocessing_mixin(object):
             if magnorm_name in master_chunk.dtype.names:
                 master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
 
-        return master_chunk
+        return self._final_pass(master_chunk)
 
 
 class agnDESCQAObject_protoDC2(AGN_postprocessing_mixin, DESCQAObject_protoDC2):

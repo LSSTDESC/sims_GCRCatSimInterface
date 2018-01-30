@@ -18,10 +18,14 @@ from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
-from . import PhoSimDESCQA#, bulgeDESCQAObject, diskDESCQAObject
+from . import PhoSimDESCQA, PhoSimDESCQA_AGN
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
-    knotsDESCQAObject_protoDC2 as knotsDESCQAObject
+    knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
+    agnDESCQAObject_protoDC2 as agnDESCQAObject, \
+    TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
+    sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
+    TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
 
@@ -32,7 +36,8 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0):
+                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
+                 agn_db_name=None, sprinkler=False):
         """
         Parameters
         ----------
@@ -73,6 +78,16 @@ class InstanceCatalogWriter(object):
         self.star_db = StarObj(database='LSSTCATSIM',
                                host='fatboy.phys.washington.edu',
                                port=1433, driver='mssql+pymssql')
+
+        if agn_db_name is None:
+            raise IOError("Need to specify an Proto DC2 AGN database.")
+        else:
+            if os.path.exists(agn_db_name):
+                self.agn_db_name = agn_db_name
+            else:
+                raise IOError("Path to Proto DC2 AGN database does not exist.")
+
+        self.sprinkler = sprinkler
 
         self.instcats = get_instance_catalogs(imsim_catalog)
 
@@ -133,21 +148,50 @@ class InstanceCatalogWriter(object):
             # Creating empty knots component
             subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
-        bulge_db = bulgeDESCQAObject(self.descqa_catalog)
-        bulge_db.field_ra = self.protoDC2_ra
-        bulge_db.field_dec = self.protoDC2_dec
-        cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
-                                      cannot_be_null=['hasBulge'])
-        cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                          write_header=False)
+        if self.sprinkler is False:
 
-        disk_db = diskDESCQAObject(self.descqa_catalog)
-        disk_db.field_ra = self.protoDC2_ra
-        disk_db.field_dec = self.protoDC2_dec
-        cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
-                                      cannot_be_null=['hasDisk'])
-        cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                          write_mode='a', write_header=False)
+            bulge_db = bulgeDESCQAObject(self.descqa_catalog)
+            bulge_db.field_ra = self.protoDC2_ra
+            bulge_db.field_dec = self.protoDC2_dec
+            cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
+                                          cannot_be_null=['hasBulge'])
+            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                              write_header=False)
+
+            disk_db = diskDESCQAObject(self.descqa_catalog)
+            disk_db.field_ra = self.protoDC2_ra
+            disk_db.field_dec = self.protoDC2_dec
+            cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
+                                          cannot_be_null=['hasDisk'])
+            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                              write_mode='a', write_header=False)
+
+            agn_db = agnDESCQAObject(self.descqa_catalog)
+            agn_db.field_ra = self.protoDC2_ra
+            agn_db.field_dec = self.protoDC2_dec
+            agn_db.agn_params_db = self.agn_db_name
+            cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
+            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                              write_mode='a', write_header=False)
+            
+        else:
+
+            self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
+                                      self.instcats.DESCQACat_Twinkles]
+            self.compoundGalDBList = [bulgeDESCQAObject,
+                                      diskDESCQAObject,
+                                      agnDESCQAObject]
+            
+            gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
+                                                   self.compoundGalDBList,
+                                                   obs_metadata=obs_md,
+                                                   compoundDBclass=sprinklerDESCQACompoundObject,
+                                                   field_ra=self.protoDC2_ra,
+                                                   field_dec=self.protoDC2_dec,
+                                                   agn_params_db=self.agn_db_name)
+
+            gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                                  write_header=False)
 
         if self.imsim_catalog:
 
@@ -250,13 +294,25 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
 
 def get_instance_catalogs(imsim_catalog=False):
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
-                                       'DESCQACat'])
+                                       'DESCQACat', 'DESCQACat_Bulge',
+                                       'DESCQACat_Disk', 'DESCQACat_Agn',
+                                       'DESCQACat_Twinkles'])
     if imsim_catalog:
         return InstCats(MaskedPhoSimCatalogPoint_ICRS, BrightStarCatalog_ICRS,
-                        PhoSimDESCQA_ICRS)
-    return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
-                    PhoSimDESCQA)
+                        PhoSimDESCQA_ICRS, DESCQACat_Bulge_ICRS, DESCQACat_Disk_ICRS,
+                        DESCQACat_Agn_ICRS, DESCQACat_Twinkles_ICRS)
 
+    return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
+                    PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
+                    PhoSimDESCQA_AGN, DESCQACat_Twinkles)
+
+class DESCQACat_Bulge(PhoSimDESCQA):
+
+    cannot_be_null=['hasBulge']
+
+class DESCQACat_Disk(PhoSimDESCQA):
+
+    cannot_be_null=['hasDisk']
 
 class MaskedPhoSimCatalogPoint(PhoSimCatalogPoint):
     disable_proper_motion = False
@@ -319,6 +375,46 @@ class PhoSimDESCQA_ICRS(PhoSimDESCQA):
                        'positionAngle': np.degrees,
                        'majorAxis': arcsecFromRadians,
                        'minorAxis': arcsecFromRadians}
+
+class DESCQACat_Disk_ICRS(PhoSimDESCQA_ICRS):
+
+    cannot_be_null=['hasDisk']
+
+class DESCQACat_Bulge_ICRS(PhoSimDESCQA_ICRS):
+
+    cannot_be_null=['hasBulge']
+
+class DESCQACat_Agn_ICRS(PhoSimDESCQA_AGN):
+    catalog_type = 'phoSim_catalog_DESCQA_AGN_ICRS'
+
+    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
+                      'phoSimMagNorm', 'sedFilepath',
+                      'redshift', 'gamma1', 'gamma2', 'kappa',
+                      'raOffset', 'decOffset',
+                      'spatialmodel', 
+                      'positionAngle', 
+                      'internalExtinctionModel',
+                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
+
+    transformations = {'raJ2000': np.degrees,
+                       'decJ2000': np.degrees,
+                       'positionAngle': np.degrees}
+
+class DESCQACat_Twinkles_ICRS(DESCQACat_Twinkles):
+    catalog_type = 'phoSim_catalog_DESCQA_Twinkles_ICRS'
+
+    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
+                      'phoSimMagNorm', 'sedFilepath',
+                      'redshift', 'gamma1', 'gamma2', 'kappa',
+                      'raOffset', 'decOffset',
+                      'spatialmodel', 
+                      'positionAngle',
+                      'internalExtinctionModel', 
+                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
+
+    transformations = {'raJ2000': np.degrees,
+                       'decJ2000': np.degrees,
+                       'positionAngle': np.degrees}
 
 
 class MaskedPhoSimCatalogPoint_ICRS(MaskedPhoSimCatalogPoint):
