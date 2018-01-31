@@ -11,6 +11,7 @@ import gzip
 import numpy as np
 import h5py
 
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.baseCatalogModels import StarObj
@@ -187,7 +188,7 @@ class InstanceCatalogWriter(object):
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
 	# SN Data
-        snDataDir = '../../../../data'
+        snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
         sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
         sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
         sncsv_hostless_pDC2hz = 'MainSurvey_hostlessSN_highz_trimmed.csv'
