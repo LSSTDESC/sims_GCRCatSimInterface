@@ -21,7 +21,7 @@ from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
-    knotsDESCQAObject_protoDC2 as knotsDESCQAObject \
+    knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
     agnDESCQAObject_protoDC2 as agnDESCQAObject, \
     TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
