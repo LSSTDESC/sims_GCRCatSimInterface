@@ -36,10 +36,6 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     agn_objid = 'agn_descqa'
 
     def _final_pass(self, results):
-        #From the original GalaxyTileCompoundObj final pass method
-        for name in results.dtype.fields:
-            if 'raJ2000' in name or 'decJ2000' in name:
-                results[name] = np.radians(results[name])
 
         #Use Sprinkler now
         sp = sprinkler(results, self.mjd, self.specFileMap, density_param=1.0,
