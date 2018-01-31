@@ -63,7 +63,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     delimiter : string, defaults to ','
         delimiter used in the csv file
     dtype : instance of `numpy.dtype`
-	tuples describing the variables and types in the csv files.
+        tuples describing the variables and types in the csv files.
 
 
     Returns
@@ -71,19 +71,18 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     returns an instance of a Phosim Instance catalogs with appropriate
     parameters set for the objects in the file and the obs_metadata.
     """
-    
-    x = SNFileDBObject(fname, runtable=tableName,
+    dbobj = SNFileDBObject(fname, runtable=tableName,
                        idColKey=idColKey, dtype=dtype,
                        delimiter=delimiter)
-    x.raColName = 'snra_in'
-    x.decColName ='sndec_in'
-    x.objectTypeId = objectIDtype
-    y = DC2PhosimCatalogSN(db_obj=x, obs_metadata=obs_metadata)
-    y.surveyStartDate = 0.
-    y.maxz = 1.4 # increasing max redshift
-    y.maxTimeSNVisible = 150.0 # increasing for high z SN  
-    y.phoSimHeaderMap = DefaultPhoSimHeaderMap
-    y.writeSedFile = True
+    dbobj.raColName = 'snra_in'
+    dbobj.decColName ='sndec_in'
+    dbobj.objectTypeId = objectIDtype
+    cat = DC2PhosimCatalogSN(db_obj=dbobj, obs_metadata=obs_metadata)
+    cat.surveyStartDate = 0.
+    cat.maxz = 1.4 # increasing max redshift
+    cat.maxTimeSNVisible = 150.0 # increasing for high z SN  
+    cat.phoSimHeaderMap = DefaultPhoSimHeaderMap
+    cat.writeSedFile = True
 
     # This means that the the spectra written by phosim will 
     # go to `spectra_files/Dynamic/specFileSN_* 
@@ -92,8 +91,8 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     # We can arrange for the phosim output to just read the string 
     # without directories or something else
 
-    y.sn_sedfile_prefix = 'spectra_files/Dynamic/specFileSN_'
-    return y
+    cat.sn_sedfile_prefix = 'spectra_files/Dynamic/specFileSN_'
+    return cat
 
 class InstanceCatalogWriter(object):
     """
