@@ -11,12 +11,17 @@ from lsst.sims.catUtils.mixins import EBVmixin
 
 from lsst.sims.catalogs.db import fileDBObject
 
-__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "SNFileDBObject", "DC2CatalogSN"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "SNFileDBObject",
+           "DC2PhosimCatalogSN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
 
 class SNFileDBObject(fileDBObject):
+    """
+    Use FileDBObject to provide CatalogDBObject functionality for SN
+    with host galaxies from protoDC2 output to csv files before
+    """
     dbDefaultValues = {'varsimobjid':-1,
                        'runid':-1,
                        'ismultiple':-1,
@@ -38,17 +43,26 @@ class SNFileDBObject(fileDBObject):
                ('redshift', 'z_in'),
                ('Tgaltileid', 'galtileid')
               ]
-class DC2CatalogSN(PhoSimCatalogSN):
+class DC2PhosimCatalogSN(PhoSimCatalogSN):
     """
     Modification of the PhoSimCatalogSN mixin to provide shorter sedFileNames
-    by leaving out the parts of the directory name 
+    by leaving out the parts of the directory name. Also fix name changes from
+    gamma to shear.
     """
     def get_sedFilepath(self):
         return self.column_by_name('TsedFilepath')
 
     def get_shorterFileNames(self):
+        """
+        Method to truncate filenames for transient
+        spectra written out by phosim. 
+
+        .. note: the variable sep needs to be in
+        `self.sn_sedfile_prefix` before writing out
+        a phosim catalog.
+        """
         fnames = self.column_by_name('sedFilepath')
-        sep = 'spectra_files/specFile_'
+        sep = 'specFileSN_'
         split_names = []
         for fname in fnames:
             if 'None' not in fname:
