@@ -173,6 +173,21 @@ class InstanceCatalogWriter(object):
         knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
+	# SN Data
+        snDataDir = '../../../../data'
+        sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
+        sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
+        sncsv_hostless_pDC2hz = 'MainSurvey_hostlessSN_highz_trimmed.csv'
+        sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
+        sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
+
+        snpopcsvs = list(os.path.join(snDataDir, n) for n in 
+                        [sncsv_hostless_uDDF,
+                         sncsv_hostless_pDC2,
+                         sncsv_hostless_pDC2hz,
+                         sncsv_hosted_uDDF,
+                         sncsv_hosted_pDC2])
+
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
                             imsim_catalog=self.imsim_catalog,
@@ -247,6 +262,16 @@ class InstanceCatalogWriter(object):
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
+        
+        # SN instance catalogs
+        for i, snpop in enumerate(snpopcsvs):
+            name = snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+            phosimcatalog = snphosimcat(snpop, tableName=name,
+                                        obs_metadata=obsmd, objectIDtype=i+42)
+
+            snOutFile = name +'_cat_{}.txt'.format(obsHistID)  
+            phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
+                                        chunk_size=10000, write_header=False)
 
         if self.imsim_catalog:
 
@@ -348,6 +373,11 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
 
 
 def get_instance_catalogs(imsim_catalog=False):
+
+
+
+
+
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
                                        'DESCQACat', 'DESCQACat_Bulge',
                                        'DESCQACat_Disk', 'DESCQACat_Agn',
