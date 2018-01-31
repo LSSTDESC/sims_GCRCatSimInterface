@@ -9,40 +9,13 @@ from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 
-from lsst.sims.catalogs.db import fileDBObject
 
-__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "SNFileDBObject",
-           "DC2PhosimCatalogSN"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
 
-class SNFileDBObject(fileDBObject):
-    """
-    Use FileDBObject to provide CatalogDBObject functionality for SN
-    with host galaxies from protoDC2 output to csv files before
-    """
-    dbDefaultValues = {'varsimobjid':-1,
-                       'runid':-1,
-                       'ismultiple':-1,
-                       'run':-1,
-                       'runobjid':-1}
 
-    # These types should be matched to the database.
-    #: Default map is float.  If the column mapping is the same as the
-    # column name, None can be specified
-
-    columns = [('raJ2000', 'snra_in*PI()/180.'),
-               ('decJ2000', 'sndec_in*PI()/180.'),
-               ('Tt0', 't0_in'),
-               ('Tx0', 'x0_in'),
-               ('Tx1', 'x1_in'),
-               ('Tc', 'c_in'),
-               ('id', 'snid_in'),
-               ('Tredshift', 'z_in'),
-               ('redshift', 'z_in'),
-               ('Tgaltileid', 'galtileid')
-              ]
 class DC2PhosimCatalogSN(PhoSimCatalogSN):
     """
     Modification of the PhoSimCatalogSN mixin to provide shorter sedFileNames

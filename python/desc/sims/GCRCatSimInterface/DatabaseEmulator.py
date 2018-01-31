@@ -1,11 +1,11 @@
 """
 This script will define classes that enable CatSim to interface with GCR
 """
-import numpy as np
-
 __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject",
-           "deg2rad_double", "arcsec2rad"]
+           "deg2rad_double", "arcsec2rad", "SNFileDBObject"]
 
+import numpy as np
+from lsst.sims.catalogs.db import fileDBObject
 
 _GCR_IS_AVAILABLE = True
 try:
@@ -434,3 +434,30 @@ class diskDESCQAObject(DESCQAObject):
 class knotsDESCQAObject(DESCQAObject):
     objectTypeId = 95
     _postfix = '::knots'
+
+
+class SNFileDBObject(fileDBObject):
+    """
+    Use FileDBObject to provide CatalogDBObject functionality for SN
+    with host galaxies from protoDC2 output to csv files before
+    """
+    dbDefaultValues = {'varsimobjid':-1,
+                       'runid':-1,
+                       'ismultiple':-1,
+                       'run':-1,
+                       'runobjid':-1}
+
+    # These types should be matched to the database.
+    #: Default map is float.  If the column mapping is the same as the
+    # column name, None can be specified
+
+    columns = [('raJ2000', 'snra_in*PI()/180.'),
+               ('decJ2000', 'sndec_in*PI()/180.'),
+               ('Tt0', 't0_in'),
+               ('Tx0', 'x0_in'),
+               ('Tx1', 'x1_in'),
+               ('Tc', 'c_in'),
+               ('id', 'snid_in'),
+               ('Tredshift', 'z_in'),
+               ('redshift', 'z_in'),
+              ]
