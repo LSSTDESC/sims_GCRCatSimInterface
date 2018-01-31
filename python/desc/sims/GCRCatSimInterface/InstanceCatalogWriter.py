@@ -80,7 +80,6 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
 
     y.sn_sedfile_prefix = 'spectra_files/Dynamic/specFileSN_'
     return y
->>>>>>> added convenience function for doing SN populations
 
 class InstanceCatalogWriter(object):
     """
