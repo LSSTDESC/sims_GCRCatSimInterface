@@ -21,13 +21,66 @@ from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
-    knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
-    agnDESCQAObject_protoDC2 as agnDESCQAObject, \
-    TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
-    sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
-    TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
+    knotsDESCQAObject_protoDC2 as knotsDESCQAObject
+from . import DC2PhosimCatalogSN, SNFileDBObject
 
-__all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
+__all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
+           'snphosimcat']
+
+
+SNDTYPESR1p1 = np.dtype([('snid_in', int),
+                         ('x0_in', float),
+                         ('t0_in', float),
+                         ('x1_in', float),
+                         ('c_in', float),
+                         ('z_in', float),
+                         ('snra_in', float),
+                         ('sndec_in', float)])
+
+def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in',
+              delimiter=',', dtype=SNDTYPESR1p1):
+    """convenience function for writing out phosim instance catalogs for
+    different SN populations in DC2 Run 1.1 that have been serialized to
+    csv files.
+
+    Parameters: string
+	absolute path to csv file for SN population.
+    tableName : string 
+	table name describing the population upto user choice.
+    obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
+	observation metadata describing the observation
+    idColKey : string, defaults to values for Run1.1
+        describes the input parameters to the database as interpreted from the
+        csv file.
+    delimiter : string, defaults to ','
+        delimiter used in the csv file
+    dtype : instance of `numpy.dtype`
+	tuples describing the variables and types in the csv files.
+    """
+    
+    x = SNFileDBObject(fname, runtable=tableName,
+                       idColKey=idColKey, dtype=dtype,
+                       delimiter=delimiter)
+    x.raColName = 'snra_in'
+    x.decColName ='sndec_in'
+    x.objectTypeId = objectIDtype
+    y = DC2PhosimCatalogSN(db_obj=x, obs_metadata=obs_metadata)
+    y.surveyStartDate = 0.
+    y.maxz = 1.4 # increasing max redshift
+    y.maxTimeSNVisible = 150.0 # increasing for high z SN  
+    y.phoSimHeaderMap = DefaultPhoSimHeaderMap
+    y.writeSedFile = True
+
+    # This means that the the spectra written by phosim will 
+    # go to `spectra_files/Dynamic/specFileSN_* 
+    # Note: you want DC2PhosimCatalogSN.sep to be part of this prefix
+    # string. 
+    # We can arrange for the phosim output to just read the string 
+    # without directories or something else
+
+    y.sn_sedfile_prefix = 'spectra_files/Dynamic/specFileSN_'
+    return y
+>>>>>>> added convenience function for doing SN populations
 
 class InstanceCatalogWriter(object):
     """
