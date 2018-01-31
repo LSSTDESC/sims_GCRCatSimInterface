@@ -32,6 +32,8 @@ __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
 
 
+# Global `numpy.dtype` instance to define the types  
+# in the csv files being read 
 SNDTYPESR1p1 = np.dtype([('snid_in', int),
                          ('x0_in', float),
                          ('t0_in', float),
@@ -47,10 +49,12 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     different SN populations in DC2 Run 1.1 that have been serialized to
     csv files.
 
-    Parameters: string
-	absolute path to csv file for SN population.
+    Parameters:
+    -----------
+    fname : string
+        absolute path to csv file for SN population.
     tableName : string 
-	table name describing the population upto user choice.
+        table name describing the population to be descided by user choice.
     obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
 	observation metadata describing the observation
     idColKey : string, defaults to values for Run1.1
@@ -60,6 +64,12 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
         delimiter used in the csv file
     dtype : instance of `numpy.dtype`
 	tuples describing the variables and types in the csv files.
+
+
+    Returns
+    -------
+    returns an instance of a Phosim Instance catalogs with appropriate
+    parameters set for the objects in the file and the obs_metadata.
     """
     
     x = SNFileDBObject(fname, runtable=tableName,
@@ -271,7 +281,7 @@ class InstanceCatalogWriter(object):
         for i, snpop in enumerate(snpopcsvs):
             name = snpop.split('/')[-1].split('.')[0].strip('_trimmed')
             phosimcatalog = snphosimcat(snpop, tableName=name,
-                                        obs_metadata=obsmd, objectIDtype=i+42)
+                                        obs_metadata=obs_md, objectIDtype=i+42)
 
             snOutFile = name +'_cat_{}.txt'.format(obsHistID)  
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
