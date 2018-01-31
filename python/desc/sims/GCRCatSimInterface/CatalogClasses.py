@@ -53,6 +53,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                       'shear1', 'shear2', 'kappa', 'raOffset', 'decOffset',
                       'spatialmodel', 'internalExtinctionModel',
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
+
     cannot_be_null = ['x0', 't0', 'z', 'shorterFileNames']
     
     default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
