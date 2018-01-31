@@ -27,14 +27,15 @@ class SNFileDBObject(fileDBObject):
     #: Default map is float.  If the column mapping is the same as the
     # column name, None can be specified
 
-    columns = [('raJ2000', 'snra*PI()/180.'),
-               ('decJ2000', 'sndec*PI()/180.'),
-               ('Tt0', 't0'),
-               ('Tx0', 'x0'),
-               ('Tx1', 'x1'),
-               ('Tc', 'c'),
-               ('Tsnid', 'id'),
-               ('Tredshift', 'redshift'),
+    columns = [('raJ2000', 'snra_in*PI()/180.'),
+               ('decJ2000', 'sndec_in*PI()/180.'),
+               ('Tt0', 't0_in'),
+               ('Tx0', 'x0_in'),
+               ('Tx1', 'x1_in'),
+               ('Tc', 'c_in'),
+               ('id', 'snid_in'),
+               ('Tredshift', 'z_in'),
+               ('redshift', 'z_in'),
                ('Tgaltileid', 'galtileid')
               ]
 class DC2CatalogSN(PhoSimCatalogSN):
