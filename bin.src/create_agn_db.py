@@ -83,9 +83,9 @@ if __name__ == "__main__":
                         "out_dir/out_file.  Default='False'")
 
     parser.add_argument('--yaml_file', type=str,
-                        default='proto-dc2_v2.1.2',
+                        default='protoDC2',
                         help="yaml file to load with GCRCatalogs. "
-                        "Default = 'proto-dc2_v2.1.2'")
+                        "Default = 'protoDC2'")
 
     parser.add_argument('--seed', type=int, default=81,
                         help="Seed value for random number generator "

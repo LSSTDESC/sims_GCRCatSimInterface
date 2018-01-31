@@ -59,6 +59,10 @@ class InstanceCatalogWriter(object):
             Desired RA (J2000 degrees) of protoDC2 center.
         protoDC2_dec: float [0]
             Desired Dec (J2000 degrees) of protoDC2 center.
+        agn_db_name: str [None]
+            Filename of the agn parameter sqlite db file.
+        sprinkler: bool [False]
+            Flag to enable the Sprinkler.
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
@@ -173,7 +177,6 @@ class InstanceCatalogWriter(object):
             cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_mode='a', write_header=False)
-            
         else:
 
             self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
@@ -181,7 +184,7 @@ class InstanceCatalogWriter(object):
             self.compoundGalDBList = [bulgeDESCQAObject,
                                       diskDESCQAObject,
                                       agnDESCQAObject]
-            
+
             gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
                                                    self.compoundGalDBList,
                                                    obs_metadata=obs_md,
@@ -281,11 +284,11 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
                                             boundLength=fov)[0]
     if dither:
         obs_md.pointingRA \
-            = np.degrees(obs_md.OpsimMetaData['randomDitherFieldPerVisitRA'])
+            = np.degrees(obs_md.OpsimMetaData['descDitheredRA'])
         obs_md.pointingDec \
-            = np.degrees(obs_md.OpsimMetaData['randomDitherFieldPerVisitDec'])
+            = np.degrees(obs_md.OpsimMetaData['descDitheredDec'])
         obs_md.OpsimMetaData['rotTelPos'] \
-            = obs_md.OpsimMetaData['ditheredRotTelPos']
+            = obs_md.OpsimMetaData['descDitheredRotTelPos']
         obs_md.rotSkyPos \
             = np.degrees(_getRotSkyPos(obs_md._pointingRA, obs_md._pointingDec,
                                        obs_md, obs_md.OpsimMetaData['rotTelPos']))
@@ -391,8 +394,8 @@ class DESCQACat_Agn_ICRS(PhoSimDESCQA_AGN):
                       'phoSimMagNorm', 'sedFilepath',
                       'redshift', 'gamma1', 'gamma2', 'kappa',
                       'raOffset', 'decOffset',
-                      'spatialmodel', 
-                      'positionAngle', 
+                      'spatialmodel',
+                      'positionAngle',
                       'internalExtinctionModel',
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
 
@@ -407,9 +410,9 @@ class DESCQACat_Twinkles_ICRS(DESCQACat_Twinkles):
                       'phoSimMagNorm', 'sedFilepath',
                       'redshift', 'gamma1', 'gamma2', 'kappa',
                       'raOffset', 'decOffset',
-                      'spatialmodel', 
+                      'spatialmodel',
                       'positionAngle',
-                      'internalExtinctionModel', 
+                      'internalExtinctionModel',
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
 
     transformations = {'raJ2000': np.degrees,
