@@ -54,7 +54,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     fname : string
         absolute path to csv file for SN population.
     tableName : string 
-        table name describing the population to be descided by user choice.
+        table name describing the population to be decided by user choice.
     obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
 	observation metadata describing the observation
     idColKey : string, defaults to values for Run1.1
