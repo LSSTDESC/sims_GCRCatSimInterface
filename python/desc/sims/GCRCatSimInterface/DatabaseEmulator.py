@@ -276,7 +276,7 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('gamma2', gc.get_quantity_modifier('shear_2'))
         gc.add_quantity_modifier('kappa', gc.get_quantity_modifier('convergence'))
 
-        gc.add_quantity_modifier('positionAngle', gc.get_quantity_modifier('position_angle_true'))
+        gc.add_modifier_on_derived_quantities('positionAngle', np.radians, 'position_angle_true')
 
         gc.add_modifier_on_derived_quantities('majorAxis::disk', arcsec2rad, 'size_disk_true')
         gc.add_modifier_on_derived_quantities('minorAxis::disk', arcsec2rad, 'size_minor_disk_true')
