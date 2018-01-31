@@ -59,6 +59,10 @@ class InstanceCatalogWriter(object):
             Desired RA (J2000 degrees) of protoDC2 center.
         protoDC2_dec: float [0]
             Desired Dec (J2000 degrees) of protoDC2 center.
+        agn_db_name: str [None]
+            Filename of the agn parameter sqlite db file.
+        sprinkler: bool [False]
+            Flag to enable the Sprinkler.
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
