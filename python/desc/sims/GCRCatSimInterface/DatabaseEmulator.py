@@ -240,6 +240,15 @@ class DESCQAObject(object):
         if self.idColKey is None:
             raise RuntimeError("Need to define idColKey for your DESCQAObject")
 
+    def _transform_object_coords(self, gc):
+        """
+        Apply transformations to the RA, Dec of astrophysical sources;
+
+        gc is a GCR catalog instance
+        """
+        gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
+        gc.add_modifier_on_derived_quantities('decJ2000', deg2rad_double, 'dec_true')
+
     def _transform_catalog(self, gc):
         """
         Accept a GCR catalog object and add transformations to the
@@ -259,9 +268,7 @@ class DESCQAObject(object):
             Additional column names, if any, to process through the postfix
             filter, besides the default fields already specified in _columns_need_postfix.
         """
-
-        gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
-        gc.add_modifier_on_derived_quantities('decJ2000', deg2rad_double, 'dec_true')
+        self._transform_object_coords(gc)
 
         gc.add_quantity_modifier('redshift', gc.get_quantity_modifier('redshift_true'), overwrite=True)
         gc.add_quantity_modifier('true_redshift', gc.get_quantity_modifier('redshift_true'))
