@@ -206,7 +206,7 @@ class InstanceCatalogWriter(object):
         names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
                          for snpop in snpopcsvs)
         object_catalogs = [star_name, gal_name] + \
-                          ['{}_cat_{}.txt'.fomat(x, obsHistID) for x in names]
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
