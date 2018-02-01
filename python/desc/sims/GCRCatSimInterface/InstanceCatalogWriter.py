@@ -208,7 +208,7 @@ class InstanceCatalogWriter(object):
                             os.path.join(out_dir, cat_name),
                             imsim_catalog=self.imsim_catalog,
                             object_catalogs=(star_name, gal_name, names[0],
-                            names[1], names[2], names[3], names[4], names[5]))
+                            names[1], names[2], names[3], names[4]))
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
