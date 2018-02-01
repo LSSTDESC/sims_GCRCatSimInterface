@@ -202,10 +202,13 @@ class InstanceCatalogWriter(object):
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
+        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+                         for snpop in snpopcsvs)
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
                             imsim_catalog=self.imsim_catalog,
-                            object_catalogs=(star_name, gal_name))
+                            object_catalogs=(star_name, gal_name, names[0],
+                            names[1], names[2], names[3], names[4], names[5]))
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -279,8 +282,7 @@ class InstanceCatalogWriter(object):
         
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
-            name = snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-            phosimcatalog = snphosimcat(snpop, tableName=name,
+            phosimcatalog = snphosimcat(snpop, tableName=names[i],
                                         obs_metadata=obs_md, objectIDtype=i+42)
 
             snOutFile = name +'_cat_{}.txt'.format(obsHistID)  
