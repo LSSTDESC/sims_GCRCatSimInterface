@@ -91,6 +91,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     # string. 
     # We can arrange for the phosim output to just read the string 
     # without directories or something else
+    os.makedirs('./spectra_files/Dynamic', exist_ok=True)
 
     cat.sn_sedfile_prefix = 'spectra_files/Dynamic/specFileSN_'
     return cat
@@ -204,11 +205,13 @@ class InstanceCatalogWriter(object):
 
         names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
                          for snpop in snpopcsvs)
+        object_catalogs = [star_name, gal_name] + \
+                          ['{}_cat_{}.txt'.fomat(x, obsHistID) for x in names]
+
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
                             imsim_catalog=self.imsim_catalog,
-                            object_catalogs=(star_name, gal_name, names[0],
-                            names[1], names[2], names[3], names[4]))
+                            object_catalogs=object_catalogs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -285,7 +288,7 @@ class InstanceCatalogWriter(object):
             phosimcatalog = snphosimcat(snpop, tableName=names[i],
                                         obs_metadata=obs_md, objectIDtype=i+42)
 
-            snOutFile = name +'_cat_{}.txt'.format(obsHistID)  
+            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
@@ -296,7 +299,7 @@ class InstanceCatalogWriter(object):
             subprocess.check_call(command, shell=True)
 
         # gzip the object files.
-        for orig_name in (star_name, gal_name):
+        for orig_name in object_catalogs:
             full_name = os.path.join(out_dir, orig_name)
             with open(full_name, 'rb') as input_file:
                 with gzip.open(full_name+'.gz', 'wb') as output_file:
