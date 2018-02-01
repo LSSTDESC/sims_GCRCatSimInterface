@@ -58,6 +58,9 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
         table name describing the population to be decided by user choice.
     obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
 	observation metadata describing the observation
+    objectIDtype : int
+        A unique integer identifying this class of astrophysical object as used
+        in lsst.sims.catalogs.db.CatalogDBObject
     idColKey : string, defaults to values for Run1.1
         describes the input parameters to the database as interpreted from the
         csv file.
