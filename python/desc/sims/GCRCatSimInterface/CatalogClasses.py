@@ -4,14 +4,64 @@ from .SedFitter import sed_from_galacticus_mags
 from lsst.utils import getPackageDir
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
+from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSN
 from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 
-__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN"]
+
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
+
+
+class DC2PhosimCatalogSN(PhoSimCatalogSN):
+    """
+    Modification of the PhoSimCatalogSN mixin to provide shorter sedFileNames
+    by leaving out the parts of the directory name. Also fix name changes from
+    gamma to shear.
+    """
+    def get_sedFilepath(self):
+        return self.column_by_name('TsedFilepath')
+
+    def get_shorterFileNames(self):
+        """
+        Method to truncate filenames for transient
+        spectra written out by phosim. 
+
+        .. note: the variable sep needs to be in
+        `self.sn_sedfile_prefix` before writing out
+        a phosim catalog.
+        """
+        fnames = self.column_by_name('sedFilepath')
+        sep = 'specFileSN_'
+        split_names = []
+        for fname in fnames:
+            if 'None' not in fname:
+                fname = sep + fname.split(sep)[-1] 
+            else:
+                fname = 'None'
+            split_names.append(fname)
+        return np.array(split_names)
+
+    # column_outputs = PhoSimCatalogSN.column_outputs
+    # column_outputs[PhoSimCatalogSN.column_outputs.index('sedFilepath')] = \
+    #    'shorterFileNames'
+    column_outputs = ['prefix', 'uniqueId', 'raPhoSim', 'decPhoSim',
+                      'phoSimMagNorm', 'shorterFileNames', 'redshift',
+                      'shear1', 'shear2', 'kappa', 'raOffset', 'decOffset',
+                      'spatialmodel', 'internalExtinctionModel',
+                      'galacticExtinctionModel', 'galacticAv', 'galacticRv']
+
+    cannot_be_null = ['x0', 't0', 'z', 'shorterFileNames']
+    
+    default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
+                       ('raOffset', 0., float), ('decOffset', 0., float),
+                       ('galacticAv', 0.1, float), ('galacticRv', 3.1, float),
+                       ('galacticExtinctionModel', 'CCM', (str, 3)),
+                       ('internalExtinctionModel', 'CCM', (str, 3)), ('internalAv', 0., float),
+                       ('internalRv', 3.1, float), ('shear1', 0., float), ('shear2', 0., float)]
 
 
 class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):

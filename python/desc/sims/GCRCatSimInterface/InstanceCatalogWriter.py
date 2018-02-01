@@ -11,6 +11,7 @@ import gzip
 import numpy as np
 import h5py
 
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.baseCatalogModels import StarObj
@@ -26,8 +27,77 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
     TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
+from . import DC2PhosimCatalogSN, SNFileDBObject
 
-__all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md']
+__all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
+           'snphosimcat']
+
+
+# Global `numpy.dtype` instance to define the types  
+# in the csv files being read 
+SNDTYPESR1p1 = np.dtype([('snid_in', int),
+                         ('x0_in', float),
+                         ('t0_in', float),
+                         ('x1_in', float),
+                         ('c_in', float),
+                         ('z_in', float),
+                         ('snra_in', float),
+                         ('sndec_in', float)])
+
+def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in',
+              delimiter=',', dtype=SNDTYPESR1p1):
+    """convenience function for writing out phosim instance catalogs for
+    different SN populations in DC2 Run 1.1 that have been serialized to
+    csv files.
+
+    Parameters:
+    -----------
+    fname : string
+        absolute path to csv file for SN population.
+    tableName : string 
+        table name describing the population to be decided by user choice.
+    obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
+	observation metadata describing the observation
+    objectIDtype : int
+        A unique integer identifying this class of astrophysical object as used
+        in lsst.sims.catalogs.db.CatalogDBObject
+    idColKey : string, defaults to values for Run1.1
+        describes the input parameters to the database as interpreted from the
+        csv file.
+    delimiter : string, defaults to ','
+        delimiter used in the csv file
+    dtype : instance of `numpy.dtype`
+        tuples describing the variables and types in the csv files.
+
+
+    Returns
+    -------
+    returns an instance of a Phosim Instance catalogs with appropriate
+    parameters set for the objects in the file and the obs_metadata.
+    """
+    dbobj = SNFileDBObject(fname, runtable=tableName,
+                       idColKey=idColKey, dtype=dtype,
+                       delimiter=delimiter)
+    dbobj.raColName = 'snra_in'
+    dbobj.decColName ='sndec_in'
+    dbobj.objectTypeId = objectIDtype
+    cat = DC2PhosimCatalogSN(db_obj=dbobj, obs_metadata=obs_metadata)
+    cat.surveyStartDate = 0.
+    cat.maxz = 1.4 # increasing max redshift
+    cat.maxTimeSNVisible = 150.0 # increasing for high z SN  
+    cat.phoSimHeaderMap = DefaultPhoSimHeaderMap
+    cat.writeSedFile = True
+
+    # This means that the the spectra written by phosim will 
+    # go to `spectra_files/Dynamic/specFileSN_* 
+    # Note: you want DC2PhosimCatalogSN.sep to be part of this prefix
+    # string. 
+    # We can arrange for the phosim output to just read the string 
+    # without directories or something else
+    os.makedirs('./spectra_files/Dynamic', exist_ok=True)
+
+    cat.sn_sedfile_prefix = 'spectra_files/Dynamic/specFileSN_'
+    return cat
 
 class InstanceCatalogWriter(object):
     """
@@ -121,10 +191,30 @@ class InstanceCatalogWriter(object):
         knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
+	# SN Data
+        snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
+        sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
+        sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
+        sncsv_hostless_pDC2hz = 'MainSurvey_hostlessSN_highz_trimmed.csv'
+        sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
+        sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
+
+        snpopcsvs = list(os.path.join(snDataDir, n) for n in 
+                        [sncsv_hostless_uDDF,
+                         sncsv_hostless_pDC2,
+                         sncsv_hostless_pDC2hz,
+                         sncsv_hosted_uDDF,
+                         sncsv_hosted_pDC2])
+
+        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+                         for snpop in snpopcsvs)
+        object_catalogs = [star_name, gal_name] + \
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
                             imsim_catalog=self.imsim_catalog,
-                            object_catalogs=(star_name, gal_name))
+                            object_catalogs=object_catalogs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -195,6 +285,15 @@ class InstanceCatalogWriter(object):
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
+        
+        # SN instance catalogs
+        for i, snpop in enumerate(snpopcsvs):
+            phosimcatalog = snphosimcat(snpop, tableName=names[i],
+                                        obs_metadata=obs_md, objectIDtype=i+42)
+
+            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
+            phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
+                                        chunk_size=10000, write_header=False)
 
         if self.imsim_catalog:
 
@@ -203,7 +302,7 @@ class InstanceCatalogWriter(object):
             subprocess.check_call(command, shell=True)
 
         # gzip the object files.
-        for orig_name in (star_name, gal_name):
+        for orig_name in object_catalogs:
             full_name = os.path.join(out_dir, orig_name)
             with open(full_name, 'rb') as input_file:
                 with gzip.open(full_name+'.gz', 'wb') as output_file:
@@ -296,6 +395,11 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
 
 
 def get_instance_catalogs(imsim_catalog=False):
+
+
+
+
+
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
                                        'DESCQACat', 'DESCQACat_Bulge',
                                        'DESCQACat_Disk', 'DESCQACat_Agn',
