@@ -125,7 +125,7 @@ if __name__ == "__main__":
     tau_xx, tau_yy = make_histogram(np.log10(dc2_tau[valid]), 0.025)
     sf_xx, sf_yy = make_histogram(dc2_sf['i'][valid], 0.025)
 
-    plt.figsize = (30,30)
+    plt.figure(figsize = (6,3))
     plt.subplot(1,2,1)
     plt.plot(tau_xx, tau_yy)
     plt.xlabel('log10($\\tau$ in days)',fontsize=15)
