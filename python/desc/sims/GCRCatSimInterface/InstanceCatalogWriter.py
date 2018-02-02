@@ -189,7 +189,7 @@ class InstanceCatalogWriter(object):
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory
-        twinkles_spec_map.subdir_map['(^specFile_)'] = str(os.path.join(out_dir, 'Dynamic'))
+        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = str(os.path.join(out_dir, 'Dynamic'))
 
         cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
