@@ -189,7 +189,7 @@ class InstanceCatalogWriter(object):
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory
-        twinkles_spec_map.subdir_map['(^specFile_)'] = out_dir
+        twinkles_spec_map.subdir_map['(^specFile_)'] = str(os.path.join(out_dir, 'Dynamic'))
 
         cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
@@ -289,6 +289,8 @@ class InstanceCatalogWriter(object):
                                                    field_ra=self.protoDC2_ra,
                                                    field_dec=self.protoDC2_dec,
                                                    agn_params_db=self.agn_db_name)
+
+            gal_cat.use_spec_map = twinkles_spec_map
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
