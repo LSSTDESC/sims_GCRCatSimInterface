@@ -28,6 +28,7 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
     TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
 from . import DC2PhosimCatalogSN, SNFileDBObject
+from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
@@ -187,6 +188,8 @@ class InstanceCatalogWriter(object):
             os.mkdir(out_dir)
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
+        # Add directory
+        twinkles_spec_map.subdir_map['(^specFile_)'] = out_dir
 
         cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
@@ -297,6 +300,7 @@ class InstanceCatalogWriter(object):
                                         objectIDtype=i+42)
 
             snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
+            print('writing out catalog ', snOutFile)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
