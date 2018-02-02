@@ -32,13 +32,15 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     agn_cache_file = _agn_cache_file
     sne_cache_file = _sne_cache_file
     defs_file = _twinkles_defs_file
+    sed_dir = 'Dynamic'
 
     agn_objid = 'agn_descqa'
 
     def _final_pass(self, results):
 
         #Use Sprinkler now
-        sp = sprinkler(results, self.mjd, self.specFileMap, density_param=1.0,
+        sp = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
+                       density_param=1.0,
                        cached_sprinkling=self.cached_sprinkling,
                        agn_cache_file=self.agn_cache_file,
                        sne_cache_file=self.sne_cache_file,
@@ -167,6 +169,7 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
                 compound_dbo.agn_params_db = self._agn_params_db
                 compound_dbo.mjd = self._obs_metadata.mjd.TAI
                 compound_dbo.specFileMap = twinkles_spec_map
+                compound_dbo.sed_dir = self.sed_dir
 
                 self._write_compound(catList, compound_dbo, filename,
                                      chunk_size=chunk_size, write_header=write_header,

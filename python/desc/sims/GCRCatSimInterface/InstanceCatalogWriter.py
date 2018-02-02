@@ -190,7 +190,7 @@ class InstanceCatalogWriter(object):
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory for writing the GLSN spectra to
         glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))
-        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = glsn_spectra_dir
+        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
         # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
 
@@ -294,6 +294,7 @@ class InstanceCatalogWriter(object):
                                                    agn_params_db=self.agn_db_name)
 
             gal_cat.use_spec_map = twinkles_spec_map
+            gal_cat.sed_dir = glsn_spectra_dir
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
