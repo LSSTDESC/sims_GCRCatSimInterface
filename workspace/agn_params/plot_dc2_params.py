@@ -122,19 +122,32 @@ if __name__ == "__main__":
 
     valid = np.where(dc2_obs_mag_i<=24.0)
 
-    tau_xx, tau_yy = make_histogram(dc2_tau[valid], 0.025)
+    tau_xx, tau_yy = make_histogram(np.log10(dc2_tau[valid]), 0.025)
     sf_xx, sf_yy = make_histogram(dc2_sf['i'][valid], 0.025)
 
     plt.figsize = (30,30)
     plt.subplot(1,2,1)
     plt.plot(tau_xx, tau_yy)
-    plt.xlabel('$\\tau$ (days)')
-    plt.ylabel('#')
+    plt.xlabel('log10($\\tau$ in days)')
+    plt.ylabel('N')
+    plt.xlim(0,5)
+    plt.ylim(0.0,tau_yy.max())
+    xticks = np.arange(0.0,5.0,0.2)
+    xlabels = ['%d' % int(ii*0.2) if ii%5==0 else ''
+               for ii in range(len(xticks))]
+
+    plt.xticks(xticks,xlabels)
 
     plt.subplot(1,2,2)
     plt.plot(sf_xx, sf_yy)
     plt.xlabel('SF_i')
-    plt.ylabel('#')
+    plt.ylabel('N')
+    plt.ylim(0.0,sf_yy.max())
+    xticks = np.arange(0.0,1.0,0.1)
+    plt.xlim(0.0,1.0)
+    xlabels = ['%.1f' % xx if ii%2==0 else ''
+               for ii, xx in enumerate(xticks)]
+    plt.xticks(xticks,xlabels)
 
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, 'param_distributions_180201.png'))
