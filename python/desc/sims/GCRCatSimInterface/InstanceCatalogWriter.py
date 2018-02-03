@@ -28,6 +28,7 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
     TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
 from . import DC2PhosimCatalogSN, SNFileDBObject
+from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
@@ -44,8 +45,8 @@ SNDTYPESR1p1 = np.dtype([('snid_in', int),
                          ('snra_in', float),
                          ('sndec_in', float)])
 
-def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in',
-              delimiter=',', dtype=SNDTYPESR1p1):
+def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
+                idColKey='snid_in', delimiter=',', dtype=SNDTYPESR1p1):
     """convenience function for writing out phosim instance catalogs for
     different SN populations in DC2 Run 1.1 that have been serialized to
     csv files.
@@ -61,6 +62,9 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     objectIDtype : int
         A unique integer identifying this class of astrophysical object as used
         in lsst.sims.catalogs.db.CatalogDBObject
+    sedRootDir : string
+        root directory for writing spectra corresponding to pointings. The spectra
+        will be written to the directory `sedRootDir/Dynamic/`
     idColKey : string, defaults to values for Run1.1
         describes the input parameters to the database as interpreted from the
         csv file.
@@ -76,10 +80,10 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     parameters set for the objects in the file and the obs_metadata.
     """
     dbobj = SNFileDBObject(fname, runtable=tableName,
-                       idColKey=idColKey, dtype=dtype,
-                       delimiter=delimiter)
+                           idColKey=idColKey, dtype=dtype,
+                           delimiter=delimiter)
     dbobj.raColName = 'snra_in'
-    dbobj.decColName ='sndec_in'
+    dbobj.decColName = 'sndec_in'
     dbobj.objectTypeId = objectIDtype
     cat = DC2PhosimCatalogSN(db_obj=dbobj, obs_metadata=obs_metadata)
     cat.surveyStartDate = 0.
@@ -94,9 +98,10 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, idColKey='snid_in'
     # string. 
     # We can arrange for the phosim output to just read the string 
     # without directories or something else
-    os.makedirs('./spectra_files/Dynamic', exist_ok=True)
+    spectradir = os.path.join(sedRootDir, 'Dynamic')
+    os.makedirs(spectradir, exist_ok=True)
 
-    cat.sn_sedfile_prefix = 'spectra_files/Dynamic/specFileSN_'
+    cat.sn_sedfile_prefix = os.path.join(spectradir, 'specFileSN_')
     return cat
 
 class InstanceCatalogWriter(object):
@@ -183,6 +188,11 @@ class InstanceCatalogWriter(object):
             os.mkdir(out_dir)
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
+        # Add directory for writing the GLSN spectra to
+        glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))
+        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
+        # Ensure that the directory for GLSN spectra is created
+        os.makedirs(glsn_spectra_dir, exist_ok=True)
 
         cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
@@ -283,15 +293,20 @@ class InstanceCatalogWriter(object):
                                                    field_dec=self.protoDC2_dec,
                                                    agn_params_db=self.agn_db_name)
 
+            gal_cat.use_spec_map = twinkles_spec_map
+            gal_cat.sed_dir = glsn_spectra_dir
+
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
         
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
             phosimcatalog = snphosimcat(snpop, tableName=names[i],
-                                        obs_metadata=obs_md, objectIDtype=i+42)
+                                        sedRootDir=out_dir, obs_metadata=obs_md,
+                                        objectIDtype=i+42)
 
             snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
+            print('writing out catalog ', snOutFile)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 

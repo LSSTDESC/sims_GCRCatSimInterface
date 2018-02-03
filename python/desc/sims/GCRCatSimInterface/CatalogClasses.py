@@ -35,7 +35,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
         a phosim catalog.
         """
         fnames = self.column_by_name('sedFilepath')
-        sep = 'specFileSN_'
+        sep = 'Dynamic/specFileSN_'
         split_names = []
         for fname in fnames:
             if 'None' not in fname:
