@@ -12,6 +12,7 @@ import numpy as np
 import h5py
 
 from lsst.utils import getPackageDir
+from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.baseCatalogModels import StarObj
@@ -151,6 +152,8 @@ class InstanceCatalogWriter(object):
         self.protoDC2_ra = protoDC2_ra
         self.protoDC2_dec = protoDC2_dec
 
+        self.phot_params = PhotometricParameters(nexp=1, exptime=30)
+
         self.obs_gen = ObservationMetaDataGenerator(database=opsimdb,
                                                     driver='sqlite')
 
@@ -228,12 +231,14 @@ class InstanceCatalogWriter(object):
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
+        star_cat.photParams = self.phot_params
         star_cat.disable_proper_motion = not self.proper_motion
 
         bright_cat \
             = self.instcats.BrightStarInstCat(self.star_db, obs_metadata=obs_md,
                                               cannot_be_null=['isBright'])
         bright_cat.min_mag = self.min_mag
+        bright_cat.photParams = self.phot_params
 
         cat_dict = {os.path.join(out_dir, star_name): star_cat,
                     os.path.join(out_dir, bright_star_name): bright_cat}
@@ -246,6 +251,7 @@ class InstanceCatalogWriter(object):
             knots_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(knots_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasKnots'])
+            cat.photParams = self.phot_params
             cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
                               write_header=False)
         else:
@@ -261,6 +267,7 @@ class InstanceCatalogWriter(object):
                                           cannot_be_null=['hasBulge'])
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_header=False)
+            cat.photParams = self.phot_params
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
             disk_db.field_ra = self.protoDC2_ra
@@ -269,6 +276,7 @@ class InstanceCatalogWriter(object):
                                           cannot_be_null=['hasDisk'])
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_mode='a', write_header=False)
+            cat.photParams = self.phot_params
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
             agn_db.field_ra = self.protoDC2_ra
@@ -277,6 +285,7 @@ class InstanceCatalogWriter(object):
             cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_mode='a', write_header=False)
+            cat.photParams = self.phot_params
         else:
 
             self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
@@ -295,6 +304,7 @@ class InstanceCatalogWriter(object):
 
             gal_cat.use_spec_map = twinkles_spec_map
             gal_cat.sed_dir = glsn_spectra_dir
+            gal_cat.photParams = self.phot_params
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
@@ -304,6 +314,7 @@ class InstanceCatalogWriter(object):
             phosimcatalog = snphosimcat(snpop, tableName=names[i],
                                         sedRootDir=out_dir, obs_metadata=obs_md,
                                         objectIDtype=i+42)
+            phosimcatalog.photParams = self.phot_params
 
             snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
             print('writing out catalog ', snOutFile)
