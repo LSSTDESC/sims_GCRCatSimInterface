@@ -15,10 +15,12 @@ from lsst.utils import getPackageDir
 from lsst.sims.photUtils import PhotometricParameters
 from lsst.sims.photUtils import BandpassDict
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
-from lsst.sims.catalogs.decorators import cached
+from lsst.sims.catalogs.decorators import cached, compound
+from lsst.sims.catUtils.mixins import ParametrizedLightCurveMixin
 from lsst.sims.catUtils.baseCatalogModels import StarObj
 from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap
+from lsst.sims.catUtils.mixins import VariabilityStars
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
@@ -143,6 +145,12 @@ class InstanceCatalogWriter(object):
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
+
+        # load the data for the parametrized light
+        # curve stellar variability model into a
+        # global cache
+        plc = ParametrizedLightCurveMixin()
+        plc.load_parametrized_light_curves()
 
         self.descqa_catalog = descqa_catalog
         self.dither = dither
@@ -457,7 +465,7 @@ class DESCQACat_Disk(PhoSimDESCQA):
 
     cannot_be_null=['hasDisk']
 
-class MaskedPhoSimCatalogPoint(PhoSimCatalogPoint):
+class MaskedPhoSimCatalogPoint(VariabilityStars, PhoSimCatalogPoint):
     disable_proper_motion = False
     min_mag = None
     column_outputs = ['prefix', 'uniqueId', 'raPhoSim', 'decPhoSim',
@@ -468,8 +476,35 @@ class MaskedPhoSimCatalogPoint(PhoSimCatalogPoint):
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
     protoDc2_half_size = 2.5*np.pi/180.
 
+    @compound('quiescent_lsst_u', 'quiescent_lsst_g',
+              'quiescent_lsst_r', 'quiescent_lsst_i',
+              'quiescent_lsst_z', 'quiescent_lsst_y')
+    def get_quiescentLSSTmags(self):
+        return np.array([self.column_by_name('umag'),
+                         self.column_by_name('gmag'),
+                         self.column_by_name('rmag'),
+                         self.column_by_name('imag'),
+                         self.column_by_name('zmag'),
+                         self.column_by_name('ymag')])
+
     @cached
     def get_maskedMagNorm(self):
+
+        # What follows is a terrible hack.
+        # There's a bug in CatSim such that, it won't know
+        # to query for quiescent_lsst_* until after
+        # the database query has been run.  Fixing that
+        # bug is going to take more careful thought than
+        # we have time for before Run 1.1, so I am just
+        # going to request those columns now to make sure
+        # they get queried for.
+        self.column_by_name('quiescent_lsst_u')
+        self.column_by_name('quiescent_lsst_g')
+        self.column_by_name('quiescent_lsst_r')
+        self.column_by_name('quiescent_lsst_i')
+        self.column_by_name('quiescent_lsst_z')
+        self.column_by_name('quiescent_lsst_y')
+
         raw_norm = self.column_by_name('phoSimMagNorm')
         if self.min_mag is None:
             return raw_norm
