@@ -12,15 +12,15 @@ import matplotlib.pyplot as plt
 
 class HistArray(object):
     "Class to manage subplotting of histograms."
-    def __init__(self, title='', figsize=(9, 12), shape=(5, 2)):
+    def __init__(self, title='', figsize=(12, 12), shape=(4, 3)):
         """
         Parameters
         ----------
         title: str ['']
             Overall title of the figure.
-        figsize: tuple [(9, 12)]
+        figsize: tuple [(12, 12)]
             Figure dimensions in x, y inches
-        shape: tuple [(5, 2)]
+        shape: tuple [(4, 3)]
             Number of subplots in the y and x dimensions, respectively.
         """
         plt.rcParams['figure.figsize'] = figsize
@@ -58,7 +58,7 @@ class HistArray(object):
         plt.yscale(yscale)
         plt.legend(loc=1, fontsize=6)
 
-def plot_instcat_dists(phosim_file, figsize=(9, 12)):
+def plot_instcat_dists(phosim_file, figsize=(12, 12)):
     """
     Create a multipanel plot of histograms of various columns in the
     phosim instance catalog.
@@ -83,6 +83,8 @@ def plot_instcat_dists(phosim_file, figsize=(9, 12)):
     magnorm = defaultdict(list)
     major_axis = defaultdict(list)
     minor_axis = defaultdict(list)
+    pa = defaultdict(list)
+    sersic_index = defaultdict(list)
     num_zero_major = 0
     num_zero_minor = 0
     axis_ratio = defaultdict(list)
@@ -112,6 +114,8 @@ def plot_instcat_dists(phosim_file, figsize=(9, 12)):
                                                 minor_axis[item][-1])
                         if axis_ratio[item][-1] > 1000:
                             print(line.strip())
+                    pa[item].append(float(tokens[15]))
+                    sersic_index[item].append(float(tokens[16]))
                     gamma1[item].append(float(tokens[7]))
                     gamma2[item].append(float(tokens[8]))
                     kappa[item].append(float(tokens[9]))
@@ -122,6 +126,8 @@ def plot_instcat_dists(phosim_file, figsize=(9, 12)):
     hist_array.plot_hists(major_axis, xlabel='sersic2d major axis (arcsec)')
     hist_array.plot_hists(minor_axis, xlabel='sersic2d minor axis (arcsec)')
     hist_array.plot_hists(axis_ratio, xlabel='major/minor (#<=0:{} major, {} minor)'.format(num_zero_major, num_zero_minor))
+    hist_array.plot_hists(pa, xlabel='sersic2d position angle (degrees)')
+    hist_array.plot_hists(sersic_index, xlabel='sersic index')
     hist_array.plot_hists(gamma1, xlabel='gamma1')
     hist_array.plot_hists(gamma2, xlabel='gamma2')
     hist_array.plot_hists(kappa, xlabel='kappa')
