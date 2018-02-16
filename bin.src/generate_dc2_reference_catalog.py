@@ -14,7 +14,7 @@ from lsst.sims.utils import sphericalFromCartesian
 
 from lsst.sims.photUtils import Sed, BandpassDict
 from lsst.sims.photUtils import getImsimFluxNorm
-from lsst.utils import defaultSpecMap
+from lsst.sims.utils import defaultSpecMap
 
 from desc.sims.GCRCatSimInterface import DESCQACatalogMixin
 from desc.sims.GCRCatSimInterface import DESCQAObject_protoDC2
