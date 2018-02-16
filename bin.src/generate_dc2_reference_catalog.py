@@ -220,7 +220,7 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
         """
 
         if not hasattr(self, 'lsstBandpassDict'):
-            self.lsstBandpassDict.loadTotalBandpassesFromFiles()
+            self.lsstBandpassDict = BandpassDict.loadTotalBandpassesFromFiles()
             self.sed_dir = getPackageDir('sims_sed_library')
 
         flux_list = np.zeros((len(sedname), 6), dtype=float)
