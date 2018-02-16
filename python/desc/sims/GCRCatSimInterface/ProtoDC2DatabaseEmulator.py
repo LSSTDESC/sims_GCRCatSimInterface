@@ -151,7 +151,7 @@ class DESCQAObject_protoDC2(DESCQAObject):
     _cat_cache_suffix = '_rotated'
     tableid = 'galaxy'
     database = 'LSSTCATSIM'
-    yaml_file_name = 'proto-dc2_v2.1.2'
+    yaml_file_name = 'protoDC2'
 
     def _rotate_to_correct_field(self, ra_rad, dec_rad):
         """

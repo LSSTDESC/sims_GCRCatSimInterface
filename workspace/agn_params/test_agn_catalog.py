@@ -19,7 +19,7 @@ if __name__ == "__main__":
     ra = 112.0
     dec = -75.0
 
-    db = agnDESCQAObject_protoDC2(yaml_file_name='proto-dc2_v2.1.2')
+    db = agnDESCQAObject_protoDC2(yaml_file_name='protoDC2')
 
     agn_db_name = os.path.join(os.environ['SCRATCH'], 'proto_dc2_agn',
                                'test_agn.db')
