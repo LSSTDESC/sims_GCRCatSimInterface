@@ -301,7 +301,7 @@ if __name__ == "__main__":
     file_name = os.path.join(args.out_dir, 'dc2_reference_catalog.txt')
     cat.write_catalog(file_name, chunk_size=10000)
 
-    gal_db = DESCAQReferenceObject(yaml_file_name='protoDC2')
+    gal_db = DESCQAReferenceObject(yaml_file_name='protoDC2')
     gal_db.field_ra = obs.pointingRA
     gal_db.field_dec = obs.pointingDec
 
