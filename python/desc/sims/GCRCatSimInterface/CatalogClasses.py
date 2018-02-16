@@ -10,7 +10,8 @@ from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 
 
-__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN",
+           "DESCAQCatalogMixin"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
@@ -63,45 +64,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                        ('internalExtinctionModel', 'CCM', (str, 3)), ('internalAv', 0., float),
                        ('internalRv', 3.1, float), ('shear1', 0., float), ('shear2', 0., float)]
 
-
-class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
-
-    # default values used if the database does not provide information
-    default_columns = [('raOffset', 0.0, float), ('decOffset', 0.0, float),
-                       ('internalExtinctionModel', 'CCM', str, 3),
-                       ('internalAv', 0.1, float),
-                       ('internalRv', 3.1, float),
-                       ('galacticExtinctionModel', 'CCM', str, 3),
-                       ('galacticRv', 3.1, float)]
-
-    cannot_be_null = ['magNorm']
-
-    def __init__(self, *args, **kwargs):
-        # Update the spatial model if knots are requested, for knots, the sersic
-        # parameter actually contains the number of knots
-        if 'cannot_be_null' in kwargs.keys():
-            if 'hasKnots' in kwargs['cannot_be_null']:
-                self.catalog_type = 'phoSim_catalog_KNOTS'
-                self.spatialModel = 'knots'
-                if 'hasDisk' not in kwargs['cannot_be_null']:
-                    kwargs['cannot_be_null'].append('hasDisk')
-
-        super(PhoSimDESCQA, self).__init__(*args, **kwargs)
-
-    # below are defined getter methods used to define CatSim value-added columns
-    @cached
-    def get_hasDisk(self):
-        output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
-        return output
-
-    @cached
-    def get_hasKnots(self):
-        return self.column_by_name('hasDisk')
-
-    @cached
-    def get_hasBulge(self):
-        output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
-        return output
+class DESCQACatalogMixin(object):
 
     def _calculate_av_rv(self, lum_type):
         """
@@ -150,25 +113,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         rv_list[offensive_rv] = self._dust_rng.random_sample(len(offensive_rv[0]))*4.0+1.0
 
         return np.array([av_list, rv_list])
-
-    @compound('internalAv_fitted', 'internalRv_fitted')
-    def get_internalDustParams(self):
-        if ('hasDisk' in self._cannot_be_null and
-            'hasBulge' in self._cannot_be_null):
-
-            raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
-        elif 'hasDisk' in self._cannot_be_null:
-            lum_type = 'disk'
-        elif 'hasBulge' in self._cannot_be_null:
-            lum_type = 'spheroid'
-        else:
-             raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
-
-        return self._calculate_av_rv(lum_type)
 
     def _find_sed_and_magnorm(self, lum_type):
         """
@@ -232,6 +176,65 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         sed_names, mag_norms = sed_from_galacticus_mags(mag_array,
                                                         redshift_array)
         return np.array([sed_names, mag_norms])
+
+
+class PhoSimDESCQA(PhoSimCatalogSersic2D, DESCQACatalogMixin, EBVmixin):
+
+    # default values used if the database does not provide information
+    default_columns = [('raOffset', 0.0, float), ('decOffset', 0.0, float),
+                       ('internalExtinctionModel', 'CCM', str, 3),
+                       ('internalAv', 0.1, float),
+                       ('internalRv', 3.1, float),
+                       ('galacticExtinctionModel', 'CCM', str, 3),
+                       ('galacticRv', 3.1, float)]
+
+    cannot_be_null = ['magNorm']
+
+    def __init__(self, *args, **kwargs):
+        # Update the spatial model if knots are requested, for knots, the sersic
+        # parameter actually contains the number of knots
+        if 'cannot_be_null' in kwargs.keys():
+            if 'hasKnots' in kwargs['cannot_be_null']:
+                self.catalog_type = 'phoSim_catalog_KNOTS'
+                self.spatialModel = 'knots'
+                if 'hasDisk' not in kwargs['cannot_be_null']:
+                    kwargs['cannot_be_null'].append('hasDisk')
+
+        super(PhoSimDESCQA, self).__init__(*args, **kwargs)
+
+    # below are defined getter methods used to define CatSim value-added columns
+    @cached
+    def get_hasDisk(self):
+        output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
+        return output
+
+    @cached
+    def get_hasKnots(self):
+        return self.column_by_name('hasDisk')
+
+    @cached
+    def get_hasBulge(self):
+        output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
+        return output
+
+    @compound('internalAv_fitted', 'internalRv_fitted')
+    def get_internalDustParams(self):
+        if ('hasDisk' in self._cannot_be_null and
+            'hasBulge' in self._cannot_be_null):
+
+            raise RuntimeError('\nUnsure whether this is a disk catalog '
+                               'or a bulge catalog\n'
+                               'self._cannot_be_null %s' % self._cannot_be_null)
+        elif 'hasDisk' in self._cannot_be_null:
+            lum_type = 'disk'
+        elif 'hasBulge' in self._cannot_be_null:
+            lum_type = 'spheroid'
+        else:
+             raise RuntimeError('\nUnsure whether this is a disk catalog '
+                               'or a bulge catalog\n'
+                               'self._cannot_be_null %s' % self._cannot_be_null)
+
+        return self._calculate_av_rv(lum_type)
 
     @compound('sedFilename_fitted', 'magNorm_fitted')
     def get_fittedSedAndNorm(self):
