@@ -11,7 +11,7 @@ from lsst.sims.catUtils.mixins import EBVmixin
 
 
 __all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN",
-           "DESCAQCatalogMixin"]
+           "DESCQACatalogMixin"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
