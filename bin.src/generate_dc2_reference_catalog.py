@@ -1,17 +1,31 @@
 import numpy as np
 import os
+from lsst.utils import getPackageDir
 from lsst.sims.catalogs.decorators import compound
 from lsst.sims.photUtils import cache_LSST_seds
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catUtils.mixins import AstrometryStars, PhotometryStars
+from lsst.sims.catUtils.mixins import AstrometryGalaxies, EBVmixin
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catUtils.baseCatalogModels import StarObj
 from lsst.sims.utils import arcsecFromRadians
 from lsst.sims.utils import cartesianFromSpherical
 from lsst.sims.utils import sphericalFromCartesian
 
+from lsst.sims.photUtils import Sed, BandpassDict
+from lsst.sims.photUtils import getImsimFluxNorm
+from lsst.utils import defaultSpecMap
+
+from desc.sims.GCRCatSimInterface import DESCQACatalogMixin
+from desc.sims.GCRCatSimInterface import DESCQAObject_protoDC2
+
 import copy
 import argparse
+
+
+class DESCQAReferenceObject(DESCQAObject_protoDC2):
+    objectTypeId = 231
+    objid = 'ref_descqa'
 
 
 class Dc2RefCatMixin(object):
@@ -159,6 +173,100 @@ class Dc2RefCatStars(Dc2RefCatMixin, AstrometryStars, PhotometryStars,
     pass
 
 
+class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
+                        AstrometryGalaxies, EBVmixin,
+                        InstanceCatalog):
+
+    def _calculate_fluxes(self, sedname, magnorm, redshift,
+                          internal_av, internal_rv,
+                          galactic_av, galactic_rv):
+        """
+        Parameters
+        ----------
+        sedname: ndarray of strings
+            Name of SED files
+
+        magnorm: ndarray of floats
+            normalizing magnitudes
+
+        redshift: ndarray of floats
+            redshift of sources
+
+        internal_av: ndarray of floats
+            A_v due to internal dust
+
+        internal_rv: ndarray of floats
+            R_v due to internal dust
+
+        galactic_av: ndarray of floats
+            A_v due to Milky Way dust
+
+        galactic_rv: ndarray of floats
+            R_v due to Milky Way dust
+
+        Returns
+        -------
+        flux_list: ndarray of floats
+            flux_list[i][j] will be the flux of the jth object
+            in the ith band of LSST.  Fluxes are in Janskys (see
+            docstring of lsst.sims.photUtils.Sed.calcFlux)
+        """
+
+        if not hasattr(self, 'lsstBandpassDict'):
+            self.lsstBandpassDict.loadTotalBandpassesFromFiles()
+            self.sed_dir = getPackageDir('sims_sed_library')
+
+        flux_list = np.zeros((len(sedname), 6), dtype=float)
+        for i_obj in range(len(sedname)):
+            sed_obj = Sed()
+            sed_obj.readSED_flambda(os.path.join(self.sed_dir,
+                                                 defaultSpecMap[sedname[i_obj]]))
+
+            fnorm = getImsimFluxNorm(sed_obj, magnorm[i_obj])
+            sed_obj.multiplyFluxNorm(fnorm)
+            a_int, b_int = sed_obj.setupCCMab()
+            sed_obj.addCCMDust(a_int, b_int, A_v=internal_av[i_obj],
+                               R_v=internal_rv[i_obj])
+
+            sed_obj.redshiftSED(redshift[i_obj], dimming=True)
+
+            a_gal, b_gal = sed_obj.setupCCMab()
+            sed_obj.addCCMDust(a_gal, b_gal, A_v=galactic_av[i_obj],
+                               R_v=galactic_rv[i_obj])
+
+            obj_flux_list = self.lsstBandpassDict.fluxListForSed(sed_obj)
+            flux_list[i_obj] = obj_flux_list
+
+        return obj_flux_list.transpose()
+
+    @compound('lsst_u', 'lsst_g', 'lsst_r',
+              'lsst_i', 'lsst_z', 'lsst_y')
+    def get_reference_photometry(self):
+
+        redshift = self.column_by_name('redshift')
+        galactic_rv = np.array([3.1]*len(redshift))
+        galactic_av = self.column_by_name('galacticAv')
+
+        bulge_av, bulge_rv = self._calculate_av_rv('spheroid')
+        bulge_sed, bulge_magnorm = self._find_sed_and_magnorm('spheroid')
+
+        bulge_fluxes = self._calculate_fluxes(bulge_sed, bulge_magnorm,
+                                              redshift,
+                                              bulge_av, bulge_rv,
+                                              galactic_av, galactic_rv)
+
+        disk_av, disk_rv = self._calculate_av_rv('disk')
+        disk_sed, disk_magnorm = self._find_sed_and_magnorm('disk')
+
+        disk_fluxes = self._calculate_fluxes(disk_sed, disk_magnorm,
+                                             redshift,
+                                             disk_av, disk_rv,
+                                             galactic_av, galactic_rv)
+
+        dummy_sed = Sed()
+        return dummy_sed.magFromFlux(disk_fluxes+bulge_fluxes)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--ra', type=float, default=55.064,
@@ -168,9 +276,9 @@ if __name__ == "__main__":
                         help="Center Dec of area in degrees "
                         "(default = -29.783)")
 
-    parser.add_argument('--fov', type=float, default=2.5,
+    parser.add_argument('--fov', type=float, default=3.6,
                         help="Field of view radius in degrees "
-                        "(default = 2.5)")
+                        "(default = 3.6)")
     parser.add_argument('--out_dir', type=str, default='.',
                         help="Directory where file will be made "
                         "(default = '.')")
@@ -192,3 +300,12 @@ if __name__ == "__main__":
     cat = Dc2RefCatStars(star_db, obs_metadata=obs)
     file_name = os.path.join(args.out_dir, 'dc2_reference_catalog.txt')
     cat.write_catalog(file_name, chunk_size=10000)
+
+    gal_db = DESCAQReferenceObject(yaml_file_name='protoDC2')
+    gal_db.field_ra = obs.pointingRA
+    gal_db.field_dec = obs.pointingDec
+
+    cat = Dc2RefCatGalaxies(gal_db, obs_metadata=obs)
+    cat.write_catalog(file_name, chunk_size=10000,
+                      write_header=False,
+                      write_mode='a')
