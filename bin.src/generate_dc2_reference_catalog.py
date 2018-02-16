@@ -3,9 +3,14 @@ import os
 from lsst.sims.photUtils import cache_LSST_seds
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catUtils.mixins import AstrometryStars, PhotometryStars
-import copy
+from lsst.sims.utils import ObservationMetaData
+from lsst.sims.catUtils.baseCatalogModels import StarObj
 
-class Dc1RefCat(InstanceCatalog, AstrometryStars, PhotometryStars):
+
+import copy
+import argparse
+
+class Dc2RefCat(InstanceCatalog, AstrometryStars, PhotometryStars):
     column_outputs = ['uniqueId', 'raJ2000', 'decJ2000',
                       'lsst_u', 'lsst_g', 'lsst_r', 'lsst_i', 'lsst_z',
                       'lsst_y', 'isresolved', 'isvariable']
@@ -14,22 +19,36 @@ class Dc1RefCat(InstanceCatalog, AstrometryStars, PhotometryStars):
     default_formats = {'S': '%s', 'f': '%.8f', 'i': '%i'}
 
 
-output_dir = os.path.join("/astro", "users", "danielsf", "dc1_catalogs")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ra', type=float, default=55.064,
+                        help="Center RA of area in degrees "
+                        "(default = 55.064)")
+    parser.add_argument('--dec', type=float, default=-29.783,
+                        help="Center Dec of area in degrees "
+                        "(default = -29.783)")
 
-cache_LSST_seds()
+    parser.add_argument('--fov', type=float, default=2.5,
+                        help="Field of view radius in degrees "
+                        "(default = 2.5)")
+    parser.add_argument('--out_dir', type=str, default='.',
+                        help="Directory where file will be made "
+                        "(default = '.')")
 
-from lsst.sims.utils import ObservationMetaData
+    args = parser.parse_args()
 
-obs = ObservationMetaData(pointingRA=np.degrees(1.641324),
-                          pointingDec=np.degrees(-0.496321),
-                          boundType='circle',
-                          boundLength=8.0)
+    cache_LSST_seds()
 
-from lsst.sims.catUtils.baseCatalogModels import StarObj
 
-star_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
-                  port=1433, driver='mssql+pymssql')
+    obs = ObservationMetaData(pointingRA=args.ra,
+                              pointingDec=args.dec,
+                              boundType='circle',
+                              boundLength=args.fov)
 
-cat = Dc1RefCat(star_db, obs_metadata=obs)
-file_name = os.path.join(output_dir, 'dc1_reference_catalog_8deg_radius.txt')
-cat.write_catalog(file_name, chunk_size=10000)
+
+    star_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
+                      port=1433, driver='mssql+pymssql')
+
+    cat = Dc2RefCat(star_db, obs_metadata=obs)
+    file_name = os.path.join(args.out_dir, 'dc2_reference_catalog.txt')
+    cat.write_catalog(file_name, chunk_size=10000)
