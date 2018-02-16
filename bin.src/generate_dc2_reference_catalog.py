@@ -6,9 +6,9 @@ from lsst.sims.catUtils.mixins import AstrometryStars, PhotometryStars
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.catUtils.baseCatalogModels import StarObj
 
-
 import copy
 import argparse
+
 
 class Dc2RefCat(InstanceCatalog, AstrometryStars, PhotometryStars):
     column_outputs = ['uniqueId', 'raJ2000', 'decJ2000',
