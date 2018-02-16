@@ -11,7 +11,7 @@ import copy
 import argparse
 
 
-class Dc2RefCatMixin(InstanceCatalog):
+class Dc2RefCatMixin(object):
     column_outputs = ['uniqueId', 'raJ2000', 'decJ2000',
                       'lsst_u', 'sigma_lsst_u',
                       'lsst_g', 'sigma_lsst_g',
@@ -37,8 +37,10 @@ class Dc2RefCatMixin(InstanceCatalog):
 
 
 
-class Dc2RefCatStars(AstrometryStars, PhotometryStars, Dc2RefCatMixin):
+class Dc2RefCatStars(Dc2RefCatMixin, AstrometryStars, PhotometryStars,
+                     InstanceCatalog):
     pass
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
