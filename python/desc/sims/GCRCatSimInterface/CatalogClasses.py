@@ -103,22 +103,22 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
         return output
 
-    @compound('internalAv_fitted', 'internalRv_fitted')
-    def get_internalDustParams(self):
-        if ('hasDisk' in self._cannot_be_null and
-            'hasBulge' in self._cannot_be_null):
+    def _calculate_av_rv(self, lum_type):
+        """
+        Parameters
+        ----------
+        lum_type: str
+            Either 'disk' or 'spheroid'; indicates which component of the galaxy
+            to return dust parameters for
 
-            raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
-        elif 'hasDisk' in self._cannot_be_null:
-            lum_type = 'disk'
-        elif 'hasBulge' in self._cannot_be_null:
-            lum_type = 'spheroid'
-        else:
-             raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
+        Returns
+        -------
+            av_list: nd.array
+                Array of A_v extinction parameters
+
+            rv_list: nd.array
+                Array of R_v extinction parameters
+        """
 
         b_name = 'otherLuminosities/%sLuminositiesStellar:B:rest' % lum_type
         b_dust_name = 'otherLuminosities/%sLuminositiesStellar:B:rest:dustAtlas' % lum_type
@@ -150,6 +150,26 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         rv_list[offensive_rv] = self._dust_rng.random_sample(len(offensive_rv[0]))*4.0+1.0
 
         return np.array([av_list, rv_list])
+
+    @compound('internalAv_fitted', 'internalRv_fitted')
+    def get_internalDustParams(self):
+        if ('hasDisk' in self._cannot_be_null and
+            'hasBulge' in self._cannot_be_null):
+
+            raise RuntimeError('\nUnsure whether this is a disk catalog '
+                               'or a bulge catalog\n'
+                               'self._cannot_be_null %s' % self._cannot_be_null)
+        elif 'hasDisk' in self._cannot_be_null:
+            lum_type = 'disk'
+        elif 'hasBulge' in self._cannot_be_null:
+            lum_type = 'spheroid'
+        else:
+             raise RuntimeError('\nUnsure whether this is a disk catalog '
+                               'or a bulge catalog\n'
+                               'self._cannot_be_null %s' % self._cannot_be_null)
+
+        return self._calculate_av_rv(lum_type)
+
 
 
     @compound('sedFilename_fitted', 'magNorm_fitted')
