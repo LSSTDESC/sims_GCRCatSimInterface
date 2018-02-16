@@ -49,7 +49,6 @@ class Dc2RefCatMixin(object):
                       'properMotionRa', 'properMotionDec', 'parallax',
                       'radialVelocity']
 
-    default_columns = [('isresolved', 0, int), ('isvariable', 0, int)]
 
     transformations = {'raJ2000': np.degrees,
                        'decJ2000': np.degrees,
@@ -170,12 +169,19 @@ class Dc2RefCatMixin(object):
 
 class Dc2RefCatStars(Dc2RefCatMixin, AstrometryStars, PhotometryStars,
                      InstanceCatalog):
-    pass
+
+    default_columns = [('isresolved', 0, int), ('isvariable', 0, int)]
 
 
 class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
                         AstrometryGalaxies, EBVmixin,
                         InstanceCatalog):
+
+    default_columns = [('isresolved', 1, int), ('isvariable', 0, int),
+                       ('properMotionRa', 0.0, float),
+                       ('properMotionDec', 0.0, float),
+                       ('parallax', 0.0, float),
+                       ('radialVelocity', 0.0, float)]
 
     def _calculate_fluxes(self, sedname, magnorm, redshift,
                           internal_av, internal_rv,
