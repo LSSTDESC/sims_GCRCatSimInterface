@@ -26,6 +26,7 @@ import argparse
 class DESCQAReferenceObject(DESCQAObject_protoDC2):
     objectTypeId = 231
     objid = 'ref_descqa'
+    _columns_need_postfix = False
 
 
 class Dc2RefCatMixin(object):
