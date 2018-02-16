@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from lsst.sims.catalogs.decorators import compound
 from lsst.sims.photUtils import cache_LSST_seds
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catUtils.mixins import AstrometryStars, PhotometryStars
@@ -19,6 +20,12 @@ class Dc2RefCatMixin(object):
                       'lsst_i', 'sigma_lsst_i',
                       'lsst_z', 'sigma_lsst_z',
                       'lsst_y', 'sigma_lsst_y',
+                      'lsst_u_smeared',
+                      'lsst_g_smeared',
+                      'lsst_r_smeared',
+                      'lsst_i_smeared',
+                      'lsst_z_smeared',
+                      'lsst_y_smeared',
                       'isresolved', 'isvariable',
                       'properMotionRa', 'properMotionDec', 'parallax',
                       'radialVelocity']
@@ -35,6 +42,48 @@ class Dc2RefCatMixin(object):
                         'properMotionDec': '%.8g',
                         'parallax': '%.8g'}
 
+    @compound('sigma_lsst_u', 'sigma_lsst_g', 'sigma_lsst_r',
+              'sigma_lsst_i', 'sigma_lsst_z', 'sigma_lsst_y')
+    def get_lsst_photometric_uncertainties(self):
+        n_obj = len(self.column_by_name('uniqueId'))
+        fiducial_val = 0.01
+        arr = fiducial_val*np.ones(n_obj, dtype=float)
+        return np.array([arr]*6)
+
+    def _smear_photometry(self, mag_name, sigma_name):
+        """
+        Parameters
+        ----------
+        mag_name: str
+            name of the column containing the true magnitude
+
+        sigma_name: str
+            name of the column containing the sigma in the magnitude
+
+        Returns
+        -------
+        smeared_mag: nd.array
+            array of magnitudes smeared by sigma
+        """
+        if not hasattr(self, '_phot_rng'):
+            self._phot_rng = np.random.RandomState(self.db_obj.objectTypeId)
+        mag = self.column_by_name(mag_name)
+        sig = self.column_by_name(sigma_name)
+        offset = self._phot_rng.normal(loc=0.0,
+                                       scale=1.0,
+                                       size=len(sig))
+
+        return mag + offset*sig
+
+    @compound('lsst_u_smeared', 'lsst_g_smeared', 'lsst_r_smeared',
+              'lsst_i_smeared', 'lsst_z_smeared', 'lsst_y_smeared')
+    def get_smeared_photometry(self):
+        return np.array([self._smear_photometry('lsst_u', 'sigma_lsst_u'),
+                         self._smear_photometry('lsst_g', 'sigma_lsst_g'),
+                         self._smear_photometry('lsst_r', 'sigma_lsst_r'),
+                         self._smear_photometry('lsst_i', 'sigma_lsst_i'),
+                         self._smear_photometry('lsst_z', 'sigma_lsst_z'),
+                         self._smear_photometry('lsst_y', 'sigma_lsst_y')])
 
 
 class Dc2RefCatStars(Dc2RefCatMixin, AstrometryStars, PhotometryStars,
@@ -67,10 +116,7 @@ if __name__ == "__main__":
     obs = ObservationMetaData(pointingRA=args.ra,
                               pointingDec=args.dec,
                               boundType='circle',
-                              boundLength=args.fov,
-                              bandpassName = ['u','g','r','i','z','y'])
-
-    obs.m5 = [23.68, 24.89, 24.43, 24.0, 24.45, 22.60]
+                              boundLength=args.fov)
 
     star_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
                       port=1433, driver='mssql+pymssql')
