@@ -13,7 +13,9 @@ import argparse
 
 
 class Dc2RefCatMixin(object):
-    column_outputs = ['uniqueId', 'raJ2000', 'decJ2000',
+    column_outputs = ['uniqueId',
+                      'raJ2000', 'decJ2000',
+                      'sigma_raJ2000', 'sigma_decJ2000',
                       'lsst_u', 'sigma_lsst_u',
                       'lsst_g', 'sigma_lsst_g',
                       'lsst_r', 'sigma_lsst_r',
@@ -32,7 +34,10 @@ class Dc2RefCatMixin(object):
 
     default_columns = [('isresolved', 0, int), ('isvariable', 0, int)]
 
-    transformations = {'raJ2000': np.degrees, 'decJ2000': np.degrees,
+    transformations = {'raJ2000': np.degrees,
+                       'decJ2000': np.degrees,
+                       'sigma_raJ2000': np.degrees,
+                       'sigma_decJ2000': np.degrees,
                        'properMotionDec': arcsecFromRadians,
                        'properMotionRa': arcsecFromRadians,
                        'parallax': arcsecFromRadians}
@@ -84,6 +89,13 @@ class Dc2RefCatMixin(object):
                          self._smear_photometry('lsst_i', 'sigma_lsst_i'),
                          self._smear_photometry('lsst_z', 'sigma_lsst_z'),
                          self._smear_photometry('lsst_y', 'sigma_lsst_y')])
+
+    @compound('sigma_raJ2000', 'sigma_decJ2000')
+    def get_astrometric_uncertainties(self):
+        fiducial_val = np.radians(0.01)  # in radians
+        n_obj = len(self.column_by_name('uniqueId'))
+        return np.array([fiducial_val*np.ones(n_obj, dtype=float),
+                         fiducial_val*np.ones(n_obj, dtype=float)])
 
 
 class Dc2RefCatStars(Dc2RefCatMixin, AstrometryStars, PhotometryStars,
