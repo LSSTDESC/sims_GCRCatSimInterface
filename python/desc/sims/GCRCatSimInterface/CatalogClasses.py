@@ -170,10 +170,22 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         return self._calculate_av_rv(lum_type)
 
+    def _find_sed_and_magnorm(self, lum_type):
+        """
+        Parameters
+        ----------
+        lum_type: str
+            Either 'disk' or 'spheroid'; indicates which component of the galaxy
+            to return SED and magNorm for
 
+        Returns
+        -------
+            sed_names: nd.array
+                Array of SED file names
 
-    @compound('sedFilename_fitted', 'magNorm_fitted')
-    def get_fittedSedAndNorm(self):
+            mag_norms: nd.array
+                Array of magNorms
+        """
 
         if not hasattr(self, '_disk_flux_names'):
             catsim_dir \
@@ -201,18 +213,13 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             self._disk_flux_names = disk_names
             self._bulge_flux_names = bulge_names
 
-        if 'hasBulge' in self._cannot_be_null and 'hasDisk' in self._cannot_be_null:
-            raise RuntimeError('\nUnsure whether this is a disk catalog or a bulge catalog.\n'
-                               'Both appear to be in self._cannot_be_null.\n'
-                               'self._cannot_be_null: %s' % self._cannot_be_null)
-        elif 'hasBulge' in self._cannot_be_null:
-            flux_names = self._bulge_flux_names
-        elif 'hasDisk' in self._cannot_be_null:
+        if lum_type == 'disk':
             flux_names = self._disk_flux_names
+        elif lum_type == 'spheroid':
+            flux_names= self._bulge_flux_names
         else:
-            raise RuntimeError('\nUnsure whether this is a disk catalog or a bluge catalog.\n'
-                               'Neither appear to be in self._cannot_be_null.\n'
-                               'self._cannot_be_null: %s' % self._cannot_be_null)
+            raise RuntimeError("_find_sed_and_magnorm cannot interpret "
+                               "lum_type == %s" % lum_type)
 
         mag_array = np.array([-2.5*np.log10(self.column_by_name(name))
                               for name in flux_names])
@@ -225,6 +232,24 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         sed_names, mag_norms = sed_from_galacticus_mags(mag_array,
                                                         redshift_array)
         return np.array([sed_names, mag_norms])
+
+    @compound('sedFilename_fitted', 'magNorm_fitted')
+    def get_fittedSedAndNorm(self):
+
+        if 'hasBulge' in self._cannot_be_null and 'hasDisk' in self._cannot_be_null:
+            raise RuntimeError('\nUnsure whether this is a disk catalog or a bulge catalog.\n'
+                               'Both appear to be in self._cannot_be_null.\n'
+                               'self._cannot_be_null: %s' % self._cannot_be_null)
+        elif 'hasBulge' in self._cannot_be_null:
+            lum_type = 'spheroid'
+        elif 'hasDisk' in self._cannot_be_null:
+            lum_type = 'disk'
+        else:
+            raise RuntimeError('\nUnsure whether this is a disk catalog or a bluge catalog.\n'
+                               'Neither appear to be in self._cannot_be_null.\n'
+                               'self._cannot_be_null: %s' % self._cannot_be_null)
+
+        return self._find_sed_and_magnorm(lum_type)
 
     @cached
     def get_magNorm(self):
