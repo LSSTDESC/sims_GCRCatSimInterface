@@ -258,6 +258,8 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
         bulge_av, bulge_rv = self._calculate_av_rv('spheroid')
         bulge_sed, bulge_magnorm = self._find_sed_and_magnorm('spheroid')
 
+        bulge_magnorm = bulge_magnorm.astype(float)
+
         bulge_fluxes = self._calculate_fluxes(bulge_sed, bulge_magnorm,
                                               redshift,
                                               bulge_av, bulge_rv,
@@ -265,6 +267,8 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
 
         disk_av, disk_rv = self._calculate_av_rv('disk')
         disk_sed, disk_magnorm = self._find_sed_and_magnorm('disk')
+
+        disk_magnorm = disk_magnorm.astype(float)
 
         disk_fluxes = self._calculate_fluxes(disk_sed, disk_magnorm,
                                              redshift,
