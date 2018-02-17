@@ -244,7 +244,7 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
             obj_flux_list = self.lsstBandpassDict.fluxListForSed(sed_obj)
             flux_list[i_obj] = obj_flux_list
 
-        return obj_flux_list.transpose()
+        return flux_list.transpose()
 
     @compound('lsst_u', 'lsst_g', 'lsst_r',
               'lsst_i', 'lsst_z', 'lsst_y')
