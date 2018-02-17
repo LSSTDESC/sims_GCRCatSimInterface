@@ -28,7 +28,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
     def get_shorterFileNames(self):
         """
         Method to truncate filenames for transient
-        spectra written out by phosim. 
+        spectra written out by phosim.
 
         .. note: the variable sep needs to be in
         `self.sn_sedfile_prefix` before writing out
@@ -39,7 +39,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
         split_names = []
         for fname in fnames:
             if 'None' not in fname:
-                fname = sep + fname.split(sep)[-1] 
+                fname = sep + fname.split(sep)[-1]
             else:
                 fname = 'None'
             split_names.append(fname)
@@ -55,7 +55,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
 
     cannot_be_null = ['x0', 't0', 'z', 'shorterFileNames']
-    
+
     default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float),
                        ('galacticAv', 0.1, float), ('galacticRv', 3.1, float),
@@ -91,7 +91,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
-        output = np.where(self.column_by_name('SEDs/diskLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
+        output = np.where(self.column_by_name('stellar_mass_disk')>0.0, 1.0, None)
         return output
 
     @cached
@@ -100,7 +100,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_hasBulge(self):
-        output = np.where(self.column_by_name('SEDs/spheroidLuminositiesStellar:SED_9395_583:rest')>0.0, 1.0, None)
+        output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, None)
         return output
 
     @compound('internalAv_fitted', 'internalRv_fitted')
