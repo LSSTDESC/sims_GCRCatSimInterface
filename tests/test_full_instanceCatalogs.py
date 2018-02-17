@@ -37,7 +37,7 @@ class BulgePhoSimCatalogTestCase(unittest.TestCase):
         ObservationMetaData, using protoDC2 (to make sure we don't
         break the whole interface)
         """
-        db = diskDESCQAObject_protoDC2(yaml_file_name='proto-dc2_v2.1.2')
+        db = diskDESCQAObject_protoDC2(yaml_file_name='protoDC2')
         db.field_ra = self.field_ra
         db.field_dec = self.field_dec
         obs = ObservationMetaData(pointingRA=self.field_ra+0.2,
@@ -63,7 +63,7 @@ class BulgePhoSimCatalogTestCase(unittest.TestCase):
         """
         Test that DESCQAObjects now return varParamStr='None' by default
         """
-        db = diskDESCQAObject_protoDC2(yaml_file_name='proto-dc2_v2.1.2')
+        db = diskDESCQAObject_protoDC2(yaml_file_name='protoDC2')
         db.field_ra = self.field_ra
         db.field_dec = self.field_dec
 

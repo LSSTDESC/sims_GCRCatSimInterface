@@ -8,7 +8,7 @@ from lsst.sims.utils import ObservationMetaData
 import numpy as np
 
 class _testDESCQAObj(object):
-    yaml_file_name = 'proto-dc2_v2.1.2'
+    yaml_file_name = 'protoDC2'
     field_ra = 23.0
     field_dec = -22.3
 
