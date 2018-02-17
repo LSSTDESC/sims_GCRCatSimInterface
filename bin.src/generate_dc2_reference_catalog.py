@@ -182,7 +182,8 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
                        ('properMotionRa', 0.0, float),
                        ('properMotionDec', 0.0, float),
                        ('parallax', 0.0, float),
-                       ('radialVelocity', 0.0, float)]
+                       ('radialVelocity', 0.0, float),
+                       ('galacticRv', 3.1, float)]
 
     def _calculate_fluxes(self, sedname, magnorm, redshift,
                           internal_av, internal_rv,
