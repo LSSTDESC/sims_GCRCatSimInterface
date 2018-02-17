@@ -1,26 +1,17 @@
+import re
+import GCRCatalogs
+
 bp_params_dict = {}
 bp_params_dict['disk'] = []
 bp_params_dict['bulge'] = []
 
-with open('dc2_seds.txt', 'r') as input_file:
-    for line in input_file:
-        if 'dustAtlas' in line:
-            continue
-        params = line.strip()
-        params = params.replace('/', '|')
-        params = params.replace(':', '|')
-        params = params.replace('_', '|')
-        params = params.split('|')
-        if 'disk' in params[1]:
-            tag = 'disk'
-        elif 'spheroid'in params[1]:
-            tag = 'bulge'
-        else:
-            continue
-
-        wav0 = int(params[3])
-        width= int(params[4])
-        bp_params_dict[tag].append((wav0, width))
+gc = GCRCatalogs.load_catalog('protoDC2', config_overwrite=dict(md5=False))
+sed_re = re.compile(r'sed_(\d+)_(\d+)_(bulge|disk)$')
+for q in gc.list_all_quantities():
+    m = sed_re.match(q)
+    if m:
+        wav0, width, tag = m.groups()
+        bp_params_dict[tag].append((int(wav0), int(width)))
 
 assert len(bp_params_dict['disk']) >0
 assert len(bp_params_dict['bulge']) > 0
