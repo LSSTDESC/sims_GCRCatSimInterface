@@ -28,7 +28,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
     def get_shorterFileNames(self):
         """
         Method to truncate filenames for transient
-        spectra written out by phosim. 
+        spectra written out by phosim.
 
         .. note: the variable sep needs to be in
         `self.sn_sedfile_prefix` before writing out
@@ -39,7 +39,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
         split_names = []
         for fname in fnames:
             if 'None' not in fname:
-                fname = sep + fname.split(sep)[-1] 
+                fname = sep + fname.split(sep)[-1]
             else:
                 fname = 'None'
             split_names.append(fname)
@@ -55,7 +55,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
 
     cannot_be_null = ['x0', 't0', 'z', 'shorterFileNames']
-    
+
     default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float),
                        ('galacticAv', 0.1, float), ('galacticRv', 3.1, float),
@@ -114,27 +114,21 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         elif 'hasDisk' in self._cannot_be_null:
             lum_type = 'disk'
         elif 'hasBulge' in self._cannot_be_null:
-            lum_type = 'spheroid'
+            lum_type = 'bulge'
         else:
              raise RuntimeError('\nUnsure whether this is a disk catalog '
                                'or a bulge catalog\n'
                                'self._cannot_be_null %s' % self._cannot_be_null)
 
-        b_name = 'otherLuminosities/%sLuminositiesStellar:B:rest' % lum_type
-        b_dust_name = 'otherLuminosities/%sLuminositiesStellar:B:rest:dustAtlas' % lum_type
+        av_name = 'A_v_%s' % lum_type
+        if av_name not in self._all_available_columns:
+            av_name = 'A_v'
+        av_list = self.column_by_name(av_name)
 
-        v_name = 'otherLuminosities/%sLuminositiesStellar:V:rest' % lum_type
-        v_dust_name = 'otherLuminosities/%sLuminositiesStellar:V:rest:dustAtlas' % lum_type
-
-        av_list = -2.5*(np.log10(self.column_by_name(v_dust_name)) -
-                        np.log10(self.column_by_name(v_name)))
-
-        ebv_list = -2.5*(np.log10(self.column_by_name(b_dust_name)) -
-                         np.log10(self.column_by_name(v_dust_name)) -
-                         np.log10(self.column_by_name(b_name)) +
-                         np.log10(self.column_by_name(v_name)))
-
-        rv_list = av_list/ebv_list
+        rv_name = 'R_v_%s' % lum_type
+        if rv_name not in self._all_available_columns:
+            rv_name = 'R_v'
+        rv_list = self.column_by_name(rv_name)
 
         # this is a hack to replace anomalous values of dust extinction
         # with more reasonable values
