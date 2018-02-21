@@ -46,7 +46,7 @@ class Dc2RefCatMixin(object):
                       'lsst_i_smeared',
                       'lsst_z_smeared',
                       'lsst_y_smeared',
-                      'isresolved', 'isvariable',
+                      'isresolved',
                       'properMotionRa', 'properMotionDec', 'parallax',
                       'radialVelocity']
 
@@ -171,14 +171,14 @@ class Dc2RefCatMixin(object):
 class Dc2RefCatStars(Dc2RefCatMixin, AstrometryStars, PhotometryStars,
                      InstanceCatalog):
 
-    default_columns = [('isresolved', 0, int), ('isvariable', 0, int)]
+    default_columns = [('isresolved', 0, int)]
 
 
 class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
                         AstrometryGalaxies, EBVmixin,
                         InstanceCatalog):
 
-    default_columns = [('isresolved', 1, int), ('isvariable', 0, int),
+    default_columns = [('isresolved', 1, int),
                        ('properMotionRa', 0.0, float),
                        ('properMotionDec', 0.0, float),
                        ('parallax', 0.0, float),
