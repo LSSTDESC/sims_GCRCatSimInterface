@@ -33,6 +33,9 @@ def _get_sed_mags_and_cosmology(catalog_name):
     assert bp_params_raw['disk'], 'No SED found'
 
     bp_params_sorted = sorted(bp_params_raw['disk'], key=lambda p: p[0])
+
+    # SED labels in GCR specify the band pass in angstrom, but CatSim uses nm
+    # Hence the conversion factor 0.1 in the code below
     wav_min = bp_params_sorted[0][0] * 0.1
     wav_max = max((0.1*(wav0+width) for wav0, width in bp_params_sorted))
     wav_grid = np.arange(wav_min, wav_max, 0.1)
