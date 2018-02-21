@@ -1,8 +1,9 @@
+import sqlite3
 import numpy as np
 import os
 import time
 from lsst.utils import getPackageDir
-from lsst.sims.catalogs.decorators import compound
+from lsst.sims.catalogs.decorators import compound, cached
 from lsst.sims.photUtils import cache_LSST_seds
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catUtils.mixins import AstrometryStars, PhotometryStars
@@ -47,7 +48,7 @@ class Dc2RefCatMixin(object):
                       'lsst_i_smeared',
                       'lsst_z_smeared',
                       'lsst_y_smeared',
-                      'isresolved',
+                      'isresolved', 'isagn',
                       'properMotionRa', 'properMotionDec', 'parallax',
                       'radialVelocity']
 
@@ -172,7 +173,14 @@ class Dc2RefCatMixin(object):
 class Dc2RefCatStars(Dc2RefCatMixin, AstrometryStars, PhotometryStars,
                      InstanceCatalog):
 
-    default_columns = [('isresolved', 0, int)]
+    default_columns = [('isresolved', 0, int),
+                       ('isagn', 0, int)]
+
+    @compound('properMotionRa', 'properMotionDec',
+              'parallax', 'radialVelocity')
+    def get_override_astrometry(self):
+        n_obj = len(self.column_by_name('uniqueId'))
+        return np.zeros((4,n_obj), dtype=float)
 
 
 class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
@@ -185,6 +193,29 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
                        ('parallax', 0.0, float),
                        ('radialVelocity', 0.0, float),
                        ('galacticRv', 3.1, float)]
+
+    _agn_param_db = os.path.join('/global', 'projecta', 'projectdirs',
+                                 'lsst', 'groups', 'SSim', 'DC2',
+                                 'agn_db_mbh_7.0_m_i_30.0.sqlite')
+
+    def _load_agn_id(self):
+        with sqlite3.connect(self._agn_param_db) as connection:
+            cc = connection.cursor()
+            query = 'SELECT galaxy_id FROM agn_params'
+            results = cc.execute(query).fetchall()
+            self._agn_id_set = set([rr[0] for rr in results])
+            print(self._agn_id_set)
+
+    @cached
+    def get_isagn(self):
+        if not hasattr(self, '_agn_id_set'):
+            self._load_agn_id()
+        output = np.zeros(len(self.column_by_name('uniqueId')), dtype=int)
+        galaxy_id = self.column_by_name('galaxy_id')
+        for i_g, gg in enumerate(galaxy_id):
+            if gg in self._agn_id_set:
+                output[i_g] = 1
+        return output
 
     def _calculate_fluxes(self, sedname, magnorm, redshift,
                           internal_av, internal_rv,
