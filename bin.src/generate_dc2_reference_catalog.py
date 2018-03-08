@@ -1,7 +1,6 @@
 import sqlite3
 import numpy as np
 import os
-import time
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.decorators import compound, cached
 from lsst.sims.photUtils import cache_LSST_seds
@@ -204,7 +203,6 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
             query = 'SELECT galaxy_id FROM agn_params'
             results = cc.execute(query).fetchall()
             self._agn_id_set = set([rr[0] for rr in results])
-            print(self._agn_id_set)
 
     @cached
     def get_isagn(self):
@@ -326,9 +324,7 @@ if __name__ == "__main__":
 
     cat = Dc2RefCatStars(star_db, obs_metadata=obs)
 
-    t_start = time.time()
     cat.write_catalog(file_name, chunk_size=10000)
-    print('writing stellar catalog took %.2e seconds' % (time.time()-t_start))
 
     gal_db = DESCQAReferenceObject(yaml_file_name='protoDC2')
     gal_db.field_ra = obs.pointingRA
@@ -336,8 +332,6 @@ if __name__ == "__main__":
 
     cat = Dc2RefCatGalaxies(gal_db, obs_metadata=obs)
 
-    t_start = time.time()
     cat.write_catalog(file_name, chunk_size=10000,
                       write_header=False,
                       write_mode='a')
-    print('writing galaxy catalog took %.2e seconds' % (time.time()-t_start))
