@@ -193,11 +193,13 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
                        ('radialVelocity', 0.0, float),
                        ('galacticRv', 3.1, float)]
 
-    _agn_param_db = os.path.join('/global', 'projecta', 'projectdirs',
-                                 'lsst', 'groups', 'SSim', 'DC2',
-                                 'agn_db_mbh_7.0_m_i_30.0.sqlite')
+    _agn_param_db = None
 
     def _load_agn_id(self):
+        if self._agn_param_db is None:
+            self._agn_id_set = set()
+            return
+
         with sqlite3.connect(self._agn_param_db) as connection:
             cc = connection.cursor()
             query = 'SELECT galaxy_id FROM agn_params'
@@ -206,10 +208,14 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
 
     @cached
     def get_isagn(self):
+        galaxy_id = self.column_by_name('galaxy_id')
+        output = np.zeros(len(self.column_by_name('uniqueId')), dtype=int)
+        if len(output) == 0:
+            return output
+
         if not hasattr(self, '_agn_id_set'):
             self._load_agn_id()
-        output = np.zeros(len(self.column_by_name('uniqueId')), dtype=int)
-        galaxy_id = self.column_by_name('galaxy_id')
+
         for i_g, gg in enumerate(galaxy_id):
             if gg in self._agn_id_set:
                 output[i_g] = 1
@@ -305,6 +311,15 @@ if __name__ == "__main__":
                         help="Directory where file will be made "
                         "(default = '.')")
 
+    parser.add_argument('--agn_db', type=str,
+                        help='Path to AGN parameters database '
+                             '(defaults to location at NERSC)',
+                        default=os.path.join('/global', 'projecta',
+                                             'projectdirs',
+                                             'lsst', 'groups',
+                                             'SSim', 'DC2',
+                                              'agn_db_mbh_7.0_m_i_30.0.sqlite')
+
     args = parser.parse_args()
 
     cache_LSST_seds(wavelen_min=0.0,
@@ -331,6 +346,7 @@ if __name__ == "__main__":
     gal_db.field_dec = obs.pointingDec
 
     cat = Dc2RefCatGalaxies(gal_db, obs_metadata=obs)
+    cat._agn_param_db = args.agn_db
 
     cat.write_catalog(file_name, chunk_size=10000,
                       write_header=False,
