@@ -69,7 +69,7 @@ class Dc2RefCatMixin(object):
                         'properMotionDec': '%.17f',
                         'parallax': '%.17f',
                         'raJ2000': '%.17f',
-                        'decJ2000': '%17f',
+                        'decJ2000': '%.17f',
                         'sigma_raJ2000': '%.17f',
                         'sigma_decJ2000': '%.17f',
                         'raJ2000_smeared': '%.17f',
