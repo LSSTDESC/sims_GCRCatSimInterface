@@ -326,7 +326,7 @@ if __name__ == "__main__":
                                              'projectdirs',
                                              'lsst', 'groups',
                                              'SSim', 'DC2',
-                                              'agn_db_mbh_7.0_m_i_30.0.sqlite'))
+                                             'agn_db_mbh_7.0_m_i_30.0.sqlite'))
 
     args = parser.parse_args()
 
