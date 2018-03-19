@@ -16,6 +16,7 @@ from lsst.sims.utils import sphericalFromCartesian
 from lsst.sims.photUtils import Sed, BandpassDict
 from lsst.sims.photUtils import getImsimFluxNorm
 from lsst.sims.utils import defaultSpecMap
+from lsst.sims.utils import radiansFromArcsec
 
 from desc.sims.GCRCatSimInterface import DESCQACatalogMixin
 from desc.sims.GCRCatSimInterface import DESCQAObject_protoDC2
@@ -112,7 +113,7 @@ class Dc2RefCatMixin(object):
 
     @compound('sigma_raJ2000', 'sigma_decJ2000')
     def get_astrometric_uncertainties(self):
-        fiducial_val = np.radians(0.01)  # in radians
+        fiducial_val = radiansFromArcsec(0.0001)  # in radians
         n_obj = len(self.column_by_name('uniqueId'))
         return np.array([fiducial_val*np.ones(n_obj, dtype=float),
                          fiducial_val*np.ones(n_obj, dtype=float)])
