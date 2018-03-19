@@ -71,7 +71,7 @@ class Dc2RefCatMixin(object):
               'sigma_lsst_i', 'sigma_lsst_z', 'sigma_lsst_y')
     def get_lsst_photometric_uncertainties(self):
         n_obj = len(self.column_by_name('uniqueId'))
-        fiducial_val = 0.01
+        fiducial_val = 0.001
         arr = fiducial_val*np.ones(n_obj, dtype=float)
         return np.array([arr]*6)
 
