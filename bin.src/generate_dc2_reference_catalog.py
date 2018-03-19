@@ -64,9 +64,16 @@ class Dc2RefCatMixin(object):
                        'parallax': arcsecFromRadians}
 
     default_formats = {'S': '%s', 'f': '%.8f', 'i': '%i'}
-    override_formats = {'properMotionRa': '%.8g',
-                        'properMotionDec': '%.8g',
-                        'parallax': '%.8g'}
+
+    override_formats = {'properMotionRa': '%.17f',
+                        'properMotionDec': '%.17f',
+                        'parallax': '%.17f',
+                        'raJ2000': '%.17f',
+                        'decJ2000': '%17f',
+                        'sigma_raJ2000': '%.17f',
+                        'sigma_decJ2000': '%.17f',
+                        'raJ2000_smeared': '%.17f',
+                        'decJ2000_smeared': '%.17f'}
 
     @compound('sigma_lsst_u', 'sigma_lsst_g', 'sigma_lsst_r',
               'sigma_lsst_i', 'sigma_lsst_z', 'sigma_lsst_y')
