@@ -198,11 +198,6 @@ class InstanceCatalogWriter(object):
             os.mkdir(out_dir)
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
-        # Add directory for writing the GLSN spectra to
-        glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))
-        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
-        # Ensure that the directory for GLSN spectra is created
-        os.makedirs(glsn_spectra_dir, exist_ok=True)
 
         cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
@@ -211,42 +206,18 @@ class InstanceCatalogWriter(object):
         knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
-        # SN Data
-        snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'),
-                                 'data')
-        sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
-        sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
-        sncsv_hostless_pDC2hz = 'MainSurvey_hostlessSN_highz_trimmed.csv'
-        sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
-        sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
-
-        snpopcsvs = list(os.path.join(snDataDir, n) for n in
-                         [sncsv_hostless_uDDF,
-                          sncsv_hostless_pDC2,
-                          sncsv_hostless_pDC2hz,
-                          sncsv_hosted_uDDF,
-                          sncsv_hosted_pDC2])
-
-        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-                     for snpop in snpopcsvs)
         object_catalogs = [star_name, gal_name]
-        if self.sprinkler:
-            object_catalogs += ['{}_cat_{}.txt'.format(x, obsHistID)
-                                for x in names]
 
-        make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, cat_name),
-                            object_catalogs=object_catalogs)
-
-        star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
+        star_cat \
+            = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
         star_cat.photParams = self.phot_params
         star_cat.lsstBandpassDict = self.bp_dict
         star_cat.disable_proper_motion = not self.proper_motion
 
-        bright_cat \
-            = self.instcats.BrightStarInstCat(self.star_db, obs_metadata=obs_md,
-                                              cannot_be_null=['isBright'])
+        bright_cat = self.instcats.BrightStarInstCat(self.star_db,
+                                                     obs_metadata=obs_md,
+                                                     cannot_be_null=['isBright'])
         bright_cat.min_mag = self.min_mag
         bright_cat.photParams = self.phot_params
         bright_cat.lsstBandpassDict = self.bp_dict
@@ -270,8 +241,11 @@ class InstanceCatalogWriter(object):
             # Creating empty knots component
             subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
-        if self.sprinkler is False:
+        if self.sprinkler:
+            object_catalogs += self.sprinkle_objects(out_dir, obs_md, obsHistID,
+                                                     gal_name)
 
+        else:
             bulge_db = bulgeDESCQAObject(self.descqa_catalog)
             bulge_db.field_ra = self.protoDC2_ra
             bulge_db.field_dec = self.protoDC2_dec
@@ -301,45 +275,10 @@ class InstanceCatalogWriter(object):
                               write_mode='a', write_header=False)
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
-        else:
 
-            self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
-                                      self.instcats.DESCQACat_Twinkles]
-            self.compoundGalDBList = [bulgeDESCQAObject,
-                                      diskDESCQAObject,
-                                      agnDESCQAObject]
-
-            gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
-                                                   self.compoundGalDBList,
-                                                   obs_metadata=obs_md,
-                                                   compoundDBclass=sprinklerDESCQACompoundObject,
-                                                   field_ra=self.protoDC2_ra,
-                                                   field_dec=self.protoDC2_dec,
-                                                   agn_params_db=self.agn_db_name)
-
-            gal_cat.use_spec_map = twinkles_spec_map
-            gal_cat.sed_dir = glsn_spectra_dir
-            gal_cat.photParams = self.phot_params
-            gal_cat.lsstBandpassDict = self.bp_dict
-
-            gal_cat.write_catalog(os.path.join(out_dir, gal_name),
-                                  chunk_size=100000,
-                                  write_header=False)
-
-            # SN instance catalogs
-            for i, snpop in enumerate(snpopcsvs):
-                phosimcatalog = snphosimcat(snpop, tableName=names[i],
-                                            sedRootDir=out_dir,
-                                            obs_metadata=obs_md,
-                                            objectIDtype=i+42)
-                phosimcatalog.photParams = self.phot_params
-                phosimcatalog.lsstBandpassDict = self.bp_dict
-
-                snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)
-                print('writing out catalog ', snOutFile)
-                phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
-                                            chunk_size=10000,
-                                            write_header=False)
+        make_instcat_header(self.star_db, obs_md,
+                            os.path.join(out_dir, cat_name),
+                            object_catalogs=object_catalogs)
 
         # gzip the object files.
         for orig_name in object_catalogs:
@@ -348,6 +287,72 @@ class InstanceCatalogWriter(object):
                 with gzip.open(full_name+'.gz', 'wb') as output_file:
                     output_file.writelines(input_file)
             os.unlink(full_name)
+
+    def sprinkle_objects(self, out_dir, obs_md, obsHistID, gal_name):
+        self.compoundGalICList = [self.instcats.DESCQACat_Bulge,
+                                  self.instcats.DESCQACat_Disk,
+                                  self.instcats.DESCQACat_Twinkles]
+        self.compoundGalDBList = [bulgeDESCQAObject,
+                                  diskDESCQAObject,
+                                  agnDESCQAObject]
+
+        gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
+                                               self.compoundGalDBList,
+                                               obs_metadata=obs_md,
+                                               compoundDBclass=sprinklerDESCQACompoundObject,
+                                               field_ra=self.protoDC2_ra,
+                                               field_dec=self.protoDC2_dec,
+                                               agn_params_db=self.agn_db_name)
+
+        # Add directory for writing the GLSN spectra to
+        glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))
+        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
+
+        # Ensure that the directory for GLSN spectra is created
+        os.makedirs(glsn_spectra_dir, exist_ok=True)
+
+        gal_cat.use_spec_map = twinkles_spec_map
+        gal_cat.sed_dir = glsn_spectra_dir
+        gal_cat.photParams = self.phot_params
+        gal_cat.lsstBandpassDict = self.bp_dict
+
+        gal_cat.write_catalog(os.path.join(out_dir, gal_name),
+                              chunk_size=100000,
+                              write_header=False)
+
+        # SN Data
+        snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'),
+                                 'data')
+        sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
+        sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
+        sncsv_hostless_pDC2hz = 'MainSurvey_hostlessSN_highz_trimmed.csv'
+        sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
+        sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
+
+        snpopcsvs = list(os.path.join(snDataDir, n) for n in
+                         [sncsv_hostless_uDDF,
+                          sncsv_hostless_pDC2,
+                          sncsv_hostless_pDC2hz,
+                          sncsv_hosted_uDDF,
+                          sncsv_hosted_pDC2])
+        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+                     for snpop in snpopcsvs)
+
+        # SN instance catalogs
+        for i, snpop in enumerate(snpopcsvs):
+            phosimcatalog = snphosimcat(snpop, tableName=names[i],
+                                        sedRootDir=out_dir,
+                                        obs_metadata=obs_md,
+                                        objectIDtype=i+42)
+            phosimcatalog.photParams = self.phot_params
+            phosimcatalog.lsstBandpassDict = self.bp_dict
+
+            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)
+            print('writing out catalog ', snOutFile)
+            phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
+                                        chunk_size=10000,
+                                        write_header=False)
+        return ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
