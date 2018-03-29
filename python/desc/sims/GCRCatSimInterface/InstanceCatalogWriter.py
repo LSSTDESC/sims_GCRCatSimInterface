@@ -229,8 +229,10 @@ class InstanceCatalogWriter(object):
 
         names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
                      for snpop in snpopcsvs)
-        object_catalogs = [star_name, gal_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+        object_catalogs = [star_name, gal_name]
+        if self.sprinkler:
+            object_catalogs += ['{}_cat_{}.txt'.format(x, obsHistID)
+                                for x in names]
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
@@ -320,21 +322,24 @@ class InstanceCatalogWriter(object):
             gal_cat.photParams = self.phot_params
             gal_cat.lsstBandpassDict = self.bp_dict
 
-            gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+            gal_cat.write_catalog(os.path.join(out_dir, gal_name),
+                                  chunk_size=100000,
                                   write_header=False)
 
-        # SN instance catalogs
-        for i, snpop in enumerate(snpopcsvs):
-            phosimcatalog = snphosimcat(snpop, tableName=names[i],
-                                        sedRootDir=out_dir, obs_metadata=obs_md,
-                                        objectIDtype=i+42)
-            phosimcatalog.photParams = self.phot_params
-            phosimcatalog.lsstBandpassDict = self.bp_dict
+            # SN instance catalogs
+            for i, snpop in enumerate(snpopcsvs):
+                phosimcatalog = snphosimcat(snpop, tableName=names[i],
+                                            sedRootDir=out_dir,
+                                            obs_metadata=obs_md,
+                                            objectIDtype=i+42)
+                phosimcatalog.photParams = self.phot_params
+                phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)
-            print('writing out catalog ', snOutFile)
-            phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
-                                        chunk_size=10000, write_header=False)
+                snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)
+                print('writing out catalog ', snOutFile)
+                phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
+                                            chunk_size=10000,
+                                            write_header=False)
 
         # gzip the object files.
         for orig_name in object_catalogs:
