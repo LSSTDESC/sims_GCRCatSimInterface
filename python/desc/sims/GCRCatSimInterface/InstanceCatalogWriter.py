@@ -204,7 +204,6 @@ class InstanceCatalogWriter(object):
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
         knots_name = 'knots_cat_%d.txt' % obsHistID
-        #agn_name = 'agn_cat_%d.txt' % obshistid
 
         object_catalogs = [star_name, gal_name]
 
@@ -244,7 +243,6 @@ class InstanceCatalogWriter(object):
         if self.sprinkler:
             object_catalogs += self.sprinkle_objects(out_dir, obs_md, obsHistID,
                                                      gal_name)
-
         else:
             bulge_db = bulgeDESCQAObject(self.descqa_catalog)
             bulge_db.field_ra = self.protoDC2_ra

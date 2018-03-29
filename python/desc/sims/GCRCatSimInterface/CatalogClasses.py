@@ -1,4 +1,5 @@
 import os
+import copy
 import numpy as np
 from .SedFitter import sed_from_galacticus_mags
 from lsst.utils import getPackageDir
@@ -123,12 +124,12 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         av_name = 'A_v_%s' % lum_type
         if av_name not in self._all_available_columns:
             av_name = 'A_v'
-        av_list = self.column_by_name(av_name)
+        av_list = copy.copy(self.column_by_name(av_name))
 
         rv_name = 'R_v_%s' % lum_type
         if rv_name not in self._all_available_columns:
             rv_name = 'R_v'
-        rv_list = self.column_by_name(rv_name)
+        rv_list = copy.copy(self.column_by_name(rv_name))
 
         # this is a hack to replace anomalous values of dust extinction
         # with more reasonable values
