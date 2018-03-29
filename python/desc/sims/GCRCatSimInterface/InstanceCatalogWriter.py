@@ -38,8 +38,8 @@ __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
 
 
-# Global `numpy.dtype` instance to define the types  
-# in the csv files being read 
+# Global `numpy.dtype` instance to define the types
+# in the csv files being read
 SNDTYPESR1p1 = np.dtype([('snid_in', int),
                          ('x0_in', float),
                          ('t0_in', float),
@@ -59,7 +59,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     -----------
     fname : string
         absolute path to csv file for SN population.
-    tableName : string 
+    tableName : string
         table name describing the population to be decided by user choice.
     obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
 	observation metadata describing the observation
@@ -92,15 +92,15 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     cat = DC2PhosimCatalogSN(db_obj=dbobj, obs_metadata=obs_metadata)
     cat.surveyStartDate = 0.
     cat.maxz = 1.4 # increasing max redshift
-    cat.maxTimeSNVisible = 150.0 # increasing for high z SN  
+    cat.maxTimeSNVisible = 150.0 # increasing for high z SN
     cat.phoSimHeaderMap = DefaultPhoSimHeaderMap
     cat.writeSedFile = True
 
-    # This means that the the spectra written by phosim will 
-    # go to `spectra_files/Dynamic/specFileSN_* 
+    # This means that the the spectra written by phosim will
+    # go to `spectra_files/Dynamic/specFileSN_*
     # Note: you want DC2PhosimCatalogSN.sep to be part of this prefix
-    # string. 
-    # We can arrange for the phosim output to just read the string 
+    # string.
+    # We can arrange for the phosim output to just read the string
     # without directories or something else
     spectradir = os.path.join(sedRootDir, 'Dynamic')
     os.makedirs(spectradir, exist_ok=True)
@@ -115,7 +115,7 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
+                 protoDC2_ra=0, protoDC2_dec=0,
                  agn_db_name=None, sprinkler=False):
         """
         Parameters
@@ -132,8 +132,6 @@ class InstanceCatalogWriter(object):
             Minimum number of objects for phosim.py to simulate a chip.
         proper_motion: bool [True]
             Flag to enable application of proper motion to stars.
-        imsim_catalog: bool [False]
-            Flag to write an imsim-style object catalog.
         protoDC2_ra: float [0]
             Desired RA (J2000 degrees) of protoDC2 center.
         protoDC2_dec: float [0]
@@ -157,7 +155,6 @@ class InstanceCatalogWriter(object):
         self.min_mag = min_mag
         self.minsource = minsource
         self.proper_motion = proper_motion
-        self.imsim_catalog = imsim_catalog
         self.protoDC2_ra = protoDC2_ra
         self.protoDC2_dec = protoDC2_dec
 
@@ -181,7 +178,7 @@ class InstanceCatalogWriter(object):
 
         self.sprinkler = sprinkler
 
-        self.instcats = get_instance_catalogs(imsim_catalog)
+        self.instcats = get_instance_catalogs()
 
     def write_catalog(self, obsHistID, out_dir='.', fov=2):
         """
@@ -214,29 +211,29 @@ class InstanceCatalogWriter(object):
         knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
-	# SN Data
-        snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
+        # SN Data
+        snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'),
+                                 'data')
         sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
         sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
         sncsv_hostless_pDC2hz = 'MainSurvey_hostlessSN_highz_trimmed.csv'
         sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
         sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
 
-        snpopcsvs = list(os.path.join(snDataDir, n) for n in 
-                        [sncsv_hostless_uDDF,
-                         sncsv_hostless_pDC2,
-                         sncsv_hostless_pDC2hz,
-                         sncsv_hosted_uDDF,
-                         sncsv_hosted_pDC2])
+        snpopcsvs = list(os.path.join(snDataDir, n) for n in
+                         [sncsv_hostless_uDDF,
+                          sncsv_hostless_pDC2,
+                          sncsv_hostless_pDC2hz,
+                          sncsv_hosted_uDDF,
+                          sncsv_hosted_pDC2])
 
         names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-                         for snpop in snpopcsvs)
+                     for snpop in snpopcsvs)
         object_catalogs = [star_name, gal_name] + \
                           ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
-                            imsim_catalog=self.imsim_catalog,
                             object_catalogs=object_catalogs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
@@ -325,7 +322,7 @@ class InstanceCatalogWriter(object):
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
-        
+
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
             phosimcatalog = snphosimcat(snpop, tableName=names[i],
@@ -334,16 +331,10 @@ class InstanceCatalogWriter(object):
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
+            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)
             print('writing out catalog ', snOutFile)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
-
-        if self.imsim_catalog:
-
-            imsim_cat = 'imsim_cat_%i.txt' % obsHistID
-            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
-            subprocess.check_call(command, shell=True)
 
         # gzip the object files.
         for orig_name in object_catalogs:
@@ -355,8 +346,7 @@ class InstanceCatalogWriter(object):
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
-                        imsim_catalog=False, nsnap=1, vistime=30.,
-                        minsource=100):
+                        nsnap=1, vistime=30., minsource=100):
     """
     Write the header part of an instance catalog.
 
@@ -369,8 +359,6 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     object_catalogs: sequence [()]
         Object catalog names to include in base phosim instance catalog.
         Defaults to an empty tuple.
-    imsim_catalog: bool [False]
-        Flag to write an imSim-style object catalog.
     nsnap: int [1]
         Number of snaps per visit.
     vistime: float [30.]
@@ -386,19 +374,18 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     cat.phoSimHeaderMap = copy.deepcopy(DefaultPhoSimHeaderMap)
     cat.phoSimHeaderMap['nsnap'] = nsnap
     cat.phoSimHeaderMap['vistime'] = vistime
-    if imsim_catalog:
-        cat.phoSimHeaderMap['rawSeeing'] = ('rawSeeing', None)
-        cat.phoSimHeaderMap['FWHMgeom'] = ('FWHMgeom', None)
-        cat.phoSimHeaderMap['FWHMeff'] = ('FWHMeff', None)
-    else:
-        cat.phoSimHeaderMap['camconfig'] = 1
+    cat.phoSimHeaderMap['camconfig'] = 1
+
+    # The following commands are needed by imSim.
+    cat.phoSimHeaderMap['rawSeeing'] = ('rawSeeing', None)
+    cat.phoSimHeaderMap['FWHMgeom'] = ('FWHMgeom', None)
+    cat.phoSimHeaderMap['FWHMeff'] = ('FWHMeff', None)
 
     with open(outfile, 'w') as output:
         cat.write_header(output)
-        if not imsim_catalog:
-            output.write('minsource %i\n' % minsource)
-            for cat_name in object_catalogs:
-                output.write('includeobj %s.gz\n' % cat_name)
+        output.write('minsource %i\n' % minsource)
+        for cat_name in object_catalogs:
+            output.write('includeobj %s.gz\n' % cat_name)
     return cat
 
 
@@ -438,20 +425,11 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     return obs_md
 
 
-def get_instance_catalogs(imsim_catalog=False):
-
-
-
-
-
+def get_instance_catalogs():
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
                                        'DESCQACat', 'DESCQACat_Bulge',
                                        'DESCQACat_Disk', 'DESCQACat_Agn',
                                        'DESCQACat_Twinkles'])
-    if imsim_catalog:
-        return InstCats(MaskedPhoSimCatalogPoint_ICRS, BrightStarCatalog_ICRS,
-                        PhoSimDESCQA_ICRS, DESCQACat_Bulge_ICRS, DESCQACat_Disk_ICRS,
-                        DESCQACat_Agn_ICRS, DESCQACat_Twinkles_ICRS)
 
     return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
                     PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,

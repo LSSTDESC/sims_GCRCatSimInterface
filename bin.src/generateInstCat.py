@@ -26,8 +26,6 @@ parser.add_argument('--enable_proper_motion', default=False,
                     help='flag to enable proper motion')
 parser.add_argument('--minsource', type=int, default=100,
                     help='mininum #objects in a trimmed instance catalog')
-parser.add_argument('--imsim_catalog', default=False, action='store_true',
-                    help='flag to produce object catalog for imSim')
 parser.add_argument('--protoDC2_ra', type=float, default=0,
                     help='RA (J2000 degrees) of the new protoDC2 center')
 parser.add_argument('--protoDC2_dec', type=float, default=0,
@@ -41,7 +39,6 @@ instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
                                        min_mag=args.min_mag,
                                        minsource=args.minsource,
                                        proper_motion=args.enable_proper_motion,
-                                       imsim_catalog=args.imsim_catalog,
                                        protoDC2_ra=args.protoDC2_ra,
                                        protoDC2_dec=args.protoDC2_dec,
                                        agn_db_name=args.agn_db_name,
