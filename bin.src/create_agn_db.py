@@ -65,9 +65,13 @@ if __name__ == "__main__":
                         "necessary to be considered an AGN "
                         "(in solar masses).  Default=7")
 
-    parser.add_argument('--m_i_cut', type=float, default=None,
+    parser.add_argument('--m_i_cut', type=float, default=30.0,
                         help="Dimmest apparent i-band magnitude "
-                        "to be considered an AGN.  Default = None")
+                        "to be considered an AGN.  Default = 30 "
+                        "(Note: setting this to None results in "
+                        "nonsensical variability parameters that "
+                        "can cause some AGN to reach magnitudes "
+                        "of ~ -200)")
 
     parser.add_argument('--out_dir', type=str, default='.',
                         help="Directory in which to write the output "
