@@ -60,7 +60,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                        ('raOffset', 0., float), ('decOffset', 0., float),
                        ('galacticAv', 0.1, float), ('galacticRv', 3.1, float),
                        ('galacticExtinctionModel', 'CCM', (str, 3)),
-                       ('internalExtinctionModel', 'CCM', (str, 3)), ('internalAv', 0., float),
+                       ('internalExtinctionModel', 'none', (str, 4)), ('internalAv', 0., float),
                        ('internalRv', 3.1, float), ('shear1', 0., float), ('shear2', 0., float)]
 
 
