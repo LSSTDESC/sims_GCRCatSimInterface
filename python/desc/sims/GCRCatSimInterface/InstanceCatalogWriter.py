@@ -335,7 +335,6 @@ class InstanceCatalogWriter(object):
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
             snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
-            print('writing out catalog ', snOutFile)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
