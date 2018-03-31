@@ -277,7 +277,7 @@ class InstanceCatalogWriter(object):
             bulge_db.field_ra = self.protoDC2_ra
             bulge_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
-                                          cannot_be_null=['hasBulge'])
+                                          cannot_be_null=['hasBulge', 'magNorm'])
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_header=False)
             cat.photParams = self.phot_params
@@ -287,7 +287,7 @@ class InstanceCatalogWriter(object):
             disk_db.field_ra = self.protoDC2_ra
             disk_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
-                                          cannot_be_null=['hasDisk'])
+                                          cannot_be_null=['hasDisk', 'magNorm'])
             cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                               write_mode='a', write_header=False)
             cat.photParams = self.phot_params
@@ -459,11 +459,11 @@ def get_instance_catalogs(imsim_catalog=False):
 
 class DESCQACat_Bulge(PhoSimDESCQA):
 
-    cannot_be_null=['hasBulge']
+    cannot_be_null=['hasBulge', 'magNorm']
 
 class DESCQACat_Disk(PhoSimDESCQA):
 
-    cannot_be_null=['hasDisk']
+    cannot_be_null=['hasDisk', 'magNorm']
 
 class MaskedPhoSimCatalogPoint(VariabilityStars, PhoSimCatalogPoint):
     disable_proper_motion = False
@@ -556,11 +556,11 @@ class PhoSimDESCQA_ICRS(PhoSimDESCQA):
 
 class DESCQACat_Disk_ICRS(PhoSimDESCQA_ICRS):
 
-    cannot_be_null=['hasDisk']
+    cannot_be_null=['hasDisk', 'magNorm']
 
 class DESCQACat_Bulge_ICRS(PhoSimDESCQA_ICRS):
 
-    cannot_be_null=['hasBulge']
+    cannot_be_null=['hasBulge', 'magNorm']
 
 class DESCQACat_Agn_ICRS(PhoSimDESCQA_AGN):
     catalog_type = 'phoSim_catalog_DESCQA_AGN_ICRS'
