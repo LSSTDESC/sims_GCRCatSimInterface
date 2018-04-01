@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     assert os.path.exists(agn_db_name)
 
-    ic_writer = InstanceCatalogWriter(opsim_db_name, 'protoDC2',
+    ic_writer = InstanceCatalogWriter(opsim_db_name, 'proto-dc2_v3.0',
                                       protoDC2_ra=53.0, protoDC2_dec=-28.0,
                                       agn_db_name=agn_db_name,
                                       sprinkler=True,

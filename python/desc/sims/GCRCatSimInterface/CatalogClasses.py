@@ -1,6 +1,7 @@
 import os
 import copy
 import numpy as np
+import copy
 from .SedFitter import sed_from_galacticus_mags
 from lsst.utils import getPackageDir
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
@@ -61,7 +62,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                        ('raOffset', 0., float), ('decOffset', 0., float),
                        ('galacticAv', 0.1, float), ('galacticRv', 3.1, float),
                        ('galacticExtinctionModel', 'CCM', (str, 3)),
-                       ('internalExtinctionModel', 'CCM', (str, 3)), ('internalAv', 0., float),
+                       ('internalExtinctionModel', 'none', (str, 4)), ('internalAv', 0., float),
                        ('internalRv', 3.1, float), ('shear1', 0., float), ('shear2', 0., float)]
 
 
