@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
-from desc.sims.GCRCatSimInterface import *
+import warnings
+from astropy._erfa import ErfaWarning
 
 parser = argparse.ArgumentParser(description='Instance catalog generator')
 parser.add_argument('--db', type=str,
@@ -34,18 +35,31 @@ parser.add_argument('--protoDC2_dec', type=float, default=0,
                     help='Dec (J2000 degrees) of the new protoDC2 center')
 parser.add_argument('--enable_sprinkler', default=False, action='store_true',
                     help='flag to enable the sprinkler')
+parser.add_argument('--suppress_warnings', default=False, action='store_true',
+                    help='flag to suppress warnings')
 args = parser.parse_args()
 
-instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
-                                       dither=not args.disable_dithering,
-                                       min_mag=args.min_mag,
-                                       minsource=args.minsource,
-                                       proper_motion=args.enable_proper_motion,
-                                       imsim_catalog=args.imsim_catalog,
-                                       protoDC2_ra=args.protoDC2_ra,
-                                       protoDC2_dec=args.protoDC2_dec,
-                                       agn_db_name=args.agn_db_name,
-                                       sprinkler=args.enable_sprinkler)
+with warnings.catch_warnings():
+    if args.suppress_warnings:
+        warnings.filterwarnings('ignore', '\nThis call', UserWarning)
+        warnings.filterwarnings('ignore', 'Duplicate object type', UserWarning)
+        warnings.filterwarnings('ignore', 'No md5 sum', UserWarning)
+        warnings.filterwarnings('ignore', 'ERFA function', ErfaWarning)
+        warnings.filterwarnings('ignore', 'Numpy has detected', FutureWarning)
+        warnings.filterwarnings('ignore', 'divide by zero', RuntimeWarning)
+        warnings.filterwarnings('ignore', 'invalid value', RuntimeWarning)
 
-for obsHistID in args.ids:
-    instcat_writer.write_catalog(obsHistID, out_dir=args.out_dir, fov=args.fov)
+    from desc.sims.GCRCatSimInterface import InstanceCatalogWriter
+    instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
+                                           dither=not args.disable_dithering,
+                                           min_mag=args.min_mag,
+                                           minsource=args.minsource,
+                                           proper_motion=args.enable_proper_motion,
+                                           imsim_catalog=args.imsim_catalog,
+                                           protoDC2_ra=args.protoDC2_ra,
+                                           protoDC2_dec=args.protoDC2_dec,
+                                           agn_db_name=args.agn_db_name,
+                                           sprinkler=args.enable_sprinkler)
+
+    for obsHistID in args.ids:
+        instcat_writer.write_catalog(obsHistID, out_dir=args.out_dir, fov=args.fov)
