@@ -12,12 +12,15 @@ _galaxy_sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
 
 def _get_sed_mags_and_cosmology(catalog_name):
     """
-    Returns 3 numpy arrays: sed_names, sed_mag_list, sed_mag_norm
+    Returns 5 numpy arrays: sed_names, sed_mag_list, sed_mag_norm,
+                            wav_min, wav_width
     and a dictionary for cosmology
     sed_names is 1d str array, with length = number of SED files in the library
     sed_mag_list is MxN float array, with M = number of SED files in the library,
         and N = number of top hat filters in the catalog
     sed_mag_norm is 1d float array, with length = number of SED files in the library
+    wav_min is a 1d array of the minimum wavelength of the catalog bandpasses in nm
+    wav_grid is a 1d array of the width of the catalog bandpass in nm
     cosmology = {'H0': H0, 'Om0': Om0}
     """
     gc = GCRCatalogs.load_catalog(catalog_name, config_overwrite=dict(md5=False))
@@ -39,6 +42,12 @@ def _get_sed_mags_and_cosmology(catalog_name):
     wav_min = bp_params_sorted[0][0] * 0.1
     wav_max = max((0.1*(wav0+width) for wav0, width in bp_params_sorted))
     wav_grid = np.arange(wav_min, wav_max, 0.1)
+
+    wav_min_grid = np.zeros(len(bp_params_sorted))
+    wav_width_grid = np.zeros(len(bp_params_sorted))
+    for i_bp, bp in enumerate(bp_params_sorted):
+        wav_min_grid[i_bp] = bp[0]*0.1  # 0.1 factor converts to nm
+        wav_width_grid[i_bp] = bp[1]*0.1
 
     bp_name_list = list()
     bp_list = list()
@@ -63,7 +72,9 @@ def _get_sed_mags_and_cosmology(catalog_name):
         sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
         sed_mag_norm.append(spec.calcMag(imsim_bp))
 
-    return np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm), cosmo
+    return (np.array(sed_names), np.array(sed_mag_list),
+            np.array(sed_mag_norm), wav_min_grid, wav_width_grid,
+            cosmo)
 
 
 def sed_from_galacticus_mags(galacticus_mags, redshift, catalog_name='protoDC2'):
@@ -77,7 +88,10 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, catalog_name='protoDC2')
     assert catalog_name, '`catalog_name` cannot be None or empty'
 
     if getattr(sed_from_galacticus_mags, '_catalog_name', None) != catalog_name:
-        sed_names, sed_mag_list, sed_mag_norm, cosmo = _get_sed_mags_and_cosmology(catalog_name)
+
+        (sed_names, sed_mag_list, sed_mag_norm,
+         wav_min_cat, wav_width_cat, cosmo) = _get_sed_mags_and_cosmology(catalog_name)
+
         sed_colors = sed_mag_list[:,1:] - sed_mag_list[:,:-1]
         sed_from_galacticus_mags._catalog_name = catalog_name
         sed_from_galacticus_mags._sed_names = sed_names   # N_sed
