@@ -77,11 +77,18 @@ def _get_sed_mags_and_cosmology(catalog_name):
             cosmo)
 
 
-def sed_from_galacticus_mags(galacticus_mags, redshift, catalog_name='protoDC2'):
+def sed_from_galacticus_mags(galacticus_mags, redshift,
+                             catalog_name='protoDC2',
+                             wav_min=None, wav_width=None):
     """
     galacticus_mags is a numpy array such that
     galacticus_mags[i][j] is the magnitude of the jth star in the ith bandpass,
     where the bandpasses are ordered in ascending order of minimum wavelength.
+
+    wav_min and wav_width are numpy arrays of the minimum wavelength and
+    wavelength grid width (both in nanometers) of the bandpasses
+    corresponding to galacticus_mags.  If passed in, this method will
+    verify that it is comparing to the correct set of magnitudes
 
     Will return a numpy array of SED names and a numpy array of magNorms.
     """
@@ -99,6 +106,16 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, catalog_name='protoDC2')
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
         sed_from_galacticus_mags._sed_colors = sed_colors # N_sed by (N_mag - 1)
         sed_from_galacticus_mags._cosmo = CosmologyObject(**cosmo)
+        sed_from_galacticus_mags._wav_min = wav_min_cat
+        sed_from_galacticus_mags._wav_width = wav_width_cat
+
+    if wav_min is not None:
+        np.testing.assert_array_almost_equal(wav_min,
+                                             sed_from_galacticus_mags._wav_min,
+                                             decimal=10)
+        np.testing.assert_array_almost_equal(wav_width,
+                                             sed_from_galacticus_mags._wav_width,
+                                             decimal=10)
 
     galacticus_mags_t = np.asarray(galacticus_mags).T # N_star by N_mag
     assert galacticus_mags_t.shape == (len(redshift), sed_from_galacticus_mags._sed_mags.shape[1])
