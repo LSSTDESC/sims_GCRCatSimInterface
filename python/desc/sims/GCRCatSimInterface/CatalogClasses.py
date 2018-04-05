@@ -1,7 +1,9 @@
 import os
+import re
 import numpy as np
 import copy
 from .SedFitter import sed_from_galacticus_mags
+from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
@@ -151,30 +153,21 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     def get_fittedSedAndNorm(self):
 
         if not hasattr(self, '_disk_flux_names'):
-            catsim_dir \
-                = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
-            catsim_mag_file = os.path.join(catsim_dir, 'CatSimMagGrid.txt')
 
-            if not os.path.exists(catsim_mag_file):
-                msg = '\n%s does not exist\n' % catsim_mag_file
-                msg += 'Go into the directory %s ' % catsim_dir
-                msg += 'and run the script get_sed_mags.py'
-                raise RuntimeError(msg)
+            f_params = sed_filter_names_from_catalog(self.db_obj._catalog)
 
-            with open(catsim_mag_file, 'r') as input_file:
-                header = input_file.readlines()[0]
-            header = header.strip().split()
-            mag_name_list = header[2:-1]
-            assert len(mag_name_list) == 30
-            bulge_names = []
-            disk_names = []
-            for name in mag_name_list:
-                full_disk_name = 'SEDs/diskLuminositiesStellar:SED_%s:rest' % name
-                disk_names.append(full_disk_name)
-                full_bulge_name = 'SEDs/spheroidLuminositiesStellar:SED_%s:rest' % name
-                bulge_names.append(full_bulge_name)
-            self._disk_flux_names = disk_names
-            self._bulge_flux_names = bulge_names
+            np.testing.assert_array_almost_equal(f_params['disk']['wav_min'],
+                                                 f_params['bulge']['wav_min'],
+                                                 decimal=10)
+
+            np.testing.assert_array_almost_equal(f_params['disk']['wav_width'],
+                                                 f_params['bulge']['wav_width'],
+                                                 decimal=10)
+
+            self._disk_flux_names = f_params['disk']['filter_name']
+            self._bulge_flux_names = f_params['bulge']['filter_name']
+            self._sed_wav_min = f_params['disk']['wav_min']
+            self._sed_wav_width = f_params['disk']['wav_width']
 
         if 'hasBulge' in self._cannot_be_null and 'hasDisk' in self._cannot_be_null:
             raise RuntimeError('\nUnsure whether this is a disk catalog or a bulge catalog.\n'
@@ -197,8 +190,16 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if len(redshift_array) == 0:
             return np.array([[], []])
 
-        sed_names, mag_norms = sed_from_galacticus_mags(mag_array,
-                                                        redshift_array)
+        H0 = self.db_obj._catalog.cosmology.H0.value
+        Om0 = self.db_obj._catalog.cosmology.Om0
+
+        (sed_names,
+         mag_norms) = sed_from_galacticus_mags(mag_array,
+                                               redshift_array,
+                                               H0, Om0,
+                                               self._sed_wav_min,
+                                               self._sed_wav_width)
+
         return np.array([sed_names, mag_norms])
 
     @cached
