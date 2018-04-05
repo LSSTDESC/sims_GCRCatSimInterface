@@ -82,63 +82,35 @@ def sed_filter_names_from_catalog(catalog):
                      'wav_width': bulge_wav_width}}
 
 
-def _get_sed_mags(catalog_name):
+def _create_sed_library_mags(wav_min, wav_width):
     """
-    Returns 5 numpy arrays: sed_names, sed_mag_list, sed_mag_norm,
-                            wav_min, wav_width
-    and a dictionary for cosmology
-    sed_names is 1d str array, with length = number of SED files in the library
+    Calculate the magnitudes of the SEDs in sims_sed_library dir in the
+    tophat filters specified by wav_min, wav_width
+
+    Parameters
+    ----------
+    wav_min is a numpy array of the minimum wavelengths of the tophat
+    filters (in nm)
+
+    wav_width is a numpy array of the widths of the tophat filters (in nm)
+
+    Returns
+    -------
+    sed_names is an array containing the names of the SED files
+
     sed_mag_list is MxN float array, with M = number of SED files in the library,
         and N = number of top hat filters in the catalog
+
     sed_mag_norm is 1d float array, with length = number of SED files in the library
-    wav_min is a 1d array of the minimum wavelength of the catalog bandpasses in nm
-    wav_grid is a 1d array of the width of the catalog bandpass in nm
     """
-    gc = GCRCatalogs.load_catalog(catalog_name, config_overwrite=dict(md5=False))
 
-    sed_filter_dict = sed_filter_names_from_catalog(gc)
-
-    disk_names = sed_filter_dict['disk']['filter_name']
-    bulge_names = sed_filter_dict['bulge']['filter_name']
-
-    try:
-        for d_name in disk_names:
-            b_name = d_name.replace('disk', 'bulge')
-            assert b_name in bulge_names
-        assert len(disk_names) == len(bulge_names)
-    except AssertionError:
-        for ii in range(max(len(bulge_names), len(disk_names))):
-            if ii < len(disk_names):
-                d_name = disk_names[ii]
-            else:
-                d_name = None
-
-            if ii < len(bulge_names):
-                b_name = bulge_names[ii]
-            else:
-                b_name = None
-            print('%s %s' % (b_name, d_name))
-
-        raise RuntimeError("disk and bulge SED filter names do not "
-                           "match in catalog")
-
-    np.testing.assert_array_almost_equal(sed_filter_dict['disk']['wav_min'],
-                                         sed_filter_dict['bulge']['wav_min'],
-                                         decimal=10)
-
-    np.testing.assert_array_almost_equal(sed_filter_dict['disk']['wav_width'],
-                                         sed_filter_dict['bulge']['wav_width'],
-                                         decimal=10)
-
-    wav_min_grid = sed_filter_dict['disk']['wav_min']
-    wav_width_grid = sed_filter_dict['disk']['wav_width']
     wav_max = max((wav0+width
-                  for wav0, width in zip(wav_min_grid, wav_width_grid)))
-    wav_grid = np.arange(wav_min_grid.min(), wav_max, 0.1)
+                  for wav0, width in zip(wav_min, wav_width)))
+    wav_grid = np.arange(wav_min.min(), wav_max, 0.1)
 
     bp_name_list = list()
     bp_list = list()
-    for wav0, width in zip(wav_min_grid, wav_width_grid):
+    for wav0, width in zip(wav_min, wav_width):
         sb_grid = ((wav_grid >= wav0) & (wav_grid <= (wav0+width))).astype(float)
         bp_list.append(Bandpass(wavelen=wav_grid, sb=sb_grid))
         bp_name_list.append('%d_%d' % (wav0, width))
@@ -159,54 +131,63 @@ def _get_sed_mags(catalog_name):
         sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
         sed_mag_norm.append(spec.calcMag(imsim_bp))
 
-    return (np.array(sed_names), np.array(sed_mag_list),
-            np.array(sed_mag_norm), wav_min_grid, wav_width_grid)
+    return np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm)
 
 
 def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
-                             catalog_name='protoDC2',
-                             wav_min=None, wav_width=None):
+                             wav_min, wav_width):
     """
+    Fit SEDs from sims_sed_library to Galacticus galaxies based on the
+    magnitudes in tophat filters.
+
+    Parameters
+    ----------
+
     galacticus_mags is a numpy array such that
     galacticus_mags[i][j] is the magnitude of the jth star in the ith bandpass,
     where the bandpasses are ordered in ascending order of minimum wavelength.
 
     redshift is an array of redshifts for the galaxies being fit
 
-    H0 is in units of km/s/Mpc
+    H0 is the Hubbleparameter in units of km/s/Mpc
+
     Om0 is the critical density parameter for matter
 
-    wav_min and wav_width are numpy arrays of the minimum wavelength and
-    wavelength grid width (both in nanometers) of the bandpasses
-    corresponding to galacticus_mags.  If passed in, this method will
-    verify that it is comparing to the correct set of magnitudes
+    wav_min is a numpy array of the minimum wavelengths of the tophat
+    filters (in nm)
 
-    Will return a numpy array of SED names and a numpy array of magNorms.
+    wav_grid is a numpy array of the widths of the tophat filters
+    (in nm)
+
+    Returns
+    -------
+    a numpy array of SED names and a numpy array of magNorms.
     """
-    assert catalog_name, '`catalog_name` cannot be None or empty'
 
-    if getattr(sed_from_galacticus_mags, '_catalog_name', None) != catalog_name:
+    if (not hasattr(sed_from_galacticus_mags, '_sed_colors') or
+        not np.allclose(wav_min, sed_from_galacticus_mags._wav_min,
+                        atol=1.0e-10, rtol=0.0) or
+        not np.allclose(wav_width, sed_from_galacticus_mags._wav_width,
+                        atol=1.0e-10, rtol=0.0)):
 
-        (sed_names, sed_mag_list, sed_mag_norm,
-         wav_min_cat, wav_width_cat) = _get_sed_mags(catalog_name)
+        (sed_names,
+         sed_mag_list,
+         sed_mag_norm) = _create_sed_library_mags(wav_min, wav_width)
+
 
         sed_colors = sed_mag_list[:,1:] - sed_mag_list[:,:-1]
-        sed_from_galacticus_mags._catalog_name = catalog_name
-        sed_from_galacticus_mags._sed_names = sed_names   # N_sed
+        sed_from_galacticus_mags._sed_names = sed_names
         sed_from_galacticus_mags._mag_norm = sed_mag_norm # N_sed
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
         sed_from_galacticus_mags._sed_colors = sed_colors # N_sed by (N_mag - 1)
-        sed_from_galacticus_mags._cosmo = CosmologyObject(H0=H0, Om0=Om0)
-        sed_from_galacticus_mags._wav_min = wav_min_cat
-        sed_from_galacticus_mags._wav_width = wav_width_cat
+        sed_from_galacticus_mags._wav_min = wav_min
+        sed_from_galacticus_mags._wav_width = wav_width
 
-    if wav_min is not None:
-        np.testing.assert_array_almost_equal(wav_min,
-                                             sed_from_galacticus_mags._wav_min,
-                                             decimal=10)
-        np.testing.assert_array_almost_equal(wav_width,
-                                             sed_from_galacticus_mags._wav_width,
-                                             decimal=10)
+    if (not hasattr(sed_from_galacticus_mags, '_cosmo') or
+        np.abs(sed_from_galacticus_mags._cosmo.H()-H0)>1.0e-6 or
+        np.abs(sed_from_galacticus_mags._cosmo.OmegaMatter()-Om0)>1.0e-6):
+
+        sed_from_galacticus_mags._cosmo = CosmologyObject(H0=H0, Om0=Om0)
 
     galacticus_mags_t = np.asarray(galacticus_mags).T # N_star by N_mag
     assert galacticus_mags_t.shape == (len(redshift), sed_from_galacticus_mags._sed_mags.shape[1])

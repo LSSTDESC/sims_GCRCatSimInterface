@@ -197,8 +197,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
          mag_norms) = sed_from_galacticus_mags(mag_array,
                                                redshift_array,
                                                H0, Om0,
-                                               wav_min=self._sed_wav_min,
-                                               wav_width=self._sed_wav_width)
+                                               self._sed_wav_min,
+                                               self._sed_wav_width)
 
         return np.array([sed_names, mag_norms])
 
