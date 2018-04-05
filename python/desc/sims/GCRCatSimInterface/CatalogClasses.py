@@ -3,6 +3,7 @@ import re
 import numpy as np
 import copy
 from .SedFitter import sed_from_galacticus_mags
+from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
@@ -153,70 +154,20 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         if not hasattr(self, '_disk_flux_names'):
 
-            all_quantities = self.db_obj._catalog.list_all_quantities()
-            disk_re = re.compile(r'sed_(\d+)_(\d+)_disk$')
-            bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge$')
+            f_params = sed_filter_names_from_catalog(self.db_obj._catalog)
 
-            bulge_names = []
-            disk_names = []
-            disk_wav_min = []
-            disk_wav_width = []
-            bulge_wav_min = []
-            bulge_wav_width = []
-
-            for qty_name in all_quantities:
-                disk_match = disk_re.match(qty_name)
-                if disk_match is not None:
-                    disk_names.append(qty_name)
-                    disk_wav_min.append(0.1*float(disk_match[1]))
-                    disk_wav_width.append(0.1*float(disk_match[2]))
- 
-                bulge_match = bulge_re.match(qty_name)
-                if bulge_match is not None:
-                    bulge_names.append(qty_name)
-                    bulge_wav_min.append(0.1*float(bulge_match[1]))
-                    bulge_wav_width.append(0.1*float(bulge_match[2]))
-
-            try:
-                assert len(bulge_names) == len(disk_names)
-                for d_name in disk_names:
-                    b_name = d_name.replace('disk', 'bulge')
-                    assert b_name in bulge_names
-            except AssertionError:
-                raise RuntimeError('bulge SED names and disk SED names do not '
-                                   'match in catalog')
-
-            disk_wav_min = np.array(disk_wav_min)
-            disk_wav_width = np.array(disk_wav_width)
-
-            bulge_wav_min = np.array(bulge_wav_min)
-            bulge_wav_width = np.array(bulge_wav_width)
-
-            disk_names = np.array(disk_names)
-            bulge_names = np.array(bulge_names)
-
-            sorted_dex = np.argsort(disk_wav_min)
-            disk_wav_min = disk_wav_min[sorted_dex]
-            disk_wav_width = disk_wav_width[sorted_dex]
-            disk_names = disk_names[sorted_dex]
-
-            sorted_dex = np.argsort(bulge_wav_min)
-            bulge_wav_min = bulge_wav_min[sorted_dex]
-            bulge_wav_width = bulge_wav_width[sorted_dex]
-            bulge_names = bulge_names[sorted_dex]
-
-            np.testing.assert_array_almost_equal(bulge_wav_min,
-                                                 disk_wav_min,
+            np.testing.assert_array_almost_equal(f_params['disk']['wav_min'],
+                                                 f_params['bulge']['wav_min'],
                                                  decimal=10)
 
-            np.testing.assert_array_almost_equal(bulge_wav_width,
-                                                 disk_wav_width,
+            np.testing.assert_array_almost_equal(f_params['disk']['wav_width'],
+                                                 f_params['bulge']['wav_width'],
                                                  decimal=10)
 
-            self._disk_flux_names = disk_names
-            self._bulge_flux_names = bulge_names
-            self._sed_wav_min = disk_wav_min
-            self._sed_wav_width = disk_wav_width
+            self._disk_flux_names = f_params['disk']['filter_name']
+            self._bulge_flux_names = f_params['bulge']['filter_name']
+            self._sed_wav_min = f_params['disk']['wav_min']
+            self._sed_wav_width = f_params['disk']['wav_width']
 
         if 'hasBulge' in self._cannot_be_null and 'hasDisk' in self._cannot_be_null:
             raise RuntimeError('\nUnsure whether this is a disk catalog or a bulge catalog.\n'
