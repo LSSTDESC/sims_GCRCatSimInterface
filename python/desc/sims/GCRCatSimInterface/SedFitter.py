@@ -82,7 +82,7 @@ def sed_filter_names_from_catalog(catalog):
                      'wav_width': bulge_wav_width}}
 
 
-def _get_sed_mags_and_cosmology(catalog_name):
+def _get_sed_mags(catalog_name):
     """
     Returns 5 numpy arrays: sed_names, sed_mag_list, sed_mag_norm,
                             wav_min, wav_width
@@ -93,10 +93,8 @@ def _get_sed_mags_and_cosmology(catalog_name):
     sed_mag_norm is 1d float array, with length = number of SED files in the library
     wav_min is a 1d array of the minimum wavelength of the catalog bandpasses in nm
     wav_grid is a 1d array of the width of the catalog bandpass in nm
-    cosmology = {'H0': H0, 'Om0': Om0}
     """
     gc = GCRCatalogs.load_catalog(catalog_name, config_overwrite=dict(md5=False))
-    cosmo = dict(H0=gc.cosmology.H0.value, Om0=gc.cosmology.Om0)
 
     sed_filter_dict = sed_filter_names_from_catalog(gc)
 
@@ -162,17 +160,21 @@ def _get_sed_mags_and_cosmology(catalog_name):
         sed_mag_norm.append(spec.calcMag(imsim_bp))
 
     return (np.array(sed_names), np.array(sed_mag_list),
-            np.array(sed_mag_norm), wav_min_grid, wav_width_grid,
-            cosmo)
+            np.array(sed_mag_norm), wav_min_grid, wav_width_grid)
 
 
-def sed_from_galacticus_mags(galacticus_mags, redshift,
+def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
                              catalog_name='protoDC2',
                              wav_min=None, wav_width=None):
     """
     galacticus_mags is a numpy array such that
     galacticus_mags[i][j] is the magnitude of the jth star in the ith bandpass,
     where the bandpasses are ordered in ascending order of minimum wavelength.
+
+    redshift is an array of redshifts for the galaxies being fit
+
+    H0 is in units of km/s/Mpc
+    Om0 is the critical density parameter for matter
 
     wav_min and wav_width are numpy arrays of the minimum wavelength and
     wavelength grid width (both in nanometers) of the bandpasses
@@ -186,7 +188,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift,
     if getattr(sed_from_galacticus_mags, '_catalog_name', None) != catalog_name:
 
         (sed_names, sed_mag_list, sed_mag_norm,
-         wav_min_cat, wav_width_cat, cosmo) = _get_sed_mags_and_cosmology(catalog_name)
+         wav_min_cat, wav_width_cat) = _get_sed_mags(catalog_name)
 
         sed_colors = sed_mag_list[:,1:] - sed_mag_list[:,:-1]
         sed_from_galacticus_mags._catalog_name = catalog_name
@@ -194,7 +196,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift,
         sed_from_galacticus_mags._mag_norm = sed_mag_norm # N_sed
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
         sed_from_galacticus_mags._sed_colors = sed_colors # N_sed by (N_mag - 1)
-        sed_from_galacticus_mags._cosmo = CosmologyObject(**cosmo)
+        sed_from_galacticus_mags._cosmo = CosmologyObject(H0=H0, Om0=Om0)
         sed_from_galacticus_mags._wav_min = wav_min_cat
         sed_from_galacticus_mags._wav_width = wav_width_cat
 

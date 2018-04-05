@@ -190,9 +190,13 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if len(redshift_array) == 0:
             return np.array([[], []])
 
+        H0 = self.db_obj._catalog.cosmology.H0.value
+        Om0 = self.db_obj._catalog.cosmology.Om0
+
         (sed_names,
          mag_norms) = sed_from_galacticus_mags(mag_array,
                                                redshift_array,
+                                               H0, Om0,
                                                wav_min=self._sed_wav_min,
                                                wav_width=self._sed_wav_width)
 
