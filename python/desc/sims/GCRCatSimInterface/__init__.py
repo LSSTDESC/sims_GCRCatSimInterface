@@ -7,4 +7,5 @@ from .AGNModule import *
 from .CompoundCatalogDBObjectClasses import *
 from .CompoundInstanceCatalogClasses import *
 from .TwinklesClasses import *
+from .HostImages import *
 from .InstanceCatalogWriter import *

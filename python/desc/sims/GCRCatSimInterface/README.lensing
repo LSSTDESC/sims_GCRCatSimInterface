@@ -1,0 +1,16 @@
+To generate the FITS files of the lensed hosts, you will need to run the following commands only once:
+
+python generate_lensed_hosts_agn.py
+python generate_lensed_hosts_sne.py
+
+The location of the output can be changed by editing Line 13 of "generate_lensed_hosts_agn.py and generate_lensed_hosts_sne.py:
+outdir = "./outputs/"
+
+The output FITS files currently go into these directories:
+
+"outputs/agn_lensed_bulges"
+"outputs/agn_lensed_disks"
+"outputs/sne_lensed_bulges"
+"outputs/sne_lensed_disks"
+
+The data read in by these programs are located in the top level data directory.

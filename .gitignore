@@ -63,3 +63,12 @@ target/
 
 # Backup files
 *~
+
+# FITS Postage Stamps
+python/desc/sims/GCRCatSimInterface/outputs/agn_lensed_bulges/*.fits
+python/desc/sims/GCRCatSimInterface/outputs/agn_lensed_disks/*.fits
+python/desc/sims/GCRCatSimInterface/outputs/sne_lensed_bulges/*.fits
+python/desc/sims/GCRCatSimInterface/outputs/sne_lensed_disks/*.fits
+
+# ds_store
+*.DS_Store

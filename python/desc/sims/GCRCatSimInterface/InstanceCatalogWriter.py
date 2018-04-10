@@ -34,6 +34,7 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
     TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
 from . import DC2PhosimCatalogSN, SNFileDBObject
+from . import hostImage
 from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
@@ -117,8 +118,14 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
+<<<<<<< HEAD
                  protoDC2_ra=0, protoDC2_dec=0,
                  agn_db_name=None, sprinkler=False):
+=======
+                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
+                 agn_db_name=None, sprinkler=False, host_image_dir=None,
+                 host_data_dir=None):
+>>>>>>> Added Nan's lensing files
         """
         Parameters
         ----------
@@ -178,6 +185,22 @@ class InstanceCatalogWriter(object):
             else:
                 raise IOError("Path to Proto DC2 AGN database does not exist.")
 
+        if host_image_dir is None:
+        	raise IOError("Need to specify the name of the host image directory.")
+        else:
+            if os.path.exists(host_image_dir):
+                self.host_image_dir = host_image_dir
+            else:
+                raise IOError("Path to host image directory does not exist.")
+
+        if host_data_dir is None:
+        	raise IOError("Need to specify the name of the host data directory.")
+        else:
+            if os.path.exists(host_data_dir):
+                self.host_data_dir = host_data_dir
+            else:
+                raise IOError("Path to host data directory does not exist.")        
+        
         self.sprinkler = sprinkler
 
         self.instcats = get_instance_catalogs()
@@ -211,11 +234,15 @@ class InstanceCatalogWriter(object):
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
         knots_name = 'knots_cat_%d.txt' % obsHistID
+<<<<<<< HEAD
 
         # keep track of all of the non-supernova InstanceCatalogs that
         # have been written so that we can remember to includeobj them
         # in the PhoSim catalog
         written_catalog_names = []
+=======
+        sprinkled_host_name = 'spr_hosts_%d.txt' % obsHistID
+>>>>>>> Added Nan's lensing files
 
 	# SN Data
         snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
@@ -232,8 +259,20 @@ class InstanceCatalogWriter(object):
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
+<<<<<<< HEAD
         sn_names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
                         for snpop in snpopcsvs)
+=======
+        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+                         for snpop in snpopcsvs)
+        object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+
+        make_instcat_header(self.star_db, obs_md,
+                            os.path.join(out_dir, cat_name),
+                            imsim_catalog=self.imsim_catalog,
+                            object_catalogs=object_catalogs)
+>>>>>>> Added Nan's lensing files
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -361,6 +400,24 @@ class InstanceCatalogWriter(object):
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
 
+<<<<<<< HEAD
+=======
+            host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
+            host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
+                                    os.path.join(self.host_data_dir, 'agn_host_bulge.csv.gz'),
+                                    os.path.join(out_dir, sprinkled_host_name))
+            host_cat.write_host_cat(os.path.join(self.host_image_dir,'agn_lensed_disks'),
+                                    os.path.join(self.host_data_dir, 'agn_host_disk.csv.gz'),
+                                    os.path.join(out_dir, sprinkled_host_name), append=True)
+            host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_bulges'),
+                                    os.path.join(self.host_data_dir, 'sne_host_bulge.csv.gz'),
+                                    os.path.join(out_dir, sprinkled_host_name), append=True)
+            host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_disks'),
+                                    os.path.join(self.host_data_dir, 'sne_host_disk.csv.gz'),
+                                    os.path.join(out_dir, sprinkled_host_name), append=True)
+
+        
+>>>>>>> Added Nan's lensing files
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
             phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
