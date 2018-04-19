@@ -32,8 +32,8 @@ def sed_filter_names_from_catalog(catalog):
     All outputs will be returned in order of increasing wav_min
     """
 
-    disk_re = re.compile(r'sed_(\d+)_(\d+)_disk$')
-    bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge$')
+    disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
+    bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge_no_host_extinction$')
 
     all_quantities = catalog.list_all_quantities()
 
