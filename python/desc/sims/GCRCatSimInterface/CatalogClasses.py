@@ -138,7 +138,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if not hasattr(self, '_dust_rng'):
             self._dust_rng = np.random.RandomState(182314)
 
-        offensive_av = np.where(np.logical_or(av_list<0.001, av_list>3.1))
+        offensive_av = np.where(np.logical_or(np.isnan(av_list),
+                                np.logical_or(av_list<0.001, av_list>3.1)))
 
         av_list[offensive_av] = self._dust_rng.random_sample(len(offensive_av[0]))*3.1+0.001
 
