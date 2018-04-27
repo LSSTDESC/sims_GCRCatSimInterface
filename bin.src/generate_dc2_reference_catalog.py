@@ -295,12 +295,18 @@ class Dc2RefCatGalaxies(Dc2RefCatMixin, DESCQACatalogMixin,
               'lsst_i', 'lsst_z', 'lsst_y')
     def get_reference_photometry(self):
 
-        return np.array([self.column_by_name('mag_u_lsst'),
-                         self.column_by_name('mag_g_lsst'),
-                         self.column_by_name('mag_r_lsst'),
-                         self.column_by_name('mag_i_lsst'),
-                         self.column_by_name('mag_z_lsst'),
-                         self.column_by_name('mag_Y_lsst')])
+
+        # NOTE: these are unlensed magnitudes.
+        # protoDC2 does not include lensed magnitudes.
+        # These columns should be replaced with mag_[ugrizY]_lsst
+        # when we have cosmoDC2
+
+        return np.array([self.column_by_name('mag_true_u_lsst'),
+                         self.column_by_name('mag_true_g_lsst'),
+                         self.column_by_name('mag_true_r_lsst'),
+                         self.column_by_name('mag_true_i_lsst'),
+                         self.column_by_name('mag_true_z_lsst'),
+                         self.column_by_name('mag_true_Y_lsst')])
 
 
 if __name__ == "__main__":
