@@ -319,6 +319,10 @@ if __name__ == "__main__":
                         help="Directory where file will be made "
                         "(default = '.')")
 
+    parser.add_argument("--cat", type=str, default="protoDC2",
+                        help="The GCR handle for the extragalactic "
+                        "catalog to be used (default='protoDC2')")
+
     parser.add_argument('--agn_db', type=str,
                         help='Path to AGN parameters database '
                              '(defaults to location at NERSC)',
@@ -349,7 +353,7 @@ if __name__ == "__main__":
 
     cat.write_catalog(file_name, chunk_size=10000)
 
-    gal_db = DESCQAReferenceObject(yaml_file_name='protoDC2')
+    gal_db = DESCQAReferenceObject(yaml_file_name=args.cat)
     gal_db.field_ra = obs.pointingRA
     gal_db.field_dec = obs.pointingDec
 
