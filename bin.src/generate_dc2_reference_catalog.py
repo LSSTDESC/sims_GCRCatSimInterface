@@ -1,6 +1,9 @@
 import sqlite3
 import numpy as np
 import os
+
+import GCRCatalogs
+
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.decorators import compound, cached
 from lsst.sims.photUtils import cache_LSST_seds
@@ -361,7 +364,10 @@ if __name__ == "__main__":
     file_name = os.path.join(args.out_dir, args.out_name)
 
     with open(file_name, 'w') as out_file:
-        out_file.write('# reference catalog generated from: %s' % args.cat)
+        out_file.write('# reference catalog generated from:\n')
+        cat_config = GCRCatalogs.get_catalog_config(args.cat)
+        for entry in cat_config:
+            out_file.write('# %s : %s\n' % (entry, cat_config[entry]))
 
     star_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
                       port=1433, driver='mssql+pymssql')
