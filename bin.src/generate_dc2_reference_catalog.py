@@ -340,9 +340,11 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    cache_LSST_seds(wavelen_min=0.0,
-                    wavelen_max=1600.0)
-
+    try:
+        cache_LSST_seds(wavelen_min=0.0,
+                        wavelen_max=1600.0)
+    except PermissionError:
+        pass
 
     obs = ObservationMetaData(pointingRA=args.ra,
                               pointingDec=args.dec,
