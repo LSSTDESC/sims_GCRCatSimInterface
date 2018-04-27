@@ -315,9 +315,15 @@ if __name__ == "__main__":
     parser.add_argument('--fov', type=float, default=3.6,
                         help="Field of view radius in degrees "
                         "(default = 3.6)")
+
     parser.add_argument('--out_dir', type=str, default='.',
                         help="Directory where file will be made "
                         "(default = '.')")
+
+    parser.add_argument("--out_name", type=str,
+                        default="dc2_reference_catalog.txt",
+                        help="The name of the reference catalog file "
+                        "to be written (default='dc2_reference_catalog.txt')")
 
     parser.add_argument("--cat", type=str, default="protoDC2",
                         help="The GCR handle for the extragalactic "
@@ -344,7 +350,7 @@ if __name__ == "__main__":
                               boundLength=args.fov)
 
 
-    file_name = os.path.join(args.out_dir, 'dc2_reference_catalog.txt')
+    file_name = os.path.join(args.out_dir, args.out_name)
 
     star_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
                       port=1433, driver='mssql+pymssql')
