@@ -13,7 +13,8 @@ from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 
 
-__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN",
+           "DESCQACatalogMixin"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
@@ -67,7 +68,63 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                        ('internalRv', 3.1, float), ('shear1', 0., float), ('shear2', 0., float)]
 
 
-class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
+class DESCQACatalogMixin(object):
+
+    def _find_sed_and_manorm(self, lum_type):
+        """
+        Parameters
+        ----------
+        lum_type: str
+            Either 'disk' or 'spheroid'; indicates which component of the galaxy
+            to return SED and magNorm for
+
+        Returns
+        -------
+            sed_names: nd.array
+                Array of SED file names
+
+            mag_norms: nd.array
+                Array of magNorms
+        """
+        if not hasattr(self, '_disk_flux_names'):
+
+            f_params = sed_filter_names_from_catalog(self.db_obj._catalog)
+
+            np.testing.assert_array_almost_equal(f_params['disk']['wav_min'],
+                                                 f_params['bulge']['wav_min'],
+                                                 decimal=10)
+
+            np.testing.assert_array_almost_equal(f_params['disk']['wav_width'],
+                                                 f_params['bulge']['wav_width'],
+                                                 decimal=10)
+
+            self._disk_flux_names = f_params['disk']['filter_name']
+            self._bulge_flux_names = f_params['bulge']['filter_name']
+            self._sed_wav_min = f_params['disk']['wav_min']
+            self._sed_wav_width = f_params['disk']['wav_width']
+
+        mag_array = np.array([-2.5*np.log10(self.column_by_name(name))
+                              for name in flux_names])
+
+        redshift_array = self.column_by_name('true_redshift')
+
+        if len(redshift_array) == 0:
+            return np.array([[], []])
+
+        H0 = self.db_obj._catalog.cosmology.H0.value
+        Om0 = self.db_obj._catalog.cosmology.Om0
+
+        (sed_names,
+         mag_norms) = sed_from_galacticus_mags(mag_array,
+                                               redshift_array,
+                                               H0, Om0,
+                                               self._sed_wav_min,
+                                               self._sed_wav_width)
+
+        return np.array([sed_names, mag_norms])
+
+
+class PhoSimDESCQA(DESCQACatalogMixin, PhoSimCatalogSersic2D, EBVmixin):
 
     # default values used if the database does not provide information
     default_columns = [('raOffset', 0.0, float), ('decOffset', 0.0, float),
@@ -153,23 +210,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     @compound('sedFilename_fitted', 'magNorm_fitted')
     def get_fittedSedAndNorm(self):
 
-        if not hasattr(self, '_disk_flux_names'):
-
-            f_params = sed_filter_names_from_catalog(self.db_obj._catalog)
-
-            np.testing.assert_array_almost_equal(f_params['disk']['wav_min'],
-                                                 f_params['bulge']['wav_min'],
-                                                 decimal=10)
-
-            np.testing.assert_array_almost_equal(f_params['disk']['wav_width'],
-                                                 f_params['bulge']['wav_width'],
-                                                 decimal=10)
-
-            self._disk_flux_names = f_params['disk']['filter_name']
-            self._bulge_flux_names = f_params['bulge']['filter_name']
-            self._sed_wav_min = f_params['disk']['wav_min']
-            self._sed_wav_width = f_params['disk']['wav_width']
-
         if 'hasBulge' in self._cannot_be_null and 'hasDisk' in self._cannot_be_null:
             raise RuntimeError('\nUnsure whether this is a disk catalog or a bulge catalog.\n'
                                'Both appear to be in self._cannot_be_null.\n'
@@ -183,25 +223,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                'Neither appear to be in self._cannot_be_null.\n'
                                'self._cannot_be_null: %s' % self._cannot_be_null)
 
-        mag_array = np.array([-2.5*np.log10(self.column_by_name(name))
-                              for name in flux_names])
-
-        redshift_array = self.column_by_name('true_redshift')
-
-        if len(redshift_array) == 0:
-            return np.array([[], []])
-
-        H0 = self.db_obj._catalog.cosmology.H0.value
-        Om0 = self.db_obj._catalog.cosmology.Om0
-
-        (sed_names,
-         mag_norms) = sed_from_galacticus_mags(mag_array,
-                                               redshift_array,
-                                               H0, Om0,
-                                               self._sed_wav_min,
-                                               self._sed_wav_width)
-
-        return np.array([sed_names, mag_norms])
+        return self._find_sed_and_magnorm(lum_type)
 
     @cached
     def get_magNorm(self):
