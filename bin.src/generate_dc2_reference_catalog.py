@@ -360,12 +360,15 @@ if __name__ == "__main__":
 
     file_name = os.path.join(args.out_dir, args.out_name)
 
+    with open(file_name, 'w') as out_file:
+        out_file.write('# reference catalog generated from: %s' % args.cat)
+
     star_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
                       port=1433, driver='mssql+pymssql')
 
     cat = Dc2RefCatStars(star_db, obs_metadata=obs)
 
-    cat.write_catalog(file_name, chunk_size=10000)
+    cat.write_catalog(file_name, chunk_size=10000, write_mode='a')
 
     gal_db = DESCQAReferenceObject(yaml_file_name=args.cat)
     gal_db.field_ra = obs.pointingRA
