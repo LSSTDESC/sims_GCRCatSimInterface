@@ -367,7 +367,8 @@ if __name__ == "__main__":
         out_file.write('# reference catalog generated from:\n')
         cat_config = GCRCatalogs.get_catalog_config(args.cat)
         for entry in cat_config:
-            out_file.write('# %s : %s\n' % (entry, cat_config[entry]))
+            line = str(cat_config[entry]).replace('\n','\n# ')
+            out_file.write('# %s : %s\n' % (entry, line))
 
     star_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
                       port=1433, driver='mssql+pymssql')
