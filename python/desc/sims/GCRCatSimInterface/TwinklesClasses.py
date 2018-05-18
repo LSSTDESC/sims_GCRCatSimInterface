@@ -38,7 +38,10 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
 
     def _final_pass(self, results):
         print('\n\n\nsprinkling')
-        print(results.dtype.names)
+        name_list = results.dtype.names
+        for name in name_list:
+            if 'sprinkled' in name:
+                print(name)
         print(len(results))
         print('\n')
         #Use Sprinkler now
