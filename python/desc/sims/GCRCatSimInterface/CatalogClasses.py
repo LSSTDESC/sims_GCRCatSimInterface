@@ -236,6 +236,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         Need to leave this method here to overload the get_phoSimMagNorm
         in the base PhoSim InstanceCatalog classes
         """
+        self.column_by_name('is_sprinkled')
         return self.column_by_name('magNorm')
 
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
