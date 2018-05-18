@@ -54,6 +54,10 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
         results = sp.sprinkle()
 
         print('after sprinkling')
+        n_agn = len(np.where(results['agn_descqa_is_sprinkled']==1)[0])
+        n_bulge = len(np.where(results['bulge_descqa_is_sprinkled']==1)[0])
+        n_disk = len(np.where(results['disk_descqa_is_sprinkled']==1)[0])
+        print(n_agn, n_bulge, n_disk)
         print(len(results))
         print('\n\n\n')
 
