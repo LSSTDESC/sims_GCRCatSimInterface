@@ -326,7 +326,8 @@ class agnDESCQAObject_protoDC2(AGN_postprocessing_mixin, DESCQAObject_protoDC2):
     objid = 'agn_descqa'
     _columns_need_postfix = False
 
-    descqaDefaultValues = {'varParamStr': (None, (str, 500)),
+    descqaDefaultValues = {'is_sprinkled': (0, int),
+                           'varParamStr': (None, (str, 500)),
                            'magNorm': (np.NaN, np.float),
                            'sedFilename': ('agn.spec', (str, 500))}
 
