@@ -184,7 +184,8 @@ class DESCQAObject(object):
     # default value. The second element of the tuple is
     # the dtype of the value (i.e. the argument that gets
     # passed to np.dtype())
-    descqaDefaultValues = {'internalRv_dc2': (np.NaN, float),
+    descqaDefaultValues = {'is_sprinkled': (0, int),
+                           'internalRv_dc2': (np.NaN, float),
                            'internalAv_dc2': (np.NaN, float),
                            'sedFilename_dc2': (None, (str, 200)),
                            'magNorm_dc2': (np.NaN, float),
