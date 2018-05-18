@@ -5,6 +5,7 @@ import copy
 from .SedFitter import sed_from_galacticus_mags
 from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
+from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSN
@@ -13,10 +14,41 @@ from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
 
 
-__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN"]
+__all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN",
+           "TruthCatalogMixin"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
+
+
+class TruthCatalogMixin(object):
+    """
+    This mixin provides a way to write a parallel truth catalog from
+    a CompoundInstanceCatalog.  It supplants the _write_recarray
+    method, which CompundInstanceCatalog calls, and replaces it
+    with something that will write a separate truth catalog.
+    """
+
+    _file_handle = None
+
+    def _write_recarray(self, local_recarray, file_handle):
+        """
+        local_recarray is a recarray of the data to be written
+
+        file_handle points to the InstanceCatalog for which this
+        catalog contains truth information
+        """
+        if self._file_handle is None:
+            file_dir = os.path.dirname(file_handle.name)
+            instcat_name = file_handle.name.replace(file_dir, '')
+            truth_name = os.path.join(file_dir,
+                                      'truth_%s' % instcat_name)
+
+            assert truth_name != file_handle.name
+            self._file_handle = open(truth_name, 'w')
+            self.write_header(self._file_handle)
+
+        InstanceCatalog._write_recarray(self, local_recarray, file_handle)
 
 
 class DC2PhosimCatalogSN(PhoSimCatalogSN):
