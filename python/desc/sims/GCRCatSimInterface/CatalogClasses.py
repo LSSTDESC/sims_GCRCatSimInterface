@@ -6,6 +6,7 @@ from .SedFitter import sed_from_galacticus_mags
 from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.definitions import InstanceCatalog
+from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSN
@@ -15,7 +16,8 @@ from lsst.sims.catUtils.mixins import EBVmixin
 
 
 __all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN",
-           "TruthCatalogMixin"]
+           "TruthCatalogMixin", "TruthPhoSimDESCQA",
+           "TruthPhoSimDESCQA_AGN"]
 
 #########################################################################
 # define a class to write the PhoSim catalog; defining necessary defaults
@@ -29,7 +31,20 @@ class TruthCatalogMixin(object):
     with something that will write a separate truth catalog.
     """
 
+    cannot_be_null = ['sprinkling_switch']
+
     _file_handle = None
+
+    @cached
+    def get_sprinkling_switch(self):
+        is_sprinkled = self.column_by_name('is_sprinkled')
+        result = np.where(is_sprinkled==1, 1, None)
+        ct_valid =0;
+        for rr in result:
+            if rr is not None:
+                ct_valid+=1
+        print('sprinkled ct_valid %d\n' % ct_valid)
+        return result
 
     def _write_recarray(self, local_recarray, file_handle):
         """
@@ -40,15 +55,22 @@ class TruthCatalogMixin(object):
         """
         if self._file_handle is None:
             file_dir = os.path.dirname(file_handle.name)
-            instcat_name = file_handle.name.replace(file_dir, '')
+            instcat_name = os.path.basename(file_handle.name)
             truth_name = os.path.join(file_dir,
                                       'truth_%s' % instcat_name)
 
             assert truth_name != file_handle.name
-            self._file_handle = open(truth_name, 'w')
-            self.write_header(self._file_handle)
+            self._file_handle = open(truth_name, 'a')
 
-        InstanceCatalog._write_recarray(self, local_recarray, file_handle)
+            # call InstanceCatalog.write_header to avoid calling
+            # the PhoSim catalog write_header (which will require
+            # a phoSimHeaderMap)
+            InstanceCatalog.write_header(self, self._file_handle)
+
+            print('writing %d' % len(local_recarray))
+            print(local_recarray.dtype.names)
+
+        InstanceCatalog._write_recarray(self, local_recarray, self._file_handle)
 
 
 class DC2PhosimCatalogSN(PhoSimCatalogSN):
@@ -271,6 +293,11 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         self.column_by_name('is_sprinkled')
         return self.column_by_name('magNorm')
 
+
+class TruthPhoSimDESCQA(TruthCatalogMixin, PhoSimDESCQA):
+    column_outputs = ['raJ2000', 'decJ2000', 'sedFilepath', 'phoSimMagNorm']
+
+
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
     cannot_be_null = ['sedFilepath', 'magNorm']
@@ -280,3 +307,7 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
         self.column_by_name('is_sprinkled')
         chunkiter = range(len(self.column_by_name(self.refIdCol)))
         return np.array(['object' for i in chunkiter], dtype=(str, 6))
+
+
+class TruthPhoSimDESCQA_AGN(TruthCatalogMixin, PhoSimDESCQA_AGN):
+    column_outputs = ['raJ2000', 'decJ2000', 'sedFilepath', 'phoSimMagNorm']
