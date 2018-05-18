@@ -242,3 +242,9 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
     cannot_be_null = ['sedFilepath', 'magNorm']
+
+    @cached
+    def get_prefix(self):
+        self.column_by_name('is_sprinkled')
+        chunkiter = range(len(self.column_by_name(self.refIdCol)))
+        return np.array(['object' for i in chunkiter], dtype=(str, 6))
