@@ -61,6 +61,19 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
         print(len(results))
         print('\n\n\n')
 
+        # copy results from the InstanceCatalog queries
+        # into the truth_* catalog queries
+        column_name_list = results.dtype.names
+        for name in column_name_list:
+            if name.startswith('truth'):
+                continue
+            truth_name = 'truth_%s' % name
+            if truth_name not in column_name_list:
+                continue
+
+            print('copying %s from %s' % (truth_name, name))
+            results[truth_name] = results[name]
+
         return results
 
 class TwinklesCatalogSersic2D_DC2(PhoSimDESCQA):
