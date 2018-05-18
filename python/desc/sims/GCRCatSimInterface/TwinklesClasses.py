@@ -37,7 +37,10 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     agn_objid = 'agn_descqa'
 
     def _final_pass(self, results):
-        print('\n\n\nsprinkling\n\n\n')
+        print('\n\n\nsprinkling')
+        print(results.dtype.names)
+        print(len(results))
+        print('\n')
         #Use Sprinkler now
         sp = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
                        density_param=1.0,
@@ -46,6 +49,10 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
                        sne_cache_file=self.sne_cache_file,
                        defs_file=self.defs_file)
         results = sp.sprinkle()
+
+        print('after sprinkling')
+        print(len(results))
+        print('\n\n\n')
 
         return results
 
