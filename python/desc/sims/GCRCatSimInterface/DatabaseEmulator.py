@@ -124,7 +124,9 @@ class DESCQAChunkIterator(object):
             dtype_list = [(name, chunk.dtype[name]) for name in chunk.dtype.names]
             for name in self._colnames:
                 if not descqa_catalog.has_quantity(self._column_map[name][0]):
-                    dtype_list.append((name, self._default_values[name][1]))
+                    dtype_tuple = (name, self._default_values[name][1])
+                    if dtype_tuple not in dtype_list:
+                        dtype_list.append(dtype_tuple)
 
             new_dtype = np.dtype(dtype_list)
 
