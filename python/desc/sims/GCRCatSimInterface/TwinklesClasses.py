@@ -37,13 +37,6 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     agn_objid = 'agn_descqa'
 
     def _final_pass(self, results):
-        print('\n\n\nsprinkling')
-        name_list = results.dtype.names
-        for name in name_list:
-            if 'sprinkled' in name:
-                print(name)
-        print(len(results))
-        print('\n')
         #Use Sprinkler now
         sp = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
                        density_param=1.0,
@@ -52,14 +45,6 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
                        sne_cache_file=self.sne_cache_file,
                        defs_file=self.defs_file)
         results = sp.sprinkle()
-
-        print('after sprinkling')
-        n_agn = len(np.where(results['agn_descqa_is_sprinkled']==1)[0])
-        n_bulge = len(np.where(results['bulge_descqa_is_sprinkled']==1)[0])
-        n_disk = len(np.where(results['disk_descqa_is_sprinkled']==1)[0])
-        print(n_agn, n_bulge, n_disk)
-        print(len(results))
-        print('\n\n\n')
 
         return results
 
