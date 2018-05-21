@@ -37,7 +37,7 @@ class TruthCatalogMixin(object):
 
     cannot_be_null = ['sprinkling_switch']
 
-    _file_handle = None
+    _truth_file_handle = None
 
     @cached
     def get_sprinkling_switch(self):
@@ -57,24 +57,25 @@ class TruthCatalogMixin(object):
         file_handle points to the InstanceCatalog for which this
         catalog contains truth information
         """
-        if self._file_handle is None:
+        if self._truth_file_handle is None:
             file_dir = os.path.dirname(file_handle.name)
             instcat_name = os.path.basename(file_handle.name)
             truth_name = os.path.join(file_dir,
                                       'truth_%s' % instcat_name)
 
             assert truth_name != file_handle.name
-            self._file_handle = open(truth_name, 'a')
+            self._truth_file_handle = open(truth_name, 'a')
 
             # call InstanceCatalog.write_header to avoid calling
             # the PhoSim catalog write_header (which will require
             # a phoSimHeaderMap)
-            InstanceCatalog.write_header(self, self._file_handle)
+            InstanceCatalog.write_header(self, self._truth_file_handle)
 
             print('writing %d' % len(local_recarray))
             print(local_recarray.dtype.names)
 
-        InstanceCatalog._write_recarray(self, local_recarray, self._file_handle)
+        InstanceCatalog._write_recarray(self, local_recarray,
+                                        self._truth_file_handle)
 
 
 class DC2PhosimCatalogSN(PhoSimCatalogSN):
