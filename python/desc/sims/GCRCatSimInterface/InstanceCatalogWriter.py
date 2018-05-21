@@ -24,6 +24,7 @@ from lsst.sims.catUtils.mixins import VariabilityStars
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
+from . import TruthPhoSimDESCQA, TruthCatalogMixin
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
@@ -304,9 +305,16 @@ class InstanceCatalogWriter(object):
             cat.lsstBandpassDict = self.bp_dict
         else:
 
-            self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
-                                      self.instcats.DESCQACat_Twinkles]
+            self.compoundGalICList = [self.instcats.DESCQACat_Bulge,
+                                      self.instcats.DESCQACat_Disk,
+                                      self.instcats.DESCQACat_Twinkles,
+                                      SprinklerTruthSersicCat,
+                                      SprinklerTruthSersicCat,
+                                      SprinklerTruthAgnCat]
             self.compoundGalDBList = [bulgeDESCQAObject,
+                                      diskDESCQAObject,
+                                      agnDESCQAObject,
+                                      bulgeDESCQAObject,
                                       diskDESCQAObject,
                                       agnDESCQAObject]
 
@@ -463,6 +471,20 @@ class DESCQACat_Bulge(PhoSimDESCQA):
 class DESCQACat_Disk(PhoSimDESCQA):
 
     cannot_be_null=['hasDisk', 'magNorm']
+
+class SprinklerTruthSersicCat(TruthPhoSimDESCQA):
+    cannot_be_null=['hasBulge', 'magNorm', 'sprinkling_switch']
+
+    def get_isPoint(self):
+        unq = self.column_by_name('uniqueId')
+        return np.zeros(len(unq), dtype=int)
+
+class SprinklerTruthAgnCat(TruthCatalogMixin, DESCQACat_Twinkles):
+    cannot_be_null = ['sprinkling_switch', 'magNorm']
+
+    def get_isPoint(self):
+        unq = self.column_by_name('uniqueId')
+        return np.ones(len(unq), dtype=int)
 
 class MaskedPhoSimCatalogPoint(VariabilityStars, PhoSimCatalogPoint):
     disable_proper_motion = False

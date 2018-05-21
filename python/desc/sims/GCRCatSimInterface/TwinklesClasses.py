@@ -37,7 +37,6 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     agn_objid = 'agn_descqa'
 
     def _final_pass(self, results):
-
         #Use Sprinkler now
         sp = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
                        density_param=1.0,

@@ -109,9 +109,11 @@ class DESCQAChunkIterator(object):
 
         self._data_indices = self._data_indices[self._chunk_size:]
 
-        chunk = dict_to_numpy_array({name: self._descqa_obj._catalog[self._column_map[name][0]][data_indices_this]
-                                    for name in self._colnames
-                                    if descqa_catalog.has_quantity(self._column_map[name][0])})
+        # temporarily suppress divide by zero warnings
+        with np.errstate(divide='ignore', invalid='ignore'):
+            chunk = dict_to_numpy_array({name: self._descqa_obj._catalog[self._column_map[name][0]][data_indices_this]
+                                        for name in self._colnames
+                                        if descqa_catalog.has_quantity(self._column_map[name][0])})
 
         need_to_append_defaults = False
         for name in self._colnames:
@@ -124,7 +126,9 @@ class DESCQAChunkIterator(object):
             dtype_list = [(name, chunk.dtype[name]) for name in chunk.dtype.names]
             for name in self._colnames:
                 if not descqa_catalog.has_quantity(self._column_map[name][0]):
-                    dtype_list.append((name, self._default_values[name][1]))
+                    dtype_tuple = (name, self._default_values[name][1])
+                    if dtype_tuple not in dtype_list:
+                        dtype_list.append(dtype_tuple)
 
             new_dtype = np.dtype(dtype_list)
 
@@ -184,7 +188,8 @@ class DESCQAObject(object):
     # default value. The second element of the tuple is
     # the dtype of the value (i.e. the argument that gets
     # passed to np.dtype())
-    descqaDefaultValues = {'internalRv_dc2': (np.NaN, float),
+    descqaDefaultValues = {'is_sprinkled': (0, int),
+                           'internalRv_dc2': (np.NaN, float),
                            'internalAv_dc2': (np.NaN, float),
                            'sedFilename_dc2': (None, (str, 200)),
                            'magNorm_dc2': (np.NaN, float),
