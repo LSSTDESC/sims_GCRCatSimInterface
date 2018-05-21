@@ -31,7 +31,7 @@ class TruthCatalogMixin(object):
     with something that will write a separate truth catalog.
     """
 
-    column_outputs = ['raJ2000', 'decJ2000',
+    column_outputs = ['uniqueId', 'raJ2000', 'decJ2000',
                       'sedFilepath', 'phoSimMagNorm',
                       'redshift']
 
