@@ -39,6 +39,14 @@ class TruthCatalogMixin(object):
 
     _truth_file_handle = None
 
+    # cls._written_truth_catalos will keep track of the names
+    # of all of the truth catalogs that have been written
+    # so far.  If a catalog has already been written, it will
+    # be opened with write_mode='a', rather than write_mode='w'.
+    # This will allow us to write the truth about different
+    # classes of sprinkled object to the same catalog.
+    _written_truth_catalogs = []
+
     @cached
     def get_sprinkling_switch(self):
         is_sprinkled = self.column_by_name('is_sprinkled')
@@ -64,12 +72,19 @@ class TruthCatalogMixin(object):
                                       'truth_%s' % instcat_name)
 
             assert truth_name != file_handle.name
-            self._truth_file_handle = open(truth_name, 'a')
+            if truth_name not in self._written_truth_catalogs:
+                write_mode = 'w'
+            else:
+                write_mode = 'a'
+            self._truth_file_handle = open(truth_name, write_mode)
 
-            # call InstanceCatalog.write_header to avoid calling
-            # the PhoSim catalog write_header (which will require
-            # a phoSimHeaderMap)
-            InstanceCatalog.write_header(self, self._truth_file_handle)
+            self._written_truth_catalogs.append(truth_name)
+
+            if write_mode == 'w':
+                # call InstanceCatalog.write_header to avoid calling
+                # the PhoSim catalog write_header (which will require
+                # a phoSimHeaderMap)
+                InstanceCatalog.write_header(self, self._truth_file_handle)
 
             print('writing %d' % len(local_recarray))
             print(local_recarray.dtype.names)
