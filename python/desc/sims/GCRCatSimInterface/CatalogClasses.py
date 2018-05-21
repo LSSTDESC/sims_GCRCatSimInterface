@@ -31,6 +31,10 @@ class TruthCatalogMixin(object):
     with something that will write a separate truth catalog.
     """
 
+    column_outputs = ['raJ2000', 'decJ2000',
+                      'sedFilepath', 'phoSimMagNorm',
+                      'redshift']
+
     cannot_be_null = ['sprinkling_switch']
 
     _file_handle = None
@@ -295,8 +299,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
 
 class TruthPhoSimDESCQA(TruthCatalogMixin, PhoSimDESCQA):
-    column_outputs = ['raJ2000', 'decJ2000', 'sedFilepath', 'phoSimMagNorm']
-
+    pass
 
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
@@ -310,4 +313,4 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
 
 class TruthPhoSimDESCQA_AGN(TruthCatalogMixin, PhoSimDESCQA_AGN):
-    column_outputs = ['raJ2000', 'decJ2000', 'sedFilepath', 'phoSimMagNorm']
+    pass
