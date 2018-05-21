@@ -33,7 +33,7 @@ class TruthCatalogMixin(object):
 
     column_outputs = ['uniqueId', 'galaxy_id', 'raJ2000', 'decJ2000',
                       'sedFilepath', 'phoSimMagNorm',
-                      'redshift']
+                      'redshift', 'isPoint']
 
     cannot_be_null = ['sprinkling_switch']
 
