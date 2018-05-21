@@ -479,7 +479,7 @@ class SprinklerTruthDiskCat(TruthPhoSimDESCQA):
     cannot_be_null = ['hasDisk', 'magNorm', 'sprinkling_switch']
 
 class SprinklerTruthAgnCat(TruthCatalogMixin, DESCQACat_Twinkles):
-    cannot_be_null = ['sprinkling_switch', 'phoSimMagNorm']
+    cannot_be_null = ['sprinkling_switch', 'magNorm']
 
 class MaskedPhoSimCatalogPoint(VariabilityStars, PhoSimCatalogPoint):
     disable_proper_motion = False
