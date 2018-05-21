@@ -50,13 +50,7 @@ class TruthCatalogMixin(object):
     @cached
     def get_sprinkling_switch(self):
         is_sprinkled = self.column_by_name('is_sprinkled')
-        result = np.where(is_sprinkled==1, 1, None)
-        ct_valid =0;
-        for rr in result:
-            if rr is not None:
-                ct_valid+=1
-        print('sprinkled ct_valid %d\n' % ct_valid)
-        return result
+        return np.where(is_sprinkled==1, 1, None)
 
     def _write_recarray(self, local_recarray, file_handle):
         """
@@ -85,9 +79,6 @@ class TruthCatalogMixin(object):
                 # the PhoSim catalog write_header (which will require
                 # a phoSimHeaderMap)
                 InstanceCatalog.write_header(self, self._truth_file_handle)
-
-            print('writing %d' % len(local_recarray))
-            print(local_recarray.dtype.names)
 
         InstanceCatalog._write_recarray(self, local_recarray,
                                         self._truth_file_handle)
