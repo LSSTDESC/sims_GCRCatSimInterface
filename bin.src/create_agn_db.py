@@ -96,6 +96,11 @@ if __name__ == "__main__":
                         "used to introduce scatter into AGN parameter "
                         "distributions. Default=81")
 
+    parser.add_argument('--max_sf', type=float, default=4.0,
+                        help="Maximum allowed value for the structure "
+                        "function of the random walk driving AGN "
+                        "variability.  Default=4 (in magnitudes)")
+
     args = parser.parse_args()
 
     if args.out_file is None:
@@ -168,6 +173,20 @@ if __name__ == "__main__":
         sf_dict[bp] = SF_from_params(redshift, abs_mag_i,
                                      bhm, eff_wavelen,
                                      rng=rng)
+
+    # cut on structure function value
+    for bp in 'ugrizy':
+        valid = np.where(sf_dict[bp]<args.max_sf)
+        redshift = redshift[valid]
+        tau = tau[valid]
+        log_edd_ratio = log_edd_ratio[valid]
+        abs_mag_i = abs_mag_i[valid]
+        obs_mag_i = obs_mag_i[valid]
+        bhm = bhm[valid]
+        galaxy_id = galaxy_id[valid]
+        for other_bp in 'ugrizy':
+            sf_dict[other_bp] = sf_dict[other_bp][valid]
+
 
     sed_dir = os.path.join(getPackageDir('sims_sed_library'),
                            'agnSED')
