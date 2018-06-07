@@ -25,6 +25,7 @@ from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
 from . import TruthPhoSimDESCQA, SprinklerTruthCatMixin
+from . import SubCatalogMixin
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
@@ -304,6 +305,23 @@ class InstanceCatalogWriter(object):
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
         else:
+
+            class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
+                subcat_prefix = 'bulge_'
+
+                # must add catalog_type to fool InstanceCatalog registry into
+                # accepting each iteration of these sprinkled classe as
+                # unique classes (in the case where we are generating InstanceCatalogs
+                # for multiple ObsHistIDs)
+                catalog_type = 'sprinkled_bulge_%d' % obs_md.OpsimMetaData['obsHistID']
+
+            class SprinkledDiskCat(SubCatalogMixin, self.instcats.DESCQACat_Disk):
+                subcat_prefix = 'disk_'
+                catalog_type = 'sprinkled_disk_%d' % obs_md.OpsimMetaData['obsHistID']
+
+            class SprinkledAgnCat(SubCatalogMixin, self.instcats.DESCQACat_Twinkles):
+                subcat_prefix = 'agn_'
+                catalog_type = 'sprinkled_agn_%d' % obs_md.OpsimMetaData['obsHistID']
 
             self.compoundGalICList = [self.instcats.DESCQACat_Bulge,
                                       self.instcats.DESCQACat_Disk,
