@@ -323,9 +323,9 @@ class InstanceCatalogWriter(object):
                 subcat_prefix = 'agn_'
                 catalog_type = 'sprinkled_agn_%d' % obs_md.OpsimMetaData['obsHistID']
 
-            self.compoundGalICList = [self.instcats.DESCQACat_Bulge,
-                                      self.instcats.DESCQACat_Disk,
-                                      self.instcats.DESCQACat_Twinkles,
+            self.compoundGalICList = [SprinkledBulgeCat,
+                                      SprinkledDiskCat,
+                                      SprinkledAgnCat,
                                       SprinklerTruthBulgeCat,
                                       SprinklerTruthDiskCat,
                                       SprinklerTruthAgnCat]
