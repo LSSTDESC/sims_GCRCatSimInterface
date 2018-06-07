@@ -255,6 +255,7 @@ class InstanceCatalogWriter(object):
         cat_dict = {os.path.join(out_dir, star_name): star_cat,
                     os.path.join(out_dir, bright_star_name): bright_cat}
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
+        written_catalog_names.append(star_name)
 
         # TODO: Find a better way of checking for catalog type
         if 'knots' in self.descqa_catalog:
