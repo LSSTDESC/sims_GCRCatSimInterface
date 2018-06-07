@@ -209,7 +209,7 @@ class InstanceCatalogWriter(object):
         # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
 
-        cat_name = 'phosim_cat_%d.txt' % obsHistID
+        phosim_cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
@@ -384,7 +384,7 @@ class InstanceCatalogWriter(object):
                           ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
         make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, cat_name),
+                            os.path.join(out_dir, phosim_cat_name),
                             imsim_catalog=self.imsim_catalog,
                             object_catalogs=object_catalogs)
 
