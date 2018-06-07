@@ -480,11 +480,11 @@ class SprinklerTruthSersicCat(TruthPhoSimDESCQA):
 
 class SprinklerTruthBulgeCat(SprinklerTruthSersicCat):
     cannot_be_null=['hasBulge', 'magNorm', 'sprinkling_switch']
-    subcat_prefix = 'truth_bulge'
+    subcat_prefix = 'truth_bulge_'
 
 class SprinklerTruthDiskCat(SprinklerTruthSersicCat):
     cannot_be_null=['hasDisk', 'magNorm', 'sprinkling_switch']
-    subcat_prefix = 'truth_disk'
+    subcat_prefix = 'truth_disk_'
 
 class SprinklerTruthAgnCat(SubCatalogMixin, DESCQACat_Twinkles):
     cannot_be_null = ['sprinkling_switch', 'magNorm']
