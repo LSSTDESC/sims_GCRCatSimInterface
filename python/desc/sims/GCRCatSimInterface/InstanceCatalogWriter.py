@@ -231,6 +231,9 @@ class InstanceCatalogWriter(object):
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
+        sn_names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+                        for snpop in snpopcsvs)
+
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
         star_cat.photParams = self.phot_params
@@ -344,13 +347,13 @@ class InstanceCatalogWriter(object):
         
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
-            phosimcatalog = snphosimcat(snpop, tableName=names[i],
+            phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
                                         sedRootDir=out_dir, obs_metadata=obs_md,
                                         objectIDtype=i+42)
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
+            snOutFile = sn_names[i] +'_cat_{}.txt'.format(obsHistID)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
@@ -360,10 +363,8 @@ class InstanceCatalogWriter(object):
             command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
             subprocess.check_call(command, shell=True)
 
-        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-                         for snpop in snpopcsvs)
         object_catalogs = [star_name, gal_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, cat_name),
