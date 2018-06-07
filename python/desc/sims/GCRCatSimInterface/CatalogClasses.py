@@ -39,13 +39,11 @@ class TruthCatalogMixin(object):
 
     _truth_file_handle = None
 
-    # cls._written_truth_catalos will keep track of the names
-    # of all of the truth catalogs that have been written
-    # so far.  If a catalog has already been written, it will
-    # be opened with write_mode='a', rather than write_mode='w'.
-    # This will allow us to write the truth about different
-    # classes of sprinkled object to the same catalog.
-    _written_truth_catalogs = []
+    # This boolean will keep track of whether or not this
+    # truth catalog has been written to yet.  If it has,
+    # it will be opened in mode 'a'; if not, it will be
+    # opened in mode 'w'
+    _truth_cat_written = False
 
     @cached
     def get_sprinkling_switch(self):
@@ -66,13 +64,12 @@ class TruthCatalogMixin(object):
                                       'truth_%s' % instcat_name)
 
             assert truth_name != file_handle.name
-            if truth_name not in self._written_truth_catalogs:
+            if not self._truth_cat_written:
                 write_mode = 'w'
             else:
                 write_mode = 'a'
             self._truth_file_handle = open(truth_name, write_mode)
-
-            self._written_truth_catalogs.append(truth_name)
+            self._truth_cat_written = True
 
             if write_mode == 'w':
                 # call InstanceCatalog.write_header to avoid calling
