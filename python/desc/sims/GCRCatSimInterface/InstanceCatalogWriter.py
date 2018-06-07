@@ -231,16 +231,6 @@ class InstanceCatalogWriter(object):
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
-        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-                         for snpop in snpopcsvs)
-        object_catalogs = [star_name, gal_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
-
-        make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, cat_name),
-                            imsim_catalog=self.imsim_catalog,
-                            object_catalogs=object_catalogs)
-
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
         star_cat.photParams = self.phot_params
@@ -369,6 +359,16 @@ class InstanceCatalogWriter(object):
             imsim_cat = 'imsim_cat_%i.txt' % obsHistID
             command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
             subprocess.check_call(command, shell=True)
+
+        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+                         for snpop in snpopcsvs)
+        object_catalogs = [star_name, gal_name] + \
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+
+        make_instcat_header(self.star_db, obs_md,
+                            os.path.join(out_dir, cat_name),
+                            imsim_catalog=self.imsim_catalog,
+                            object_catalogs=object_catalogs)
 
         # gzip the object files.
         for orig_name in object_catalogs:
