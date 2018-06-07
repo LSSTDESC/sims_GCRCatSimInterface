@@ -39,11 +39,19 @@ class SubCatalogMixin(object):
 
     _subcat_file_handle = None
 
+    subcat_prefix = None  # prefix prepended to main InstanceCatalog file name
+    subcat_suffix = None  # suffix appended to main InstanceCatalog file name
+
     # This boolean will keep track of whether or not this
     # truth catalog has been written to yet.  If it has,
     # it will be opened in mode 'a'; if not, it will be
     # opened in mode 'w'
     _subcat_cat_written = False
+
+    # The list below *will* be shared among instantiations
+    # as a safeguard against accidentally opening the
+    # same SubCatalog in write mode twice
+    _list_of_opened_subcats = set()
 
     @cached
     def get_sprinkling_switch(self):
@@ -60,16 +68,33 @@ class SubCatalogMixin(object):
         if self._subcat_file_handle is None:
             file_dir = os.path.dirname(file_handle.name)
             instcat_name = os.path.basename(file_handle.name)
+            subcat_file_name = instcat_name
+
+            if self.subcat_prefix is None and self.subcat_suffix is None:
+                raise RuntimeError("Trying to write SubCatalog without either "
+                                   "a subcat_prefix or a subcat_suffix. This "
+                                   "could cause you to overwrite existing files")
+
+            if self.subcat_prefix is not None:
+                subcat_file_name = self.subcat_prefix + subcat_file_name
+            if self.subcat_suffix is not None:
+                subcat_file_name += self.subcat_suffix
+
             subcat_name = os.path.join(file_dir,
-                                       'truth_%s' % instcat_name)
+                                       subcat_file_name)
 
             assert subcat_name != file_handle.name
             if not self._subcat_cat_written:
                 write_mode = 'w'
+                if subcat_name in self._list_of_opened_subcats:
+                    raise RuntimeError("Trying to create SubCatalog\n"
+                                       + "%s\n" % subcat_name
+                                       + "which was already created")
             else:
                 write_mode = 'a'
             self._subcat_file_handle = open(subcat_name, write_mode)
             self._subcat_cat_written = True
+            self._list_of_opened_subcats.add(subcat_name)
 
             if write_mode == 'w':
                 # call InstanceCatalog.write_header to avoid calling

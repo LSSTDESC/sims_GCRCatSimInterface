@@ -475,12 +475,16 @@ class DESCQACat_Disk(PhoSimDESCQA):
 class SprinklerTruthSersicCat(TruthPhoSimDESCQA):
     cannot_be_null=['hasBulge', 'magNorm', 'sprinkling_switch']
 
+    subcat_prefix = 'truth_sersic_'
+
     def get_isPoint(self):
         unq = self.column_by_name('uniqueId')
         return np.zeros(len(unq), dtype=int)
 
 class SprinklerTruthAgnCat(SubCatalogMixin, DESCQACat_Twinkles):
     cannot_be_null = ['sprinkling_switch', 'magNorm']
+
+    subcat_prefix = 'truth_agn_'
 
     def get_isPoint(self):
         unq = self.column_by_name('uniqueId')
