@@ -338,7 +338,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         return self.column_by_name('magNorm')
 
 
-class TruthPhoSimDESCQA(SubCatalogMixin, PhoSimDESCQA):
+class TruthPhoSimDESCQA(SprinklerTruthCatMixin, PhoSimDESCQA):
     pass
 
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
@@ -352,5 +352,5 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
         return np.array(['object' for i in chunkiter], dtype=(str, 6))
 
 
-class TruthPhoSimDESCQA_AGN(SubCatalogMixin, PhoSimDESCQA_AGN):
+class TruthPhoSimDESCQA_AGN(SprinklerTruthCatMixin, PhoSimDESCQA_AGN):
     pass
