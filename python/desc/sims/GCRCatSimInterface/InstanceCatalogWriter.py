@@ -387,6 +387,15 @@ class InstanceCatalogWriter(object):
                             imsim_catalog=self.imsim_catalog,
                             object_catalogs=object_catalogs)
 
+        if os.path.exists(os.path.join(out_dir, gal_name)):
+            full_name = os.path.join(out_dir, gal_name)
+            with open(full_name, 'r') as in_file:
+                gal_lines = in_file.readlines()
+                if len(gal_lines) > 0:
+                    raise RuntimeError("%d lines in\n%s\nThat file should be empty" %
+                                       (len(gal_lines), full_name))
+            os.unlink(full_name)
+
         # gzip the object files.
         for orig_name in object_catalogs:
             full_name = os.path.join(out_dir, orig_name)
