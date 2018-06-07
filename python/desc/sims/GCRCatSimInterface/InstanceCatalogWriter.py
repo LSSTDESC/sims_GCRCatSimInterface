@@ -117,7 +117,7 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
+                 protoDC2_ra=0, protoDC2_dec=0,
                  agn_db_name=None, sprinkler=False):
         """
         Parameters
@@ -134,8 +134,6 @@ class InstanceCatalogWriter(object):
             Minimum number of objects for phosim.py to simulate a chip.
         proper_motion: bool [True]
             Flag to enable application of proper motion to stars.
-        imsim_catalog: bool [False]
-            Flag to write an imsim-style object catalog.
         protoDC2_ra: float [0]
             Desired RA (J2000 degrees) of protoDC2 center.
         protoDC2_dec: float [0]
@@ -159,7 +157,6 @@ class InstanceCatalogWriter(object):
         self.min_mag = min_mag
         self.minsource = minsource
         self.proper_motion = proper_motion
-        self.imsim_catalog = imsim_catalog
         self.protoDC2_ra = protoDC2_ra
         self.protoDC2_dec = protoDC2_dec
 
@@ -183,7 +180,7 @@ class InstanceCatalogWriter(object):
 
         self.sprinkler = sprinkler
 
-        self.instcats = get_instance_catalogs(imsim_catalog)
+        self.instcats = get_instance_catalogs()
 
     def write_catalog(self, obsHistID, out_dir='.', fov=2):
         """
@@ -374,18 +371,11 @@ class InstanceCatalogWriter(object):
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
-        if self.imsim_catalog:
-
-            imsim_cat = 'imsim_cat_%i.txt' % obsHistID
-            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
-            subprocess.check_call(command, shell=True)
-
         object_catalogs = written_catalog_names + \
                           ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, phosim_cat_name),
-                            imsim_catalog=self.imsim_catalog,
                             object_catalogs=object_catalogs)
 
         if os.path.exists(os.path.join(out_dir, gal_name)):
@@ -409,8 +399,7 @@ class InstanceCatalogWriter(object):
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
-                        imsim_catalog=False, nsnap=1, vistime=30.,
-                        minsource=100):
+                        nsnap=1, vistime=30., minsource=100):
     """
     Write the header part of an instance catalog.
 
@@ -423,8 +412,6 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     object_catalogs: sequence [()]
         Object catalog names to include in base phosim instance catalog.
         Defaults to an empty tuple.
-    imsim_catalog: bool [False]
-        Flag to write an imSim-style object catalog.
     nsnap: int [1]
         Number of snaps per visit.
     vistime: float [30.]
@@ -440,19 +427,18 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     cat.phoSimHeaderMap = copy.deepcopy(DefaultPhoSimHeaderMap)
     cat.phoSimHeaderMap['nsnap'] = nsnap
     cat.phoSimHeaderMap['vistime'] = vistime
-    if imsim_catalog:
-        cat.phoSimHeaderMap['rawSeeing'] = ('rawSeeing', None)
-        cat.phoSimHeaderMap['FWHMgeom'] = ('FWHMgeom', None)
-        cat.phoSimHeaderMap['FWHMeff'] = ('FWHMeff', None)
-    else:
-        cat.phoSimHeaderMap['camconfig'] = 1
+    cat.phoSimHeaderMap['camconfig'] = 1
+
+    # the following commands are needed by imSim
+    cat.phoSimHeaderMap['rawSeeing'] = ('rawSeeing', None)
+    cat.phoSimHeaderMap['FWHMgeom'] = ('FWHMgeom', None)
+    cat.phoSimHeaderMap['FWHMeff'] = ('FWHMeff', None)
 
     with open(outfile, 'w') as output:
         cat.write_header(output)
-        if not imsim_catalog:
-            output.write('minsource %i\n' % minsource)
-            for cat_name in object_catalogs:
-                output.write('includeobj %s.gz\n' % cat_name)
+        output.write('minsource %i\n' % minsource)
+        for cat_name in object_catalogs:
+            output.write('includeobj %s.gz\n' % cat_name)
     return cat
 
 
@@ -492,20 +478,13 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     return obs_md
 
 
-def get_instance_catalogs(imsim_catalog=False):
-
-
-
+def get_instance_catalogs():
 
 
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
                                        'DESCQACat', 'DESCQACat_Bulge',
                                        'DESCQACat_Disk', 'DESCQACat_Agn',
                                        'DESCQACat_Twinkles'])
-    if imsim_catalog:
-        return InstCats(MaskedPhoSimCatalogPoint_ICRS, BrightStarCatalog_ICRS,
-                        PhoSimDESCQA_ICRS, DESCQACat_Bulge_ICRS, DESCQACat_Disk_ICRS,
-                        DESCQACat_Agn_ICRS, DESCQACat_Twinkles_ICRS)
 
     return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
                     PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
@@ -612,90 +591,3 @@ class BrightStarCatalog(PhoSimCatalogPoint):
     def get_isBright(self):
         raw_norm = self.column_by_name('phoSimMagNorm')
         return np.where(raw_norm < self.min_mag, raw_norm, None)
-
-class PhoSimDESCQA_ICRS(PhoSimDESCQA):
-    catalog_type = 'phoSim_catalog_DESCQA_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel', 'majorAxis', 'minorAxis',
-                      'positionAngle', 'sindex',
-                      'internalExtinctionModel', 'internalAv', 'internalRv',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees,
-                       'positionAngle': np.degrees,
-                       'majorAxis': arcsecFromRadians,
-                       'minorAxis': arcsecFromRadians}
-
-class DESCQACat_Disk_ICRS(PhoSimDESCQA_ICRS):
-
-    cannot_be_null=['hasDisk', 'magNorm']
-
-class DESCQACat_Bulge_ICRS(PhoSimDESCQA_ICRS):
-
-    cannot_be_null=['hasBulge', 'magNorm']
-
-class DESCQACat_Agn_ICRS(PhoSimDESCQA_AGN):
-    catalog_type = 'phoSim_catalog_DESCQA_AGN_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'positionAngle',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees,
-                       'positionAngle': np.degrees}
-
-class DESCQACat_Twinkles_ICRS(DESCQACat_Twinkles):
-    catalog_type = 'phoSim_catalog_DESCQA_Twinkles_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'positionAngle',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees,
-                       'positionAngle': np.degrees}
-
-
-class MaskedPhoSimCatalogPoint_ICRS(MaskedPhoSimCatalogPoint):
-    catalog_type = 'masked_phoSim_catalog_point_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'maskedMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees}
-
-class BrightStarCatalog_ICRS(BrightStarCatalog):
-    catalog_type = 'bright_star_catalog_point_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees}
