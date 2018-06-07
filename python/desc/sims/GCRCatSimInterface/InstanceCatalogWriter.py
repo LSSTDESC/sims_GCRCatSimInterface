@@ -40,8 +40,8 @@ __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
 
 
-# Global `numpy.dtype` instance to define the types  
-# in the csv files being read 
+# Global `numpy.dtype` instance to define the types
+# in the csv files being read
 SNDTYPESR1p1 = np.dtype([('snid_in', int),
                          ('x0_in', float),
                          ('t0_in', float),
@@ -61,7 +61,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     -----------
     fname : string
         absolute path to csv file for SN population.
-    tableName : string 
+    tableName : string
         table name describing the population to be decided by user choice.
     obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
 	observation metadata describing the observation
@@ -94,15 +94,15 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     cat = DC2PhosimCatalogSN(db_obj=dbobj, obs_metadata=obs_metadata)
     cat.surveyStartDate = 0.
     cat.maxz = 1.4 # increasing max redshift
-    cat.maxTimeSNVisible = 150.0 # increasing for high z SN  
+    cat.maxTimeSNVisible = 150.0 # increasing for high z SN
     cat.phoSimHeaderMap = DefaultPhoSimHeaderMap
     cat.writeSedFile = True
 
-    # This means that the the spectra written by phosim will 
-    # go to `spectra_files/Dynamic/specFileSN_* 
+    # This means that the the spectra written by phosim will
+    # go to `spectra_files/Dynamic/specFileSN_*
     # Note: you want DC2PhosimCatalogSN.sep to be part of this prefix
-    # string. 
-    # We can arrange for the phosim output to just read the string 
+    # string.
+    # We can arrange for the phosim output to just read the string
     # without directories or something else
     spectradir = os.path.join(sedRootDir, 'Dynamic')
     os.makedirs(spectradir, exist_ok=True)
@@ -224,7 +224,7 @@ class InstanceCatalogWriter(object):
         sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
         sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
 
-        snpopcsvs = list(os.path.join(snDataDir, n) for n in 
+        snpopcsvs = list(os.path.join(snDataDir, n) for n in
                         [sncsv_hostless_uDDF,
                          sncsv_hostless_pDC2,
                          sncsv_hostless_pDC2hz,
@@ -344,7 +344,7 @@ class InstanceCatalogWriter(object):
 
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
-        
+
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
             phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
