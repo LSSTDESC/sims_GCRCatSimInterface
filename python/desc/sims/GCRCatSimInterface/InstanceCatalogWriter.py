@@ -390,6 +390,8 @@ class InstanceCatalogWriter(object):
         # gzip the object files.
         for orig_name in object_catalogs:
             full_name = os.path.join(out_dir, orig_name)
+            if not os.path.exists(full_name):
+                continue
             with open(full_name, 'rb') as input_file:
                 with gzip.open(full_name+'.gz', 'wb') as output_file:
                     output_file.writelines(input_file)
