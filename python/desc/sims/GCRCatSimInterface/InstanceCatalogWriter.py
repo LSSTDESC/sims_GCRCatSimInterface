@@ -216,6 +216,11 @@ class InstanceCatalogWriter(object):
         knots_name = 'knots_cat_%d.txt' % obsHistID
         #agn_name = 'agn_cat_%d.txt' % obshistid
 
+        # keep track of all of the non-supernova InstanceCatalogs that
+        # have been written so that we can remember to includeobj them
+        # in the PhoSim catalog
+        written_catalog_names = []
+
 	# SN Data
         snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
         sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
@@ -262,6 +267,7 @@ class InstanceCatalogWriter(object):
             cat.lsstBandpassDict = self.bp_dict
             cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
                               write_header=False)
+            written_catalog_names.append(knots_name)
         else:
             # Creating empty knots component
             subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
@@ -273,30 +279,36 @@ class InstanceCatalogWriter(object):
             bulge_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasBulge', 'magNorm'])
-            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+            cat_name = 'bulge_'+gal_name
+            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
+            written_catalog_names.append(cat_name)
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
             disk_db.field_ra = self.protoDC2_ra
             disk_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasDisk', 'magNorm'])
-            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                              write_mode='a', write_header=False)
+            cat_name = 'disk_'+gal_name
+            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
+                              write_header=False)
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
+            written_catalog_names.append(cat_name)
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
             agn_db.field_ra = self.protoDC2_ra
             agn_db.field_dec = self.protoDC2_dec
             agn_db.agn_params_db = self.agn_db_name
             cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
-            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                              write_mode='a', write_header=False)
+            cat_name = 'agn_'+gal_name
+            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
+                              write_header=False)
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
+            written_catalog_names.append(cat_name)
         else:
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
@@ -342,6 +354,10 @@ class InstanceCatalogWriter(object):
             gal_cat.photParams = self.phot_params
             gal_cat.lsstBandpassDict = self.bp_dict
 
+            written_catalog_names.append('bulge_'+gal_name)
+            written_catalog_names.append('disk_'+gal_name)
+            written_catalog_names.append('agn_'+gal_name)
+
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
 
@@ -363,7 +379,7 @@ class InstanceCatalogWriter(object):
             command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
             subprocess.check_call(command, shell=True)
 
-        object_catalogs = [star_name, gal_name] + \
+        object_catalogs = written_catalog_names + \
                           ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
         make_instcat_header(self.star_db, obs_md,
