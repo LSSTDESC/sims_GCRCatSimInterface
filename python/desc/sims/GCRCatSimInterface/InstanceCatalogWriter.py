@@ -24,7 +24,7 @@ from lsst.sims.catUtils.mixins import VariabilityStars
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
-from . import TruthPhoSimDESCQA, TruthCatalogMixin
+from . import TruthPhoSimDESCQA, SubCatalogMixin
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
@@ -479,7 +479,7 @@ class SprinklerTruthSersicCat(TruthPhoSimDESCQA):
         unq = self.column_by_name('uniqueId')
         return np.zeros(len(unq), dtype=int)
 
-class SprinklerTruthAgnCat(TruthCatalogMixin, DESCQACat_Twinkles):
+class SprinklerTruthAgnCat(SubCatalogMixin, DESCQACat_Twinkles):
     cannot_be_null = ['sprinkling_switch', 'magNorm']
 
     def get_isPoint(self):
