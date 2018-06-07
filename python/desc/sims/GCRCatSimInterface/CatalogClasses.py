@@ -42,6 +42,10 @@ class SubCatalogMixin(object):
     # opened in mode 'w'
     _subcat_cat_written = False
 
+    # so that we don't have to rework the CompoundInstanceCatalog
+    # API
+    _write_subcat_header = False
+
     # The list below *will* be shared among instantiations
     # as a safeguard against accidentally opening the
     # same SubCatalog in write mode twice
@@ -90,7 +94,7 @@ class SubCatalogMixin(object):
             self._subcat_cat_written = True
             self._list_of_opened_subcats.add(subcat_name)
 
-            if write_mode == 'w':
+            if write_mode == 'w' and self._write_subcat_header:
                 # call InstanceCatalog.write_header to avoid calling
                 # the PhoSim catalog write_header (which will require
                 # a phoSimHeaderMap)
@@ -112,6 +116,7 @@ class SprinklerTruthCatMixin(SubCatalogMixin):
 
     cannot_be_null = ['sprinkling_switch']
 
+    _write_subcat_header = True
 
 
 class DC2PhosimCatalogSN(PhoSimCatalogSN):
