@@ -24,7 +24,7 @@ from lsst.sims.catUtils.mixins import VariabilityStars
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
-from . import TruthPhoSimDESCQA, SubCatalogMixin
+from . import TruthPhoSimDESCQA, SprinklerTruthCatMixin
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
@@ -486,7 +486,7 @@ class SprinklerTruthDiskCat(SprinklerTruthSersicCat):
     cannot_be_null=['hasDisk', 'magNorm', 'sprinkling_switch']
     subcat_prefix = 'truth_disk_'
 
-class SprinklerTruthAgnCat(SubCatalogMixin, DESCQACat_Twinkles):
+class SprinklerTruthAgnCat(SprinklerTruthCatMixin, DESCQACat_Twinkles):
     cannot_be_null = ['sprinkling_switch', 'magNorm']
 
     subcat_prefix = 'truth_agn_'

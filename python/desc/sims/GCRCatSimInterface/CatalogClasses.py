@@ -16,7 +16,7 @@ from lsst.sims.catUtils.mixins import EBVmixin
 
 
 __all__ = ["PhoSimDESCQA", "PhoSimDESCQA_AGN", "DC2PhosimCatalogSN",
-           "SubCatalogMixin", "TruthPhoSimDESCQA",
+           "SubCatalogMixin", "SprinklerTruthCatMixin", "TruthPhoSimDESCQA",
            "TruthPhoSimDESCQA_AGN"]
 
 #########################################################################
@@ -30,12 +30,6 @@ class SubCatalogMixin(object):
     method, which CompundInstanceCatalog calls, and replaces it
     with something that will write a separate truth catalog.
     """
-
-    column_outputs = ['uniqueId', 'galaxy_id', 'raJ2000', 'decJ2000',
-                      'sedFilepath', 'phoSimMagNorm',
-                      'redshift', 'isPoint']
-
-    cannot_be_null = ['sprinkling_switch']
 
     _subcat_file_handle = None
 
@@ -104,6 +98,20 @@ class SubCatalogMixin(object):
 
         InstanceCatalog._write_recarray(self, local_recarray,
                                         self._subcat_file_handle)
+
+
+
+class SprinklerTruthCatMixin(SubCatalogMixin):
+    """
+    A sub-class of the SubCatalogMixin specifically for generating truth
+    catalogs for sprinkled objects
+    """
+    column_outputs = ['uniqueId', 'galaxy_id', 'raJ2000', 'decJ2000',
+                      'sedFilepath', 'phoSimMagNorm',
+                      'redshift', 'isPoint']
+
+    cannot_be_null = ['sprinkling_switch']
+
 
 
 class DC2PhosimCatalogSN(PhoSimCatalogSN):
