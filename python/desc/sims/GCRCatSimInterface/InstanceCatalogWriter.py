@@ -429,11 +429,6 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     cat.phoSimHeaderMap['vistime'] = vistime
     cat.phoSimHeaderMap['camconfig'] = 1
 
-    # the following commands are needed by imSim
-    cat.phoSimHeaderMap['rawSeeing'] = ('rawSeeing', None)
-    cat.phoSimHeaderMap['FWHMgeom'] = ('FWHMgeom', None)
-    cat.phoSimHeaderMap['FWHMeff'] = ('FWHMeff', None)
-
     with open(outfile, 'w') as output:
         cat.write_header(output)
         output.write('minsource %i\n' % minsource)
