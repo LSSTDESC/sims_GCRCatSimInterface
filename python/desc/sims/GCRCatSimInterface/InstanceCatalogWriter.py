@@ -312,7 +312,7 @@ class InstanceCatalogWriter(object):
                 subcat_prefix = 'bulge_'
 
                 # must add catalog_type to fool InstanceCatalog registry into
-                # accepting each iteration of these sprinkled classe as
+                # accepting each iteration of these sprinkled classes as
                 # unique classes (in the case where we are generating InstanceCatalogs
                 # for multiple ObsHistIDs)
                 catalog_type = 'sprinkled_bulge_%d' % obs_md.OpsimMetaData['obsHistID']
