@@ -24,6 +24,8 @@ from lsst.sims.catUtils.mixins import VariabilityStars
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 from lsst.sims.utils import arcsecFromRadians, _getRotSkyPos
 from . import PhoSimDESCQA, PhoSimDESCQA_AGN
+from . import TruthPhoSimDESCQA, SprinklerTruthCatMixin
+from . import SubCatalogMixin
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
@@ -38,8 +40,8 @@ __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
 
 
-# Global `numpy.dtype` instance to define the types  
-# in the csv files being read 
+# Global `numpy.dtype` instance to define the types
+# in the csv files being read
 SNDTYPESR1p1 = np.dtype([('snid_in', int),
                          ('x0_in', float),
                          ('t0_in', float),
@@ -59,7 +61,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     -----------
     fname : string
         absolute path to csv file for SN population.
-    tableName : string 
+    tableName : string
         table name describing the population to be decided by user choice.
     obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
 	observation metadata describing the observation
@@ -92,15 +94,15 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     cat = DC2PhosimCatalogSN(db_obj=dbobj, obs_metadata=obs_metadata)
     cat.surveyStartDate = 0.
     cat.maxz = 1.4 # increasing max redshift
-    cat.maxTimeSNVisible = 150.0 # increasing for high z SN  
+    cat.maxTimeSNVisible = 150.0 # increasing for high z SN
     cat.phoSimHeaderMap = DefaultPhoSimHeaderMap
     cat.writeSedFile = True
 
-    # This means that the the spectra written by phosim will 
-    # go to `spectra_files/Dynamic/specFileSN_* 
+    # This means that the the spectra written by phosim will
+    # go to `spectra_files/Dynamic/specFileSN_*
     # Note: you want DC2PhosimCatalogSN.sep to be part of this prefix
-    # string. 
-    # We can arrange for the phosim output to just read the string 
+    # string.
+    # We can arrange for the phosim output to just read the string
     # without directories or something else
     spectradir = os.path.join(sedRootDir, 'Dynamic')
     os.makedirs(spectradir, exist_ok=True)
@@ -115,7 +117,7 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-                 imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
+                 protoDC2_ra=0, protoDC2_dec=0,
                  agn_db_name=None, sprinkler=False):
         """
         Parameters
@@ -132,8 +134,6 @@ class InstanceCatalogWriter(object):
             Minimum number of objects for phosim.py to simulate a chip.
         proper_motion: bool [True]
             Flag to enable application of proper motion to stars.
-        imsim_catalog: bool [False]
-            Flag to write an imsim-style object catalog.
         protoDC2_ra: float [0]
             Desired RA (J2000 degrees) of protoDC2 center.
         protoDC2_dec: float [0]
@@ -157,7 +157,6 @@ class InstanceCatalogWriter(object):
         self.min_mag = min_mag
         self.minsource = minsource
         self.proper_motion = proper_motion
-        self.imsim_catalog = imsim_catalog
         self.protoDC2_ra = protoDC2_ra
         self.protoDC2_dec = protoDC2_dec
 
@@ -181,7 +180,7 @@ class InstanceCatalogWriter(object):
 
         self.sprinkler = sprinkler
 
-        self.instcats = get_instance_catalogs(imsim_catalog)
+        self.instcats = get_instance_catalogs()
 
     def write_catalog(self, obsHistID, out_dir='.', fov=2):
         """
@@ -207,12 +206,16 @@ class InstanceCatalogWriter(object):
         # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
 
-        cat_name = 'phosim_cat_%d.txt' % obsHistID
+        phosim_cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
         knots_name = 'knots_cat_%d.txt' % obsHistID
-        #agn_name = 'agn_cat_%d.txt' % obshistid
+
+        # keep track of all of the non-supernova InstanceCatalogs that
+        # have been written so that we can remember to includeobj them
+        # in the PhoSim catalog
+        written_catalog_names = []
 
 	# SN Data
         snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
@@ -222,22 +225,15 @@ class InstanceCatalogWriter(object):
         sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
         sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
 
-        snpopcsvs = list(os.path.join(snDataDir, n) for n in 
+        snpopcsvs = list(os.path.join(snDataDir, n) for n in
                         [sncsv_hostless_uDDF,
                          sncsv_hostless_pDC2,
                          sncsv_hostless_pDC2hz,
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
-        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-                         for snpop in snpopcsvs)
-        object_catalogs = [star_name, gal_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
-
-        make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, cat_name),
-                            imsim_catalog=self.imsim_catalog,
-                            object_catalogs=object_catalogs)
+        sn_names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+                        for snpop in snpopcsvs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -255,6 +251,7 @@ class InstanceCatalogWriter(object):
         cat_dict = {os.path.join(out_dir, star_name): star_cat,
                     os.path.join(out_dir, bright_star_name): bright_cat}
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
+        written_catalog_names.append(star_name)
 
         # TODO: Find a better way of checking for catalog type
         if 'knots' in self.descqa_catalog:
@@ -267,6 +264,7 @@ class InstanceCatalogWriter(object):
             cat.lsstBandpassDict = self.bp_dict
             cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
                               write_header=False)
+            written_catalog_names.append(knots_name)
         else:
             # Creating empty knots component
             subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
@@ -278,35 +276,65 @@ class InstanceCatalogWriter(object):
             bulge_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasBulge', 'magNorm'])
-            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+            cat_name = 'bulge_'+gal_name
+            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
+            written_catalog_names.append(cat_name)
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
             disk_db.field_ra = self.protoDC2_ra
             disk_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasDisk', 'magNorm'])
-            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                              write_mode='a', write_header=False)
+            cat_name = 'disk_'+gal_name
+            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
+                              write_header=False)
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
+            written_catalog_names.append(cat_name)
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
             agn_db.field_ra = self.protoDC2_ra
             agn_db.field_dec = self.protoDC2_dec
             agn_db.agn_params_db = self.agn_db_name
             cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
-            cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                              write_mode='a', write_header=False)
+            cat_name = 'agn_'+gal_name
+            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
+                              write_header=False)
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
+            written_catalog_names.append(cat_name)
         else:
 
-            self.compoundGalICList = [self.instcats.DESCQACat_Bulge, self.instcats.DESCQACat_Disk,
-                                      self.instcats.DESCQACat_Twinkles]
+            class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
+                subcat_prefix = 'bulge_'
+
+                # must add catalog_type to fool InstanceCatalog registry into
+                # accepting each iteration of these sprinkled classes as
+                # unique classes (in the case where we are generating InstanceCatalogs
+                # for multiple ObsHistIDs)
+                catalog_type = 'sprinkled_bulge_%d' % obs_md.OpsimMetaData['obsHistID']
+
+            class SprinkledDiskCat(SubCatalogMixin, self.instcats.DESCQACat_Disk):
+                subcat_prefix = 'disk_'
+                catalog_type = 'sprinkled_disk_%d' % obs_md.OpsimMetaData['obsHistID']
+
+            class SprinkledAgnCat(SubCatalogMixin, self.instcats.DESCQACat_Twinkles):
+                subcat_prefix = 'agn_'
+                catalog_type = 'sprinkled_agn_%d' % obs_md.OpsimMetaData['obsHistID']
+
+            self.compoundGalICList = [SprinkledBulgeCat,
+                                      SprinkledDiskCat,
+                                      SprinkledAgnCat,
+                                      SprinklerTruthBulgeCat,
+                                      SprinklerTruthDiskCat,
+                                      SprinklerTruthAgnCat]
             self.compoundGalDBList = [bulgeDESCQAObject,
+                                      diskDESCQAObject,
+                                      agnDESCQAObject,
+                                      bulgeDESCQAObject,
                                       diskDESCQAObject,
                                       agnDESCQAObject]
 
@@ -323,30 +351,46 @@ class InstanceCatalogWriter(object):
             gal_cat.photParams = self.phot_params
             gal_cat.lsstBandpassDict = self.bp_dict
 
+            written_catalog_names.append('bulge_'+gal_name)
+            written_catalog_names.append('disk_'+gal_name)
+            written_catalog_names.append('agn_'+gal_name)
+
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
-        
+
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
-            phosimcatalog = snphosimcat(snpop, tableName=names[i],
+            phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
                                         sedRootDir=out_dir, obs_metadata=obs_md,
                                         objectIDtype=i+42)
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)  
+            snOutFile = sn_names[i] +'_cat_{}.txt'.format(obsHistID)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
-        if self.imsim_catalog:
+        object_catalogs = written_catalog_names + \
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
-            imsim_cat = 'imsim_cat_%i.txt' % obsHistID
-            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
-            subprocess.check_call(command, shell=True)
+        make_instcat_header(self.star_db, obs_md,
+                            os.path.join(out_dir, phosim_cat_name),
+                            object_catalogs=object_catalogs)
+
+        if os.path.exists(os.path.join(out_dir, gal_name)):
+            full_name = os.path.join(out_dir, gal_name)
+            with open(full_name, 'r') as in_file:
+                gal_lines = in_file.readlines()
+                if len(gal_lines) > 0:
+                    raise RuntimeError("%d lines in\n%s\nThat file should be empty" %
+                                       (len(gal_lines), full_name))
+            os.unlink(full_name)
 
         # gzip the object files.
         for orig_name in object_catalogs:
             full_name = os.path.join(out_dir, orig_name)
+            if not os.path.exists(full_name):
+                continue
             with open(full_name, 'rb') as input_file:
                 with gzip.open(full_name+'.gz', 'wb') as output_file:
                     output_file.writelines(input_file)
@@ -354,8 +398,7 @@ class InstanceCatalogWriter(object):
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
-                        imsim_catalog=False, nsnap=1, vistime=30.,
-                        minsource=100):
+                        nsnap=1, vistime=30., minsource=100):
     """
     Write the header part of an instance catalog.
 
@@ -368,8 +411,6 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     object_catalogs: sequence [()]
         Object catalog names to include in base phosim instance catalog.
         Defaults to an empty tuple.
-    imsim_catalog: bool [False]
-        Flag to write an imSim-style object catalog.
     nsnap: int [1]
         Number of snaps per visit.
     vistime: float [30.]
@@ -385,19 +426,13 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     cat.phoSimHeaderMap = copy.deepcopy(DefaultPhoSimHeaderMap)
     cat.phoSimHeaderMap['nsnap'] = nsnap
     cat.phoSimHeaderMap['vistime'] = vistime
-    if imsim_catalog:
-        cat.phoSimHeaderMap['rawSeeing'] = ('rawSeeing', None)
-        cat.phoSimHeaderMap['FWHMgeom'] = ('FWHMgeom', None)
-        cat.phoSimHeaderMap['FWHMeff'] = ('FWHMeff', None)
-    else:
-        cat.phoSimHeaderMap['camconfig'] = 1
+    cat.phoSimHeaderMap['camconfig'] = 1
 
     with open(outfile, 'w') as output:
         cat.write_header(output)
-        if not imsim_catalog:
-            output.write('minsource %i\n' % minsource)
-            for cat_name in object_catalogs:
-                output.write('includeobj %s.gz\n' % cat_name)
+        output.write('minsource %i\n' % minsource)
+        for cat_name in object_catalogs:
+            output.write('includeobj %s.gz\n' % cat_name)
     return cat
 
 
@@ -437,20 +472,13 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     return obs_md
 
 
-def get_instance_catalogs(imsim_catalog=False):
-
-
-
+def get_instance_catalogs():
 
 
     InstCats = namedtuple('InstCats', ['StarInstCat', 'BrightStarInstCat',
                                        'DESCQACat', 'DESCQACat_Bulge',
                                        'DESCQACat_Disk', 'DESCQACat_Agn',
                                        'DESCQACat_Twinkles'])
-    if imsim_catalog:
-        return InstCats(MaskedPhoSimCatalogPoint_ICRS, BrightStarCatalog_ICRS,
-                        PhoSimDESCQA_ICRS, DESCQACat_Bulge_ICRS, DESCQACat_Disk_ICRS,
-                        DESCQACat_Agn_ICRS, DESCQACat_Twinkles_ICRS)
 
     return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
                     PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
@@ -463,6 +491,29 @@ class DESCQACat_Bulge(PhoSimDESCQA):
 class DESCQACat_Disk(PhoSimDESCQA):
 
     cannot_be_null=['hasDisk', 'magNorm']
+
+class SprinklerTruthSersicCat(TruthPhoSimDESCQA):
+
+    def get_isPoint(self):
+        unq = self.column_by_name('uniqueId')
+        return np.zeros(len(unq), dtype=int)
+
+class SprinklerTruthBulgeCat(SprinklerTruthSersicCat):
+    cannot_be_null=['hasBulge', 'magNorm', 'sprinkling_switch']
+    subcat_prefix = 'truth_bulge_'
+
+class SprinklerTruthDiskCat(SprinklerTruthSersicCat):
+    cannot_be_null=['hasDisk', 'magNorm', 'sprinkling_switch']
+    subcat_prefix = 'truth_disk_'
+
+class SprinklerTruthAgnCat(SprinklerTruthCatMixin, DESCQACat_Twinkles):
+    cannot_be_null = ['sprinkling_switch', 'magNorm']
+
+    subcat_prefix = 'truth_agn_'
+
+    def get_isPoint(self):
+        unq = self.column_by_name('uniqueId')
+        return np.ones(len(unq), dtype=int)
 
 class MaskedPhoSimCatalogPoint(VariabilityStars, PhoSimCatalogPoint):
     disable_proper_motion = False
@@ -534,90 +585,3 @@ class BrightStarCatalog(PhoSimCatalogPoint):
     def get_isBright(self):
         raw_norm = self.column_by_name('phoSimMagNorm')
         return np.where(raw_norm < self.min_mag, raw_norm, None)
-
-class PhoSimDESCQA_ICRS(PhoSimDESCQA):
-    catalog_type = 'phoSim_catalog_DESCQA_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel', 'majorAxis', 'minorAxis',
-                      'positionAngle', 'sindex',
-                      'internalExtinctionModel', 'internalAv', 'internalRv',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees,
-                       'positionAngle': np.degrees,
-                       'majorAxis': arcsecFromRadians,
-                       'minorAxis': arcsecFromRadians}
-
-class DESCQACat_Disk_ICRS(PhoSimDESCQA_ICRS):
-
-    cannot_be_null=['hasDisk', 'magNorm']
-
-class DESCQACat_Bulge_ICRS(PhoSimDESCQA_ICRS):
-
-    cannot_be_null=['hasBulge', 'magNorm']
-
-class DESCQACat_Agn_ICRS(PhoSimDESCQA_AGN):
-    catalog_type = 'phoSim_catalog_DESCQA_AGN_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'positionAngle',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees,
-                       'positionAngle': np.degrees}
-
-class DESCQACat_Twinkles_ICRS(DESCQACat_Twinkles):
-    catalog_type = 'phoSim_catalog_DESCQA_Twinkles_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'positionAngle',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees,
-                       'positionAngle': np.degrees}
-
-
-class MaskedPhoSimCatalogPoint_ICRS(MaskedPhoSimCatalogPoint):
-    catalog_type = 'masked_phoSim_catalog_point_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'maskedMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees}
-
-class BrightStarCatalog_ICRS(BrightStarCatalog):
-    catalog_type = 'bright_star_catalog_point_ICRS'
-
-    column_outputs = ['prefix', 'uniqueId', 'raJ2000', 'decJ2000',
-                      'phoSimMagNorm', 'sedFilepath',
-                      'redshift', 'gamma1', 'gamma2', 'kappa',
-                      'raOffset', 'decOffset',
-                      'spatialmodel',
-                      'internalExtinctionModel',
-                      'galacticExtinctionModel', 'galacticAv', 'galacticRv',]
-
-    transformations = {'raJ2000': np.degrees,
-                       'decJ2000': np.degrees}
