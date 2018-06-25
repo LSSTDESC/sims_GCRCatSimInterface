@@ -338,6 +338,9 @@ class InstanceCatalogWriter(object):
                                       diskDESCQAObject,
                                       agnDESCQAObject]
 
+            for db_class in self.compoundGalDBList:
+                db_class.yaml_file_name = self.descqa_catalog
+
             gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
                                                    self.compoundGalDBList,
                                                    obs_metadata=obs_md,

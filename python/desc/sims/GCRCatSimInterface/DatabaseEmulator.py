@@ -278,7 +278,7 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('redshift', gc.get_quantity_modifier('redshift_true'), overwrite=True)
         gc.add_quantity_modifier('true_redshift', gc.get_quantity_modifier('redshift_true'))
         gc.add_quantity_modifier('gamma1', gc.get_quantity_modifier('shear_1'))
-        gc.add_quantity_modifier('gamma2', gc.get_quantity_modifier('shear_2'))
+        gc.add_quantity_modifier('gamma2', gc.get_quantity_modifier('shear_2_phosim'))
         gc.add_quantity_modifier('kappa', gc.get_quantity_modifier('convergence'))
 
         gc.add_modifier_on_derived_quantities('positionAngle', np.radians, 'position_angle_true')
