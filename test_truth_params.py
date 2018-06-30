@@ -10,6 +10,8 @@ assert os.path.isfile(agn_db)
 
 obs = ObservationMetaData(pointingRA=53.13231600394978216,
                           pointingDec=-28.03064232384672749,
-                          mjd=62746.27986361111106817)
+                          mjd=62746.27986361111106817,
+                          boundType='circle',
+                          boundLength=0.5)
 
 write_sprinkled_truth(obs, agn_db=agn_db)

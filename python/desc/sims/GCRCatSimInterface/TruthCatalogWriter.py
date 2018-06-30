@@ -21,15 +21,19 @@ class _SprinkledTruth(object):
 
 class _SersicTruth(_SprinkledTruth):
     column_outputs = ['uniqueId', 'galaxy_id',
-                      'raJ2000', 'decJ2000',
-                      'sedFilepath', 'magNorm']
+                      'raJ2000', 'decJ2000', 'redshift',
+                      'sedFilepath', 'magNorm',
+                      'majorAxis', 'minorAxis',
+                      'positionAngle',
+                      'internalAv', 'internalRv']
 
 
 class _ZPointTruth(_SprinkledTruth):
     column_outputs = ['uniqueId', 'galaxy_id',
-                      'raJ2000', 'decJ2000',
+                      'raJ2000', 'decJ2000', 'redshift',
                       'sedFilepath', 'magNorm',
-                      'varParamStr', 'sn_truth_params']
+                      'varParamStr', 'sn_truth_params',
+                      'has_params']
 
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
 
@@ -47,8 +51,21 @@ class DiskTruth(_SersicTruth, SubCatalogMixin, PhoSimDESCQA):
     subcat_prefix = 'disk'
 
 class AgnTruth(_ZPointTruth, SubCatalogMixin, TwinklesCatalogZPoint_DC2):
-    cannot_be_null = ['is_sprinkled']
+    cannot_be_null = ['is_sprinkled', 'has_params']
     subcat_prefix = 'agn'
+
+    def get_has_params(self):
+        varpar = self.column_by_name('varParamStr').astype(str)
+        snpar = self.column_by_name('sn_truth_params').astype(str)
+
+        output = []
+        for vv, ss in zip(varpar, snpar):
+            if vv == 'None' and ss == 'None':
+                output.append(None)
+            else:
+                output.append(True)
+
+        return np.array(output)
 
 def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
                           agn_db=None, yaml_file='proto-dc2_v4.6.1'):
