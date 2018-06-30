@@ -10,3 +10,4 @@ from .TwinklesClasses import *
 from .HostImages import *
 from .om10_lensing_equations import * 
 from .InstanceCatalogWriter import *
+from .TruthCatalogWriter import *

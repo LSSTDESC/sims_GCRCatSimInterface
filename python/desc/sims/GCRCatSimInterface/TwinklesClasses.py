@@ -21,7 +21,9 @@ assert os.path.exists(_agn_cache_file)
 assert os.path.exists(_sne_cache_file)
 
 __all__ = ["TwinklesCompoundInstanceCatalog_DC2",
-           "sprinklerCompound_DC2", "TwinklesCatalogSersic2D_DC2",
+           "sprinklerCompound_DC2",
+           "sprinklerCompound_DC2_truth",
+           "TwinklesCatalogSersic2D_DC2",
            "TwinklesCatalogZPoint_DC2"]
 
 
@@ -32,9 +34,14 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     agn_cache_file = _agn_cache_file
     sne_cache_file = _sne_cache_file
     defs_file = _twinkles_defs_file
+    _write_sn_sed = True
     sed_dir = 'Dynamic'
 
     agn_objid = 'agn_descqa'
+
+    @property
+    def write_sn_sed(self):
+        return self._write_sn_sed
 
     def _final_pass(self, results):
         #Use Sprinkler now
@@ -43,10 +50,14 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
                        cached_sprinkling=self.cached_sprinkling,
                        agn_cache_file=self.agn_cache_file,
                        sne_cache_file=self.sne_cache_file,
-                       defs_file=self.defs_file)
+                       defs_file=self.defs_file,
+                       write_sn_sed=self._write_sn_sed)
         results = sp.sprinkle()
 
         return results
+
+class sprinklerCompound_DC2_truth(sprinklerCompound_DC2):
+    _write_sn_sed = False
 
 class TwinklesCatalogSersic2D_DC2(PhoSimDESCQA):
 
