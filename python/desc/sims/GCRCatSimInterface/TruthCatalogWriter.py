@@ -38,15 +38,15 @@ class _ZPointTruth(_SprinkledTruth):
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
 
 class BulgeTruth(_SersicTruth, SubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasBulge', 'is_sprinkled', 'sedFilepath']
+    cannot_be_null = ['hasBulge', 'sprinkling_switch', 'sedFilepath']
     subcat_prefix = 'bulge'
 
 class DiskTruth(_SersicTruth, SubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasDisk', 'is_sprinkled', 'sedFilepath']
+    cannot_be_null = ['hasDisk', 'sprinkling_switch', 'sedFilepath']
     subcat_prefix = 'disk'
 
 class AgnTruth(_ZPointTruth, SubCatalogMixin, TwinklesCatalogZPoint_DC2):
-    cannot_be_null = ['is_sprinkled', 'has_params']
+    cannot_be_null = ['sprinkling_switch', 'has_params']
     subcat_prefix = 'agn'
 
     def get_has_params(self):
