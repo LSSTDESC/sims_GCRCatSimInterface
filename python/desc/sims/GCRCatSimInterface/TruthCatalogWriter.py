@@ -33,7 +33,7 @@ class _ZPointTruth(_SprinkledTruth):
                       'raJ2000', 'decJ2000', 'redshift',
                       'sedFilepath', 'magNorm',
                       'varParamStr', 'sn_truth_params',
-                      'has_params']
+                      'has_params', 'is_sprinkled']
 
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
 
@@ -48,7 +48,7 @@ class DiskTruth(_SersicTruth, SubCatalogMixin, PhoSimDESCQA):
     _write_subcat_header = True
 
 class AgnTruth(_ZPointTruth, SubCatalogMixin, TwinklesCatalogZPoint_DC2):
-    cannot_be_null = ['sprinkling_switch', 'has_params']
+    cannot_be_null = ['has_params']
     subcat_prefix = 'agn'
     _write_subcat_header = True
 
