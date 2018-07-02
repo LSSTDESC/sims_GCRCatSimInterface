@@ -37,11 +37,6 @@ class _ZPointTruth(_SprinkledTruth):
 
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
 
-    def get_sn_truth_params(self):
-        n_obj = len(self.column_by_name('raJ2000'))
-        return np.array([None]*n_obj).astype(str)
-
-
 class BulgeTruth(_SersicTruth, SubCatalogMixin, PhoSimDESCQA):
     cannot_be_null = ['hasBulge', 'is_sprinkled', 'sedFilepath']
     subcat_prefix = 'bulge'
