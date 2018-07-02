@@ -55,10 +55,13 @@ class AgnTruth(_ZPointTruth, SubCatalogMixin, TwinklesCatalogZPoint_DC2):
     def get_has_params(self):
         varpar = self.column_by_name('varParamStr').astype(str)
         snpar = self.column_by_name('sn_truth_params').astype(str)
+        magnorm = self.column_by_name('magNorm')
 
         output = []
-        for vv, ss in zip(varpar, snpar):
+        for vv, ss, mm in zip(varpar, snpar, magnorm):
             if vv == 'None' and ss == 'None':
+                output.append(None)
+            elif vv!='None' and not (np.isfinite(mm) or mm < 100.0):
                 output.append(None)
             else:
                 output.append(True)
