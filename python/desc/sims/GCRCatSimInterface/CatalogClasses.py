@@ -56,6 +56,35 @@ class SubCatalogMixin(object):
         is_sprinkled = self.column_by_name('is_sprinkled')
         return np.where(is_sprinkled==1, 1, None)
 
+    def _get_subcat_name(self, file_handle):
+        """
+        file_handle points to the main InstanceCatalog that
+        the CompoundInstanceCatalog is trying to write
+
+        Returns a string containing the name of the subcatalog
+        that this subcatalog instantiation is writing.
+        """
+
+        file_dir = os.path.dirname(file_handle.name)
+        instcat_name = os.path.basename(file_handle.name)
+        subcat_file_name = instcat_name
+
+        if self.subcat_prefix is None and self.subcat_suffix is None:
+            raise RuntimeError("Trying to write SubCatalog without either "
+                               "a subcat_prefix or a subcat_suffix. This "
+                               "could cause you to overwrite existing files")
+
+        if self.subcat_prefix is not None:
+            subcat_file_name = self.subcat_prefix + subcat_file_name
+        if self.subcat_suffix is not None:
+            subcat_file_name += self.subcat_suffix
+
+        subcat_name = os.path.join(file_dir,
+                                   subcat_file_name)
+
+        assert subcat_name != file_handle.name
+        return subcat_name
+
     def _write_recarray(self, local_recarray, file_handle):
         """
         local_recarray is a recarray of the data to be written
@@ -64,24 +93,7 @@ class SubCatalogMixin(object):
         the CompoundInstanceCatalog is trying to write
         """
         if self._subcat_file_handle is None:
-            file_dir = os.path.dirname(file_handle.name)
-            instcat_name = os.path.basename(file_handle.name)
-            subcat_file_name = instcat_name
-
-            if self.subcat_prefix is None and self.subcat_suffix is None:
-                raise RuntimeError("Trying to write SubCatalog without either "
-                                   "a subcat_prefix or a subcat_suffix. This "
-                                   "could cause you to overwrite existing files")
-
-            if self.subcat_prefix is not None:
-                subcat_file_name = self.subcat_prefix + subcat_file_name
-            if self.subcat_suffix is not None:
-                subcat_file_name += self.subcat_suffix
-
-            subcat_name = os.path.join(file_dir,
-                                       subcat_file_name)
-
-            assert subcat_name != file_handle.name
+            subcat_name = self._get_subcat_name(file_handle)
             if not self._subcat_cat_written:
                 write_mode = 'w'
                 if subcat_name in self._list_of_opened_subcats:
