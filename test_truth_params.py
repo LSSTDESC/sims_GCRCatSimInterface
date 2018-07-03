@@ -14,4 +14,6 @@ obs = ObservationMetaData(pointingRA=53.13231600394978216,
                           boundType='circle',
                           boundLength=0.5)
 
-write_sprinkled_truth_db(obs, agn_db=agn_db)
+out_dir = 'workspace/catalogs/truth_params'
+
+write_sprinkled_truth_db(obs, agn_db=agn_db, out_dir=out_dir)
