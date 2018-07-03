@@ -11,13 +11,14 @@ class SQLSubCatalogMixin(object):
     _files_written = set()
     _tables_created = set()
 
-    def _create_table(self, file_name, local_recarray):
+    def _create_table(self, file_name):
         """
         file_name is the full path to the file where we will
         make the database
-
-        local_recarray contains the data to be written
         """
+        if len(self._current_chunk) is 0:
+            return
+
         dtype_map = {}
         dtype_map[float] = ('float', float)
         dtype_map[np.float] = ('float', float)
@@ -28,6 +29,7 @@ class SQLSubCatalogMixin(object):
         dtype_map[np.int64] = ('int', int)
         dtype_map[np.int32] = ('int', int)
         dtype_map[np.str_] = ('text', str)
+        dtype_map[np.object_] = ('text', str)
 
         self._type_casting = {}
 
@@ -35,8 +37,8 @@ class SQLSubCatalogMixin(object):
             cursor = conn.cursor()
             creation_cmd = '''CREATE TABLE %s ''' % self._table_name
             creation_cmd += '''('''
-            for i_col, name in enumerate(local_recarray.dtype.names):
-                col_type = local_recarray.dtype[name]
+            for i_col, name in enumerate(self.iter_column_names()):
+                col_type = self.column_by_name(name).dtype.type
                 sql_type = dtype_map[col_type][0]
                 self._type_casting[name] = dtype_map[col_type][1]
                 if i_col>0:
@@ -44,15 +46,15 @@ class SQLSubCatalogMixin(object):
                 creation_cmd += '''%s %s''' % (name, sql_type)
             creation_cmd+=''')'''
 
-            cursor.execute()
+            cursor.execute(creation_cmd)
             conn.commit()
 
         self._files_written.add(file_name)
         self._tables_created.add(self._table_name)
 
-    def _write_recarray(self, local_recarray, file_handle):
+    def _write_recarray(self, input_recarray, file_handle):
         """
-        local_recarray is a recarray of data to be written
+        input_recarray is a recarray of data to be written
 
         file_handle is the file handle of the main .txt
         InstanceCatalog being written
@@ -66,6 +68,8 @@ class SQLSubCatalogMixin(object):
             raise RuntimeError("Cannot call SubCatalogSQLMixin._write_recarray:"
                                "\n_file_name is None")
 
+        self._filter_chunk(input_recarray)
+
         file_dir = os.path.dirname(file_handle.name)
         full_file_name = os.path.join(file_dir, self._file_name)
 
@@ -74,20 +78,21 @@ class SQLSubCatalogMixin(object):
                 os.unlink(full_file_name)
 
         if self._table_name not in self._tables_created:
-            self._create_table(full_file_name, local_recarray)
+            self._create_table(full_file_name)
 
         with sqlite3.connect(full_file_name) as conn:
             insert_cmd = '''INSERT INTO %s ''' % self._table_name
             insert_cmd += '''VALUES('''
-            for i_col in range(len(local_recarray.dtype.names)):
+            for i_col, name in enumerate(self.iter_column_names()):
                 if i_col>0:
                     insert_cmd += ''','''
                 insert_cmd += '''?'''
             insert_cmd += ''')'''
 
             cursor = conn.cursor()
-            values = ((self._type_casting[name](local_recarray[name][i_obj])
-                       for name in local_recarray.dtype.names)
-                       for i_obj in range(len(local_recarray)))
+            values = (tuple(self._type_casting[name](self.column_by_name(name)[i_obj])
+                       for name in self.iter_column_names())
+                       for i_obj in range(len(self._current_chunk)))
+
             cursor.executemany(insert_cmd, values)
             conn.commit()
