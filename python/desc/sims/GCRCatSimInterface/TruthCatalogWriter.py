@@ -4,6 +4,7 @@ import sqlite3
 
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catalogs.definitions import InstanceCatalog
+from lsst.sims.catalogs.db import DBObject
 from lsst.sims.utils import findHtmid, halfSpaceFromRaDec
 from . import sprinklerCompound_DC2_truth
 from . import TwinklesCompoundInstanceCatalog_DC2
@@ -16,14 +17,16 @@ from . import TwinklesCatalogZPoint_DC2
 from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ["write_sprinkled_truth_db",
-           "write_pointing_db"]
+           "get_pointing_htmid"]
+
+_truth_trixel_level = 7
 
 class _SprinkledTruth(object):
 
     def get_htmid(self):
         ra = np.degrees(self.column_by_name('raJ2000'))
         dec = np.degrees(self.column_by_name('decJ2000'))
-        return findHtmid(ra, dec, max_level=7)
+        return findHtmid(ra, dec, max_level=_truth_trixel_level)
 
     def write_header(self, file_handle):
         InstanceCatalog.write_header(self, file_handle)
@@ -144,9 +147,11 @@ def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
     return full_file_name, table_name_list
 
 
-def write_pointing_db(pointing_dir, opsim_db_name,
-                      ra_col_name = 'descDitheredRA',
-                      dec_col_name = 'descDitheredDec'):
+def get_pointing_htmid(pointing_dir, opsim_db_name,
+                       ra_colname = 'descDitheredRA',
+                       dec_colname = 'descDitheredDec'):
+
+    radius = 2.0  # field of view in degrees
 
     if not os.path.isfile(opsim_db_name):
         raise RuntimeError("%s is not a valid file name" % opsim_db_name)
@@ -167,4 +172,37 @@ def write_pointing_db(pointing_dir, opsim_db_name,
 
     obs_data = np.sort(obs_data)
 
-    print('%d obs' % len(obs_data))
+    db = DBObject(opsim_db_name, driver='sqlite')
+    dtype = np.dtype([('obshistid', int), ('ra', float), ('dec', float)])
+
+    htmid_bound_dict = {}
+
+    d_obs = len(obs_data)//5
+    for i_start in range(0,len(obs_data), d_obs):
+        i_end = i_start + d_obs
+        if len(obs_data)-i_start < d_obs:
+            i_end = len(obs_data)
+
+        subset = obs_data[i_start:i_end]
+
+        query = 'SELECT obsHistId, %s, %s FROM Summary' % (ra_colname, dec_colname)
+        query += ' WHERE obsHistID BETWEEN %d and %e' % (subset.min(), subset.max())
+        query += ' GROUP BY obsHistID'
+
+        results = db.execute_arbitrary(query, dtype=dtype)
+
+        for ii in range(len(results)):
+            obshistid = results['obshistid'][ii]
+            if obshistid not in obs_data:
+                continue
+
+            hs = halfSpaceFromRaDec(results['ra'][ii],
+                                    results['dec'][ii],
+                                    radius)
+
+            trixel_bounds = hs.findAllTrixels(_truth_trixel_level)
+            htmid_bound_dict[obshistid] = trixel_bounds
+
+    assert len(obs_data) == len(htmid_bound_dict)
+
+    return htmid_bound_dict
