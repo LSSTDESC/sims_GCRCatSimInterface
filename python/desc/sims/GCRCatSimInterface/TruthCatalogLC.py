@@ -1,3 +1,4 @@
+import h5py
 import tempfile
 import os
 import numpy as np
@@ -23,7 +24,7 @@ class AgnSimulator(ExtraGalacticVariabilityModels, TimeDelayVariability):
         return self._redshift_arr
 
 
-def write_sprinkled_lc(total_obs_md,
+def write_sprinkled_lc(h5_file, total_obs_md,
                        pointing_dir, opsim_db_name,
                        field_ra=55.064, field_dec=-29.783,
                        agn_db=None, yaml_file='proto-dc2_v4.6.1',
@@ -71,32 +72,36 @@ def write_sprinkled_lc(total_obs_md,
     agn_base_query += 'FROM zpoint '
 
     n_floats = 0
-    for htmid in object_htmid:
-        mjd_arr = []
-        t_start = time.time()
-        for obshistid in htmid_dict:
-            is_contained = False
-            for bounds in htmid_dict[obshistid]:
-                if htmid<=bounds[1] and htmid>=bounds[0]:
-                    is_contained = True
-                    break
-            mjd_arr.append(mjd_dict[obshistid])
-        mjd_arr = np.sort(np.array(mjd_arr))
-        duration = time.time()-t_start
-        print('made mjd_arr in %e seconds' % duration)
-        if len(mjd_arr) == 0:
-            continue
+    with h5py.File(h5_file, 'w') as out_file:
+        for htmid_dex, htmid in enumerate(object_htmid):
+            mjd_arr = []
+            t_start = time.time()
+            for obshistid in htmid_dict:
+                is_contained = False
+                for bounds in htmid_dict[obshistid]:
+                    if htmid<=bounds[1] and htmid>=bounds[0]:
+                        is_contained = True
+                        break
+                mjd_arr.append(mjd_dict[obshistid])
+            mjd_arr = np.sort(np.array(mjd_arr))
+            duration = time.time()-t_start
+            print('made mjd_arr in %e seconds' % duration)
+            if len(mjd_arr) == 0:
+                continue
 
-        agn_query = agn_base_query + 'WHERE htmid=%d and is_agn=1' % htmid
+            agn_query = agn_base_query + 'WHERE htmid=%d and is_agn=1' % htmid
 
-        agn_results = db.execute_arbitrary(agn_query, dtype=agn_dtype)
+            agn_results = db.execute_arbitrary(agn_query, dtype=agn_dtype)
 
-        agn_simulator = AgnSimulator(agn_results['redshift'])
+            agn_simulator = AgnSimulator(agn_results['redshift'])
 
-        dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
-                                              expmjd=mjd_arr)
+            dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
+                                                  expmjd=mjd_arr)
 
-        n_floats += len(dmag.flatten())
+            dmag_name = 'agn_dmag_%d' % htmid_dex
+            out_file.create_dataset(dmag_name, data = dmag.transpose(1,0,2))
+
+            n_floats += len(dmag.flatten())
 
     print('n_floats %d' % n_floats)
 
