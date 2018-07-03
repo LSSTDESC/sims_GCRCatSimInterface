@@ -82,7 +82,8 @@ def write_sprinkled_lc(h5_file, total_obs_md,
                     if htmid<=bounds[1] and htmid>=bounds[0]:
                         is_contained = True
                         break
-                mjd_arr.append(mjd_dict[obshistid])
+                if is_contained:
+                    mjd_arr.append(mjd_dict[obshistid])
             mjd_arr = np.sort(np.array(mjd_arr))
             duration = time.time()-t_start
             print('made mjd_arr in %e seconds' % duration)
