@@ -173,9 +173,11 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
     obs_data = np.sort(obs_data)
 
     db = DBObject(opsim_db_name, driver='sqlite')
-    dtype = np.dtype([('obshistid', int), ('ra', float), ('dec', float)])
+    dtype = np.dtype([('obshistid', int), ('mjd', float),
+                      ('ra', float), ('dec', float)])
 
     htmid_bound_dict = {}
+    mjd_dict = {}
 
     d_obs = len(obs_data)//5
     for i_start in range(0,len(obs_data), d_obs):
@@ -185,7 +187,7 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
 
         subset = obs_data[i_start:i_end]
 
-        query = 'SELECT obsHistId, %s, %s FROM Summary' % (ra_colname, dec_colname)
+        query = 'SELECT obsHistId, expMJD, %s, %s FROM Summary' % (ra_colname, dec_colname)
         query += ' WHERE obsHistID BETWEEN %d and %e' % (subset.min(), subset.max())
         query += ' GROUP BY obsHistID'
 
@@ -202,7 +204,8 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
 
             trixel_bounds = hs.findAllTrixels(_truth_trixel_level)
             htmid_bound_dict[obshistid] = trixel_bounds
+            mjd_dict[obshistid] = results['mjd'][ii]
 
     assert len(obs_data) == len(htmid_bound_dict)
 
-    return htmid_bound_dict
+    return htmid_bound_dict, mjd_dict
