@@ -89,7 +89,8 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
                             None)
 
 def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
-                             agn_db=None, yaml_file='proto-dc2_v4.6.1'):
+                             agn_db=None, yaml_file='proto-dc2_v4.6.1',
+                             out_dir=None):
     """
     This method writes out a sqlite database that contains truth information
     on all of the sprinkled sources.  It will return the name of the database
@@ -100,7 +101,6 @@ def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
     """
     assert os.path.isfile(agn_db)
 
-    out_dir = 'workspace/catalogs/truth_params/'
     assert os.path.isdir(out_dir)
 
     twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
