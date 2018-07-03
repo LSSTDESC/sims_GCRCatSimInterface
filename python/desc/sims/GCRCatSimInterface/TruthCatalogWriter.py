@@ -2,6 +2,7 @@ import numpy as np
 import os
 import sqlite3
 
+from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.utils import findHtmid
 from . import sprinklerCompound_DC2_truth
@@ -40,9 +41,19 @@ class _ZPointTruth(_SprinkledTruth):
                       'raJ2000', 'decJ2000', 'redshift',
                       'sedFilepath', 'magNorm',
                       'varParamStr', 'sn_truth_params',
-                      'is_sprinkled']
+                      'is_sprinkled', 'is_sn', 'is_agn']
 
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
+
+    @cached
+    def get_is_sn(self):
+        sn = self.column_by_name('sn_truth_params').astype(str)
+        return np.where(np.char.find(sn, 'None')==0, 0, 1)
+
+    @cached
+    def get_is_agn(self):
+        var = self.column_by_name('varParamStr').astype(str)
+        return np.where(np.char.find(var, 'None')==0, 0, 1)
 
 class BulgeTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
     cannot_be_null = ['hasBulge', 'sprinkling_switch', 'sedFilepath']
@@ -60,20 +71,16 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
     _table_name = 'zpoint'
 
     def get_has_params(self):
-        varpar = self.column_by_name('varParamStr').astype(str)
-        snpar = self.column_by_name('sn_truth_params').astype(str)
+        sn = self.column_by_name('is_sn')
+        agn = self.column_by_name('is_agn')
         magnorm = self.column_by_name('magNorm')
 
-        output = []
-        for vv, ss, mm in zip(varpar, snpar, magnorm):
-            if vv == 'None' and ss == 'None':
-                output.append(None)
-            elif vv!='None' and not (np.isfinite(mm) or mm < 100.0):
-                output.append(None)
-            else:
-                output.append(True)
-
-        return np.array(output)
+        return np.where(np.logical_or(sn==1,
+                        np.logical_and(agn==1,
+                        np.logical_and(np.isfinite(magnorm),
+                                       magnorm<100.0))),
+                        True,
+                        None)
 
 def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
                           agn_db=None, yaml_file='proto-dc2_v4.6.1'):
@@ -110,6 +117,6 @@ def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
     zpoint_file_name = os.path.join(out_dir, AgnTruth._file_name)
     with sqlite3.connect(zpoint_file_name) as connection:
         cursor = connection.cursor()
-        index_cmd = 'CREATE INDEX htmid_indx ON %s (htmid)' % (AgnTruth._table_name)
+        index_cmd = 'CREATE INDEX htmid_indx ON %s (htmid, is_sn, is_agn)' % (AgnTruth._table_name)
         cursor.execute(index_cmd)
         connection.commit()
