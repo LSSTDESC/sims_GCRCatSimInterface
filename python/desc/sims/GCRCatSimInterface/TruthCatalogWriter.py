@@ -15,7 +15,7 @@ from . import PhoSimDESCQA
 from . import TwinklesCatalogZPoint_DC2
 from .TwinklesClasses import twinkles_spec_map
 
-__all__ = ["write_sprinkled_truth"]
+__all__ = ["write_sprinkled_truth_db"]
 
 class _SprinkledTruth(object):
 
@@ -83,9 +83,14 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
                             True,
                             None)
 
-def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
-                          agn_db=None, yaml_file='proto-dc2_v4.6.1'):
+def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
+                             agn_db=None, yaml_file='proto-dc2_v4.6.1'):
     """
+    This method writes out a sqlite database that contains truth information
+    on all of the sprinkled sources.  It will return the name of the database
+    and a list of the tables in that database.
+    ----
+
     obs is an ObservationMetaData
     """
     assert os.path.isfile(agn_db)
@@ -99,6 +104,11 @@ def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
     db_class_list = [bulgeDESCQAObject,
                      diskDESCQAObject,
                      agnDESCQAObject]
+
+    table_name_list = []
+    for cat_class in cat_class_list:
+        assert cat_class._file_name == cat_class_list[0]._file_name
+        table_name_list.append(cat_class._table_name)
 
     for db_class in db_class_list:
         db_class.yaml_file_name = yaml_file
@@ -115,9 +125,18 @@ def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
 
     cat.write_catalog(os.path.join(out_dir,'params.txt'), chunk_size=100000)
 
+    txt_name = os.path.join(out_dir, 'params.txt')
+    if os.path.exists(txt_name):
+        os.unlink(txt_name)
+
     zpoint_file_name = os.path.join(out_dir, AgnTruth._file_name)
     with sqlite3.connect(zpoint_file_name) as connection:
         cursor = connection.cursor()
         index_cmd = 'CREATE INDEX htmid_indx ON %s (htmid, is_sn, is_agn)' % (AgnTruth._table_name)
         cursor.execute(index_cmd)
         connection.commit()
+
+    full_file_name = os.path.join(out_dir, cat_class_list[0]._file_name)
+    assert os.path.exists(full_file_name)
+
+    return full_file_name, table_name_list
