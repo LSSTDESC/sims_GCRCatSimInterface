@@ -75,12 +75,13 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
         agn = self.column_by_name('is_agn')
         magnorm = self.column_by_name('magNorm')
 
-        return np.where(np.logical_or(sn==1,
-                        np.logical_and(agn==1,
-                        np.logical_and(np.isfinite(magnorm),
-                                       magnorm<100.0))),
-                        True,
-                        None)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            return np.where(np.logical_or(sn==1,
+                            np.logical_and(agn==1,
+                            np.logical_and(np.isfinite(magnorm),
+                                           magnorm<100.0))),
+                            True,
+                            None)
 
 def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
                           agn_db=None, yaml_file='proto-dc2_v4.6.1'):
