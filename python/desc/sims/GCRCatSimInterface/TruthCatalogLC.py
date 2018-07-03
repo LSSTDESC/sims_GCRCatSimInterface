@@ -92,17 +92,20 @@ def write_sprinkled_lc(h5_file, total_obs_md,
 
             agn_query = agn_base_query + 'WHERE htmid=%d and is_agn=1' % htmid
 
-            agn_results = db.execute_arbitrary(agn_query, dtype=agn_dtype)
+            agn_iter = db.get_arbitrary_chunk_iterator(agn_query,
+                                                       dtype=agn_dtype,
+                                                       chunk_size=10000)
 
-            agn_simulator = AgnSimulator(agn_results['redshift'])
+            for i_chunk, agn_results in enumerate(agn_iter):
+                agn_simulator = AgnSimulator(agn_results['redshift'])
 
-            dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
-                                                  expmjd=mjd_arr)
+                dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
+                                                      expmjd=mjd_arr)
 
-            dmag_name = 'agn_dmag_%d' % htmid_dex
-            out_file.create_dataset(dmag_name, data = dmag.transpose(1,0,2))
+                dmag_name = 'agn_dmag_%d_%d' % (htmid_dex, i_chunk)
+                out_file.create_dataset(dmag_name, data = dmag.transpose(1,0,2))
 
-            n_floats += len(dmag.flatten())
+                n_floats += len(dmag.flatten())
 
     print('n_floats %d' % n_floats)
 
