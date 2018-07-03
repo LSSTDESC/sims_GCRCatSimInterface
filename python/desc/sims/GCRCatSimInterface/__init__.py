@@ -10,3 +10,4 @@ from .TwinklesClasses import *
 from .InstanceCatalogWriter import *
 from .SQLSubCatalog import *
 from .TruthCatalogUtils import *
+from .TruthCatalogLC import *
