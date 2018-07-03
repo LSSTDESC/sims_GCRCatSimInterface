@@ -8,4 +8,5 @@ from .CompoundCatalogDBObjectClasses import *
 from .CompoundInstanceCatalogClasses import *
 from .TwinklesClasses import *
 from .InstanceCatalogWriter import *
+from .SQLSubCatalog import *
 from .TruthCatalogWriter import *
