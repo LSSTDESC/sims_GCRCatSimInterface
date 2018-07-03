@@ -2,6 +2,7 @@ import numpy as np
 import os
 
 from lsst.sims.catalogs.definitions import InstanceCatalog
+from lsst.sims.utils import findHtmid
 from . import sprinklerCompound_DC2_truth
 from . import TwinklesCompoundInstanceCatalog_DC2
 from . import SQLSubCatalogMixin
@@ -16,11 +17,16 @@ __all__ = ["write_sprinkled_truth"]
 
 class _SprinkledTruth(object):
 
+    def get_htmid(self):
+        ra = np.degrees(self.column_by_name('raJ2000'))
+        dec = np.degrees(self.column_by_name('decJ2000'))
+        return findHtmid(ra, dec, max_level=7)
+
     def write_header(self, file_handle):
         InstanceCatalog.write_header(self, file_handle)
 
 class _SersicTruth(_SprinkledTruth):
-    column_outputs = ['uniqueId', 'galaxy_id',
+    column_outputs = ['uniqueId', 'galaxy_id', 'htmid',
                       'raJ2000', 'decJ2000', 'redshift',
                       'sedFilepath', 'magNorm',
                       'majorAxis', 'minorAxis',
@@ -29,7 +35,7 @@ class _SersicTruth(_SprinkledTruth):
 
 
 class _ZPointTruth(_SprinkledTruth):
-    column_outputs = ['uniqueId', 'galaxy_id',
+    column_outputs = ['uniqueId', 'galaxy_id', 'htmid',
                       'raJ2000', 'decJ2000', 'redshift',
                       'sedFilepath', 'magNorm',
                       'varParamStr', 'sn_truth_params',
