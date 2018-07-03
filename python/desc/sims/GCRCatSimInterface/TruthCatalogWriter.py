@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import sqlite3
 
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.utils import findHtmid
@@ -105,3 +106,10 @@ def write_sprinkled_truth(obs, field_ra=55.064, field_dec=-29.783,
     cat.sed_dir = None
 
     cat.write_catalog(os.path.join(out_dir,'params.txt'), chunk_size=100000)
+
+    zpoint_file_name = os.path.join(out_dir, AgnTruth._file_name)
+    with sqlite3.connect(zpoint_file_name) as connection:
+        cursor = connection.cursor()
+        index_cmd = 'CREATE INDEX htmid_indx ON %s (htmid)' % (AgnTruth._table_name)
+        cursor.execute(index_cmd)
+        connection.commit()
