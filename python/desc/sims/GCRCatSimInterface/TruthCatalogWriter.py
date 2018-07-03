@@ -4,7 +4,7 @@ import sqlite3
 
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catalogs.definitions import InstanceCatalog
-from lsst.sims.utils import findHtmid
+from lsst.sims.utils import findHtmid, halfSpaceFromRaDec
 from . import sprinklerCompound_DC2_truth
 from . import TwinklesCompoundInstanceCatalog_DC2
 from . import SQLSubCatalogMixin
@@ -15,7 +15,8 @@ from . import PhoSimDESCQA
 from . import TwinklesCatalogZPoint_DC2
 from .TwinklesClasses import twinkles_spec_map
 
-__all__ = ["write_sprinkled_truth_db"]
+__all__ = ["write_sprinkled_truth_db",
+           "write_pointing_db"]
 
 class _SprinkledTruth(object):
 
@@ -141,3 +142,29 @@ def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
     assert os.path.exists(full_file_name)
 
     return full_file_name, table_name_list
+
+
+def write_pointing_db(pointing_dir, opsim_db_name,
+                      ra_col_name = 'descDitheredRA',
+                      dec_col_name = 'descDitheredDec'):
+
+    if not os.path.isfile(opsim_db_name):
+        raise RuntimeError("%s is not a valid file name" % opsim_db_name)
+
+    if not os.path.isdir(pointing_dir):
+        raise RuntimeError("%s is not a valid dir name" % pointing_dir)
+
+    dtype = np.dtype([('obshistid', int), ('mjd', float)])
+    obs_data = None
+    for file_name in os.listdir(pointing_dir):
+        if 'visits' in file_name:
+            full_name = os.path.join(pointing_dir, file_name)
+            data = np.genfromtxt(full_name, dtype=dtype)
+            if obs_data is None:
+                obs_data = data['obshistid']
+            else:
+                obs_data = np.concatenate((obs_data, data['obshistid']), axis=0)
+
+    obs_data = np.sort(obs_data)
+
+    print('%d obs' % len(obs_data))
