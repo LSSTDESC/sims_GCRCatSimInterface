@@ -81,6 +81,14 @@ class SQLSubCatalogMixin(SubCatalogMixin):
         if self._table_name not in self._tables_created:
             self._create_table(full_file_name)
 
+        col_dict = {}
+        for name in self.iter_column_names():
+            arr = self.column_by_name(name)
+            if name in self.transformations:
+                col_dict[name] = self.transformations[name](arr)
+            else:
+                col_dict[name] = arr
+
         with sqlite3.connect(full_file_name) as conn:
             insert_cmd = '''INSERT INTO %s ''' % self._table_name
             insert_cmd += '''VALUES('''
@@ -91,7 +99,7 @@ class SQLSubCatalogMixin(SubCatalogMixin):
             insert_cmd += ''')'''
 
             cursor = conn.cursor()
-            values = (tuple(self._type_casting[name](self.column_by_name(name)[i_obj])
+            values = (tuple(self._type_casting[name](col_dict[name][i_obj])
                        for name in self.iter_column_names())
                        for i_obj in range(len(self._current_chunk)))
 
