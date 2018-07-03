@@ -41,6 +41,7 @@ class _ZPointTruth(_SprinkledTruth):
                       'raJ2000', 'decJ2000', 'redshift',
                       'sedFilepath', 'magNorm',
                       'varParamStr', 'sn_truth_params',
+                      'sn_t0',
                       'is_sprinkled', 'is_sn', 'is_agn']
 
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
