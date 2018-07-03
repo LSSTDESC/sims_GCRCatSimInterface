@@ -1,5 +1,5 @@
 import os
-from desc.sims.GCRCatSimInterface import write_sprinkled_truth
+from desc.sims.GCRCatSimInterface import write_sprinkled_truth_db
 from lsst.sims.utils import ObservationMetaData
 
 agn_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
@@ -14,4 +14,4 @@ obs = ObservationMetaData(pointingRA=53.13231600394978216,
                           boundType='circle',
                           boundLength=0.5)
 
-write_sprinkled_truth(obs, agn_db=agn_db)
+write_sprinkled_truth_db(obs, agn_db=agn_db)
