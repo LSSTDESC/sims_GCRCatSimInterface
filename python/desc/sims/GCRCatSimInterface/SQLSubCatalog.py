@@ -1,10 +1,11 @@
 import numpy as np
 import os
 import sqlite3
+from . import SubCatalogMixin
 
 __all__ = ["SQLSubCatalogMixin"]
 
-class SQLSubCatalogMixin(object):
+class SQLSubCatalogMixin(SubCatalogMixin):
 
     _table_name = None
     _file_name = None
