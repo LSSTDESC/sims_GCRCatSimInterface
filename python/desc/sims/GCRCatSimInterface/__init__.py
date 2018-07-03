@@ -11,4 +11,4 @@ from .HostImages import *
 from .om10_lensing_equations import * 
 from .InstanceCatalogWriter import *
 from .SQLSubCatalog import *
-from .TruthCatalogWriter import *
+from .TruthCatalogUtils import *
