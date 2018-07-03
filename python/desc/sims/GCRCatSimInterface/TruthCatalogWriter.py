@@ -4,7 +4,7 @@ import os
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from . import sprinklerCompound_DC2_truth
 from . import TwinklesCompoundInstanceCatalog_DC2
-from . import SubCatalogMixin
+from . import SQLSubCatalogMixin
 from . import diskDESCQAObject_protoDC2 as diskDESCQAObject
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject
 from . import agnDESCQAObject_protoDC2 as agnDESCQAObject
@@ -33,24 +33,24 @@ class _ZPointTruth(_SprinkledTruth):
                       'raJ2000', 'decJ2000', 'redshift',
                       'sedFilepath', 'magNorm',
                       'varParamStr', 'sn_truth_params',
-                      'has_params', 'is_sprinkled']
+                      'is_sprinkled']
 
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
 
-class BulgeTruth(_SersicTruth, SubCatalogMixin, PhoSimDESCQA):
+class BulgeTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
     cannot_be_null = ['hasBulge', 'sprinkling_switch', 'sedFilepath']
-    subcat_prefix = 'bulge'
-    _write_subcat_header = True
+    _file_name = 'sprinkled_objects.sqlite'
+    _table_name = 'bulge'
 
-class DiskTruth(_SersicTruth, SubCatalogMixin, PhoSimDESCQA):
+class DiskTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
     cannot_be_null = ['hasDisk', 'sprinkling_switch', 'sedFilepath']
-    subcat_prefix = 'disk'
-    _write_subcat_header = True
+    _file_name = 'sprinkled_objects.sqlite'
+    _table_name = 'disk'
 
-class AgnTruth(_ZPointTruth, SubCatalogMixin, TwinklesCatalogZPoint_DC2):
+class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
     cannot_be_null = ['has_params']
-    subcat_prefix = 'agn'
-    _write_subcat_header = True
+    _file_name = 'sprinkled_objects.sqlite'
+    _table_name = 'zpoint'
 
     def get_has_params(self):
         varpar = self.column_by_name('varParamStr').astype(str)
