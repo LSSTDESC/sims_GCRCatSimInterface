@@ -12,3 +12,4 @@ from .om10_lensing_equations import *
 from .InstanceCatalogWriter import *
 from .SQLSubCatalog import *
 from .TruthCatalogUtils import *
+from .TruthCatalogLC import *
