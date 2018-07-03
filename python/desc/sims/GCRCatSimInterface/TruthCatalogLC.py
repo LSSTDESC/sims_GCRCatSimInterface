@@ -38,7 +38,7 @@ def write_sprinkled_lc(total_obs_md,
     print('\ngot htmid_dict')
 
     sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
-                               prefix='sprinkled_sql')
+                               prefix='sprinkled_sql_')
 
     (file_name,
      table_list) = write_sprinkled_truth_db(total_obs_md,
