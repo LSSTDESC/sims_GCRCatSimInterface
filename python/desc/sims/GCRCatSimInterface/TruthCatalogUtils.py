@@ -99,9 +99,11 @@ def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
 
     obs is an ObservationMetaData
     """
-    assert os.path.isfile(agn_db)
+    if not os.path.isfile(agn_db):
+        raise RuntimeError("%s is not a valid file" % agn_db)
 
-    assert os.path.isdir(out_dir)
+    if not os.path.isdir(out_dir):
+        raise RuntimeError("%s is not a valid dir" % out_dir)
 
     twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
 
@@ -142,7 +144,8 @@ def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
         connection.commit()
 
     full_file_name = os.path.join(out_dir, cat_class_list[0]._file_name)
-    assert os.path.exists(full_file_name)
+    if not os.path.exists(full_file_name):
+        raise RuntimeError("After generating db; %s does not exist" % full_file_name)
 
     return full_file_name, table_name_list
 
