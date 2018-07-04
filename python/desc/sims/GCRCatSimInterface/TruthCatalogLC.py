@@ -73,6 +73,7 @@ def write_sprinkled_lc(h5_file, total_obs_md,
 
     n_floats = 0
     with h5py.File(h5_file, 'w') as out_file:
+        sprinkled_group = out_file.create_group('sprinkled')
         for htmid_dex, htmid in enumerate(object_htmid):
             mjd_arr = []
             t_start = time.time()
@@ -89,6 +90,9 @@ def write_sprinkled_lc(h5_file, total_obs_md,
             print('made mjd_arr in %e seconds' % duration)
             if len(mjd_arr) == 0:
                 continue
+            htm_group = sprinkled_group.create_group('%d' % htmid)
+            htm_group.attrs.create('htmid', htmid, dtype=np.int)
+            htm_group.attrs.create('mjd', mjd_arr)
 
             agn_query = agn_base_query + 'WHERE htmid=%d and is_agn=1' % htmid
 
@@ -102,8 +106,9 @@ def write_sprinkled_lc(h5_file, total_obs_md,
                 dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
                                                       expmjd=mjd_arr)
 
-                dmag_name = 'agn_dmag_%d_%d' % (htmid_dex, i_chunk)
-                out_file.create_dataset(dmag_name, data = dmag.transpose(1,0,2))
+                dmag_name = 'agn_dmag_%d' % (i_chunk)
+                htm_group.create_dataset(dmag_name,
+                                         data=dmag.transpose(1,0,2))
 
                 n_floats += len(dmag.flatten())
 
