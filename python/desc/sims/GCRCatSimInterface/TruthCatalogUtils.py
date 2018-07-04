@@ -201,8 +201,8 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
             if obshistid not in obs_data:
                 continue
 
-            hs = halfSpaceFromRaDec(results['ra'][ii],
-                                    results['dec'][ii],
+            hs = halfSpaceFromRaDec(np.degrees(results['ra'][ii]),
+                                    np.degrees(results['dec'][ii]),
                                     radius)
 
             trixel_bounds = hs.findAllTrixels(_truth_trixel_level)
