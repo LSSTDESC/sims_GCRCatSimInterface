@@ -29,8 +29,7 @@ def create_sql_file(sql_name):
         cursor = conn.cursor()
         cmd = '''CREATE TABLE agn '''
         cmd += '''(uniqueId int,
-                   obshistid int, u float, g float,
-                   r float, i float, z float, y float)'''
+                   obshistid int, mag float)'''
 
         cursor.execute(cmd)
         conn.commit()
@@ -45,9 +44,10 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     create_sql_file(out_file_name)
 
     (htmid_dict,
-     mjd_dict) = get_pointing_htmid(pointing_dir, opsim_db_name,
-                                    ra_colname=ra_colname,
-                                    dec_colname=dec_colname)
+     mjd_dict,
+     filter_dict) = get_pointing_htmid(pointing_dir, opsim_db_name,
+                                       ra_colname=ra_colname,
+                                       dec_colname=dec_colname)
 
     print('\ngot htmid_dict')
 
@@ -84,12 +84,15 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     agn_base_query += 'magNorm, varParamStr '
     agn_base_query += 'FROM zpoint '
 
+    filter_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
+
     n_floats = 0
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
         for htmid_dex, htmid in enumerate(object_htmid):
             mjd_arr = []
             obs_arr = []
+            filter_arr = []
             t_start = time.time()
             for obshistid in htmid_dict:
                 is_contained = False
@@ -100,13 +103,16 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                 if is_contained:
                     mjd_arr.append(mjd_dict[obshistid])
                     obs_arr.append(obshistid)
+                    filter_arr.append(filter_to_int[filter_dict[obshistid]])
             if len(mjd_arr) == 0:
                 continue
             mjd_arr = np.array(mjd_arr)
             obs_arr = np.array(obs_arr)
+            filter_arr = np.array(filter_arr)
             sorted_dex = np.argsort(mjd_arr)
             mjd_arr = mjd_arr[sorted_dex]
             obs_arr = obs_arr[sorted_dex]
+            filter_arr = filter_arr[sorted_dex]
             duration = time.time()-t_start
             print('made mjd_arr in %e seconds' % duration)
 
@@ -126,15 +132,10 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                 for i_time in range(len(obs_arr)):
                     values = ((int(agn_results['uniqueId'][i_obj]),
                                int(obs_arr[i_time]),
-                               dmag[0][i_obj][i_time],
-                               dmag[1][i_obj][i_time],
-                               dmag[2][i_obj][i_time],
-                               dmag[3][i_obj][i_time],
-                               dmag[4][i_obj][i_time],
-                               dmag[5][i_obj][i_time])
+                               dmag[filter_arr[i_time]][i_obj][i_time])
                               for i_obj in range(len(agn_results)))
                     cursor.executemany('''INSERT INTO agn VALUES
-                                       (?,?,?,?,?,?,?,?)''', values)
+                                       (?,?,?)''', values)
 
                 conn.commit()
                 n_floats += len(dmag.flatten())
