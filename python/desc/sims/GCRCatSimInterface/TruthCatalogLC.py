@@ -52,11 +52,13 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     create_sprinkled_sql_file(out_file_name)
 
+    t_start = time.time()
     (htmid_dict,
      mjd_dict,
      filter_dict) = get_pointing_htmid(pointing_dir, opsim_db_name,
                                        ra_colname=ra_colname,
                                        dec_colname=dec_colname)
+    t_htmid_dict = time.time()-t_start
 
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
@@ -64,7 +66,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                   for obs in mjd_dict)
         cursor.executemany('''INSERT INTO obs_metadata VALUES (?,?,?)''', values)
 
-    print('\ngot htmid_dict')
+    print('\ngot htmid_dict -- %d in %e seconds' % (len(htmid_dict), t_htmid_dict))
 
     sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
                                prefix='sprinkled_sql_')
