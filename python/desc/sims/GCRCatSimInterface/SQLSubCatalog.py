@@ -89,6 +89,9 @@ class SQLSubCatalogMixin(SubCatalogMixin):
             else:
                 col_dict[name] = arr
 
+        if len(self._current_chunk) == 0:
+            return
+
         with sqlite3.connect(full_file_name) as conn:
             insert_cmd = '''INSERT INTO %s ''' % self._table_name
             insert_cmd += '''VALUES('''
