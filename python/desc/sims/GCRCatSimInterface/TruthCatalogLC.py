@@ -256,7 +256,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                     valid_obj = np.where(np.isfinite(sn_mags[:,i_time]))
                     if len(valid_obj[0]) == 0:
                         continue
-                    print('valid sn %d' % len(valid_obj[0]))
+
                     values = ((int(sn_results['uniqueId'][i_obj]),
                                int(obs_arr[i_time]),
                                sn_mags[i_obj][i_time])
