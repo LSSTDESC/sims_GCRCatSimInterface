@@ -54,6 +54,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                        agn_db=None, yaml_file='proto-dc2_v4.6.1',
                        ra_colname='descDitheredRA',
                        dec_colname='descDitheredDec'):
+    t0_master = time.time()
 
     create_sprinkled_sql_file(out_file_name)
 
@@ -172,6 +173,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                 n_floats += len(dmag.flatten())
 
     print('n_floats %d' % n_floats)
+    print('in %e seconds' % (time.time()-t0_master))
 
     del db
     for file_name in os.listdir(sql_dir):
