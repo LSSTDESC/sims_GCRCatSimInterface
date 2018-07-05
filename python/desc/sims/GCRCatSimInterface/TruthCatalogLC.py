@@ -37,6 +37,10 @@ def create_sprinkled_sql_file(sql_name):
                    obshistid int, mag float)'''
         cursor.execute(cmd)
 
+        cmd = '''CREATE TABLE obs_metadata '''
+        cmd += '''(obshistid int, mjd float, filter int)'''
+        cursor.execute(cmd)
+
         conn.commit()
 
 def write_sprinkled_lc(out_file_name, total_obs_md,
@@ -53,6 +57,12 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
      filter_dict) = get_pointing_htmid(pointing_dir, opsim_db_name,
                                        ra_colname=ra_colname,
                                        dec_colname=dec_colname)
+
+    with sqlite3.connect(out_file_name) as conn:
+        cursor = conn.cursor()
+        values = ((obs, mjd_dict[obs], filter_dict[obs])
+                  for obs in mjd_dict)
+        cursor.executemany('''INSERT INTO obs_metadata VALUES (?,?,?)''', values)
 
     print('\ngot htmid_dict')
 
