@@ -93,7 +93,8 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                        field_ra=55.064, field_dec=-29.783,
                        agn_db=None, yaml_file='proto-dc2_v4.6.1',
                        ra_colname='descDitheredRA',
-                       dec_colname='descDitheredDec'):
+                       dec_colname='descDitheredDec',
+                       sql_dir=None):
     t0_master = time.time()
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
@@ -121,16 +122,22 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     print('\ngot htmid_dict -- %d in %e seconds' % (len(htmid_dict), t_htmid_dict))
 
-    sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
-                               prefix='sprinkled_sql_')
+    if sql_dir is None or not os.path.isdir(sql_dir):
+        sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
+                                   prefix='sprinkled_sql_')
 
-    (file_name,
-     table_list) = write_sprinkled_truth_db(total_obs_md,
-                                            field_ra=field_ra,
-                                            field_dec=field_dec,
-                                            agn_db=agn_db,
-                                            yaml_file=yaml_file,
-                                            out_dir=sql_dir)
+        (file_name,
+         table_list) = write_sprinkled_truth_db(total_obs_md,
+                                                field_ra=field_ra,
+                                                field_dec=field_dec,
+                                                agn_db=agn_db,
+                                                yaml_file=yaml_file,
+                                                out_dir=sql_dir)
+    else:
+        file_name = os.path.join(sql_dir, 'sprinkled_objects.sqlite')
+
+    if not os.path.exists(file_name):
+        raise RuntimeError('%s does not exist' % file_name)
 
     print('\nwrote db %s' % file_name)
 
