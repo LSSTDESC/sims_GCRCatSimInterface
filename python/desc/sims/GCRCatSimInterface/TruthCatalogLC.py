@@ -175,7 +175,13 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     n_floats = 0
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
+        t_before_htmid = time.time()
         for htmid_dex, htmid in enumerate(object_htmid):
+            if htmid_dex>0:
+                htmid_duration = time.time()-t_before_htmid
+                htmid_prediction = len(object_htmid)*htmid_duration/htmid_dex
+                print('%d htmid in %e sec; predict %e hours' %
+                (htmid_dex, htmid_duration,htmid_prediction))
             mjd_arr = []
             obs_arr = []
             filter_arr = []
