@@ -3,15 +3,55 @@ import os
 import numpy as np
 import shutil
 import sqlite3
+import json
 import time
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 from lsst.sims.photUtils import BandpassDict, Sed, getImsimFluxNorm
+from lsst.sims.catUtils.supernovae import SNObject
 from desc.twinkles import TimeDelayVariability
 from . import write_sprinkled_truth_db
 from . import get_pointing_htmid
 
 __all__ = ["write_sprinkled_lc"]
+
+
+class SneSimulator(object):
+
+    def __init__(self, bp_dict):
+        """
+        bp_dict is a BandpassDict
+        """
+        self._bp_dict = bp_dict
+
+    def calculate_sn_magnitudes(self, sn_truth_params, mjd_arr, filter_arr):
+        """
+        sn_truth_params is a numpy array of json-ized
+        dicts defining the state of an SNObject
+
+        mjd_arr is a numpy array of the TAI times of
+        observations
+
+        filter_arr is a numpy array of ints indicating
+        the filter being observed at each time
+        """
+
+        int_to_filter = 'ugrizy'
+
+        mags = np.NaN*np.ones((len(sn_truth_params), len(mjd_arr)), dtype=float)
+
+        for i_obj, sn_par in enumerate(sn_truth_params):
+            sn_obj = SNObject.fromSNState(json.loads(sn_par))
+            for i_time in range(len(mjd_arr)):
+                mjd = mjd_arr[i_time]
+                filter_name = int_to_filter[filter_arr[i_time]]
+                if mjd < sn_obj.mintime() or mjd > sn_obj.maxtime():
+                    continue
+                sn_sed = sn_obj.SNObjectSED(mjd)
+                mm = sn_sed.calcMag(self._bp_dict[filter_name])
+                mags[i_obj][i_time] = mm
+
+        return mags
 
 
 class AgnSimulator(ExtraGalacticVariabilityModels, TimeDelayVariability):
@@ -58,6 +98,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     t0_master = time.time()
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+    sn_simulator = SneSimulator(bp_dict)
     sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
 
     create_sprinkled_sql_file(out_file_name)
@@ -112,7 +153,16 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     agn_base_query += 'raJ2000, decJ2000, '
     agn_base_query += 'redshift, sedFilepath, '
     agn_base_query += 'magNorm, varParamStr '
-    agn_base_query += 'FROM zpoint '
+    agn_base_query += 'FROM zpoint WHERE is_agn=1 '
+
+    sn_dtype = np.dtype([('uniqueId', int), ('galaxy_id', int),
+                         ('ra', float), ('dec', float),
+                         ('redshift', float), ('sn_truth_params', str, 500)])
+
+    sn_base_query = 'SELECT uniqueId, galaxy_id, '
+    sn_base_query += 'raJ2000, decJ2000, '
+    sn_base_query += 'redshift, sn_truth_params '
+    sn_base_query += 'FROM zpoint WHERE is_sn=1 '
 
     filter_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
@@ -146,7 +196,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
             duration = time.time()-t_start
             print('made mjd_arr in %e seconds' % duration)
 
-            agn_query = agn_base_query + 'WHERE htmid=%d and is_agn=1' % htmid
+            agn_query = agn_base_query + 'AND htmid=%d' % htmid
 
             agn_iter = db.get_arbitrary_chunk_iterator(agn_query,
                                                        dtype=agn_dtype,
@@ -190,6 +240,32 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
                 conn.commit()
                 n_floats += len(dmag.flatten())
+
+            sn_query = sn_base_query + 'AND htmid=%d' % htmid
+
+            sn_iter = db.get_arbitrary_chunk_iterator(sn_query,
+                                                      dtype=sn_dtype,
+                                                      chunk_size=10000)
+
+            for sn_results in sn_iter:
+                t0_sne = time.time()
+                sn_mags = sn_simulator.calculate_sn_magnitudes(sn_results['sn_truth_params'],
+                                                               mjd_arr, filter_arr)
+                print('    did %d sne in %e seconds' % (len(sn_results), time.time()-t0_sne))
+
+                for i_time in range(len(mjd_arr)):
+                    valid_obj = np.where(np.isfinite(sn_mags[:,i_time]))
+                    if len(valid_obj[0]) == 0:
+                        continue
+                    print('valid sn %d' % len(valid_obj[0]))
+                    values = ((int(sn_results['uniqueId'][i_obj]),
+                               int(obs_arr[i_time]),
+                               sn_mags[i_obj][i_time])
+                              for i_obj in valid_obj[0])
+
+                    cursor.execute('''INSERT INTO sprinkled_sne VALUES (?,?,?)''', values)
+                    conn.commit()
+                    n_floats += len(valid_obj[0])
 
     print('n_floats %d' % n_floats)
     print('in %e seconds' % (time.time()-t0_master))
