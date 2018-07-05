@@ -24,7 +24,7 @@ class AgnSimulator(ExtraGalacticVariabilityModels, TimeDelayVariability):
         return self._redshift_arr
 
 
-def create_sql_file(sql_name):
+def create_sprinkled_sql_file(sql_name):
     with sqlite3.connect(sql_name) as conn:
         cursor = conn.cursor()
         cmd = '''CREATE TABLE agn '''
@@ -41,7 +41,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                        ra_colname='descDitheredRA',
                        dec_colname='descDitheredDec'):
 
-    create_sql_file(out_file_name)
+    create_sprinkled_sql_file(out_file_name)
 
     (htmid_dict,
      mjd_dict,
