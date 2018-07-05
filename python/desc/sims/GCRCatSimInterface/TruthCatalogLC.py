@@ -6,6 +6,7 @@ import sqlite3
 import time
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
+from lsst.sims.photUtils import BandpassDict, Sed, getImsimFluxNorm
 from desc.twinkles import TimeDelayVariability
 from . import write_sprinkled_truth_db
 from . import get_pointing_htmid
@@ -55,6 +56,9 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                        ra_colname='descDitheredRA',
                        dec_colname='descDitheredDec'):
     t0_master = time.time()
+
+    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+    sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
 
     create_sprinkled_sql_file(out_file_name)
 
@@ -160,6 +164,17 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
                 agn_simulator = AgnSimulator(agn_results['redshift'])
 
+                quiescent_mag = np.zeros((len(agn_results), 6), dtype=float)
+                for i_obj, (sed_name, zz, mm) in enumerate(zip(agn_results['sed'],
+                                                               agn_results['redshift'],
+                                                               agn_results['magnorm'])):
+                    spec = Sed()
+                    spec.readSED_flambda(os.path.join(sed_dir, sed_name))
+                    fnorm = getImsimFluxNorm(spec, mm)
+                    spec.multiplyFluxNorm(fnorm)
+                    mag_list = bp_dict.magListForSed(spec)
+                    quiescent_mag[i_obj] = mag_list
+
                 dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
                                                       expmjd=mjd_arr)
 
@@ -167,6 +182,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                 for i_time in range(len(obs_arr)):
                     values = ((int(agn_results['uniqueId'][i_obj]),
                                int(obs_arr[i_time]),
+                               quiescent_mag[i_obj][filter_arr[i_time]]+
                                dmag[filter_arr[i_time]][i_obj][i_time])
                               for i_obj in range(len(agn_results)))
                     cursor.executemany('''INSERT INTO sprinkled_agn VALUES
