@@ -71,6 +71,9 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
         values = ((obs, mjd_dict[obs], filter_dict[obs])
                   for obs in mjd_dict)
         cursor.executemany('''INSERT INTO obs_metadata VALUES (?,?,?)''', values)
+        cursor.execute('''CREATE INDEX obs_filter
+                       ON obs_metadata (obshistid, filter)''')
+        conn.commit()
 
     print('\ngot htmid_dict -- %d in %e seconds' % (len(htmid_dict), t_htmid_dict))
 
