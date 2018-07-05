@@ -47,8 +47,7 @@ class SneSimulator(object):
                 filter_name = int_to_filter[filter_arr[i_time]]
                 if mjd < sn_obj.mintime() or mjd > sn_obj.maxtime():
                     continue
-                sn_sed = sn_obj.SNObjectSED(mjd)
-                mm = sn_sed.calcMag(self._bp_dict[filter_name])
+                mm = sn_obj.catsimBandMag(self._bp_dict[filter_name], mjd)
                 mags[i_obj][i_time] = mm
 
         return mags
