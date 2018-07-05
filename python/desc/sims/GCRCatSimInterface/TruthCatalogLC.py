@@ -27,12 +27,12 @@ class AgnSimulator(ExtraGalacticVariabilityModels, TimeDelayVariability):
 def create_sprinkled_sql_file(sql_name):
     with sqlite3.connect(sql_name) as conn:
         cursor = conn.cursor()
-        cmd = '''CREATE TABLE agn '''
+        cmd = '''CREATE TABLE sprinkled_agn '''
         cmd += '''(uniqueId int,
                    obshistid int, mag float)'''
         cursor.execute(cmd)
 
-        cmd = '''CREATE TABLE sne '''
+        cmd = '''CREATE TABLE sprinkled_sne '''
         cmd += '''(uniqueId int,
                    obshistid int, mag float)'''
         cursor.execute(cmd)
@@ -151,7 +151,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                int(obs_arr[i_time]),
                                dmag[filter_arr[i_time]][i_obj][i_time])
                               for i_obj in range(len(agn_results)))
-                    cursor.executemany('''INSERT INTO agn VALUES
+                    cursor.executemany('''INSERT INTO sprinkled_agn VALUES
                                        (?,?,?)''', values)
 
                 conn.commit()
