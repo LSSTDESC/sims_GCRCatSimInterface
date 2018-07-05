@@ -30,8 +30,13 @@ def create_sprinkled_sql_file(sql_name):
         cmd = '''CREATE TABLE agn '''
         cmd += '''(uniqueId int,
                    obshistid int, mag float)'''
-
         cursor.execute(cmd)
+
+        cmd = '''CREATE TABLE sne '''
+        cmd += '''(uniqueId int,
+                   obshistid int, mag float)'''
+        cursor.execute(cmd)
+
         conn.commit()
 
 def write_sprinkled_lc(out_file_name, total_obs_md,
