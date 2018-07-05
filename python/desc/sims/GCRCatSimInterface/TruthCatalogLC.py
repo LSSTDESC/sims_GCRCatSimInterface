@@ -41,6 +41,11 @@ def create_sprinkled_sql_file(sql_name):
         cmd += '''(obshistid int, mjd float, filter int)'''
         cursor.execute(cmd)
 
+        cmd = '''CREATE TABLE sprinkled_objects '''
+        cmd += '''(uniqueId int, galaxy_id int,
+                   ra float, dec float)'''
+        cursor.execute(cmd)
+
         conn.commit()
 
 def write_sprinkled_lc(out_file_name, total_obs_md,
@@ -140,6 +145,15 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                                        chunk_size=10000)
 
             for i_chunk, agn_results in enumerate(agn_iter):
+                values = ((int(agn_results['uniqueId'][i_obj]),
+                           int(agn_results['galaxy_id'][i_obj]),
+                           np.degrees(agn_results['ra'][i_obj]),
+                           np.degrees(agn_results['dec'][i_obj]))
+                          for i_obj in range(len(agn_results)))
+
+                cursor.executemany('''INSERT INTO sprinkled_objects VALUES
+                                      (?,?,?,?)''', values)
+
                 agn_simulator = AgnSimulator(agn_results['redshift'])
 
                 dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
