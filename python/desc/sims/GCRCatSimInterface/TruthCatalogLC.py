@@ -262,7 +262,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                sn_mags[i_obj][i_time])
                               for i_obj in valid_obj[0])
 
-                    cursor.execute('''INSERT INTO sprinkled_sne VALUES (?,?,?)''', values)
+                    cursor.executemany('''INSERT INTO sprinkled_sne VALUES (?,?,?)''', values)
                     conn.commit()
                     n_floats += len(valid_obj[0])
 
