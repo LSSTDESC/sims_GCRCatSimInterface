@@ -16,7 +16,7 @@ from . import PhoSimDESCQA
 from . import TwinklesCatalogZPoint_DC2
 from .TwinklesClasses import twinkles_spec_map
 
-__all__ = ["write_sprinkled_truth_db",
+__all__ = ["write_sprinkled_param_db",
            "get_pointing_htmid"]
 
 _truth_trixel_level = 7
@@ -88,7 +88,7 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
                             True,
                             None)
 
-def write_sprinkled_truth_db(obs, field_ra=55.064, field_dec=-29.783,
+def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
                              agn_db=None, yaml_file='proto-dc2_v4.6.1',
                              out_dir=None):
     """

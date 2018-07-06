@@ -1,4 +1,3 @@
-import tempfile
 import os
 import numpy as np
 import shutil
@@ -10,7 +9,6 @@ from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 from lsst.sims.photUtils import BandpassDict, Sed, getImsimFluxNorm
 from lsst.sims.catUtils.supernovae import SNObject
 from desc.twinkles import TimeDelayVariability
-from . import write_sprinkled_truth_db
 from . import get_pointing_htmid
 
 __all__ = ["write_sprinkled_lc"]
@@ -90,12 +88,15 @@ def create_sprinkled_sql_file(sql_name):
 
 def write_sprinkled_lc(out_file_name, total_obs_md,
                        pointing_dir, opsim_db_name,
-                       field_ra=55.064, field_dec=-29.783,
-                       agn_db=None, yaml_file='proto-dc2_v4.6.1',
                        ra_colname='descDitheredRA',
                        dec_colname='descDitheredDec',
-                       sql_dir=None):
+                       sql_file_name=None):
+
     t0_master = time.time()
+
+    if not os.path.isfile(sql_file_name):
+        raise RuntimeError('%s does not exist' % sql_file_name)
+
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
     sn_simulator = SneSimulator(bp_dict)
@@ -122,26 +123,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     print('\ngot htmid_dict -- %d in %e seconds' % (len(htmid_dict), t_htmid_dict))
 
-    if sql_dir is None or not os.path.isdir(sql_dir):
-        sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
-                                   prefix='sprinkled_sql_')
-
-        (file_name,
-         table_list) = write_sprinkled_truth_db(total_obs_md,
-                                                field_ra=field_ra,
-                                                field_dec=field_dec,
-                                                agn_db=agn_db,
-                                                yaml_file=yaml_file,
-                                                out_dir=sql_dir)
-    else:
-        file_name = os.path.join(sql_dir, 'sprinkled_objects.sqlite')
-
-    if not os.path.exists(file_name):
-        raise RuntimeError('%s does not exist' % file_name)
-
-    print('\nwrote db %s' % file_name)
-
-    db = DBObject(file_name, driver='sqlite')
+    db = DBObject(sql_file_name, driver='sqlite')
 
     query = 'SELECT DISTINCT htmid FROM zpoint WHERE is_agn=1'
     dtype = np.dtype([('htmid', int)])
@@ -282,8 +264,3 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     print('n_floats %d' % n_floats)
     print('in %e seconds' % (time.time()-t0_master))
-
-    del db
-    for file_name in os.listdir(sql_dir):
-        os.unlink(os.path.join(sql_dir, file_name))
-    shutil.rmtree(sql_dir)
