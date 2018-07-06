@@ -234,6 +234,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                     spec.readSED_flambda(os.path.join(sed_dir, sed_name))
                     fnorm = getImsimFluxNorm(spec, mm)
                     spec.multiplyFluxNorm(fnorm)
+                    spec.redshiftSED(zz, dimming=True)
                     mag_list = bp_dict.magListForSed(spec)
                     quiescent_mag[i_obj] = mag_list
 
