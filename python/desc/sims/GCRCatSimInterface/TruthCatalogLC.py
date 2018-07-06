@@ -268,5 +268,10 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                     conn.commit()
                     n_floats += len(valid_obj[0])
 
+        cursor.execute('CREATE INDEX unq_obs_agn ON agn_lc (uniqueId, obshistid)')
+        conn.commit()
+        cursor.execute('CREATE INDEX unq_obs_sne ON sne_lc (uniqueId, obshistid)')
+        conn.commit()
+
     print('n_floats %d' % n_floats)
     print('in %e seconds' % (time.time()-t0_master))
