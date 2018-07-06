@@ -39,13 +39,10 @@ class _SprinkledTruth(object):
 class _SersicTruth(_SprinkledTruth):
     column_outputs = ['uniqueId', 'galaxy_id',
                       'raJ2000', 'decJ2000', 'redshift',
-                      'umag']#, 'gmag', 'rmag', 'imag',
-                      #'zmag', 'ymag']
+                      'umag', 'gmag', 'rmag', 'imag',
+                      'zmag', 'ymag']
 
     _bp_dict = None
-
-    #def get_umag(self):
-    #    return np.random.random_sample(len(self.column_by_name('raJ2000')))
 
     @compound('umag', 'gmag', 'rmag', 'imag', 'zmag', 'ymag')
     def get_SersicMagnitudes(self):
