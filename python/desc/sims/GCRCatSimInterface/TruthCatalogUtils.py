@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sqlite3
+import copy
 
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catalogs.definitions import InstanceCatalog
@@ -143,11 +144,7 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
         cursor.execute(index_cmd)
         connection.commit()
 
-    full_file_name = os.path.join(out_dir, cat_class_list[0]._file_name)
-    if not os.path.exists(full_file_name):
-        raise RuntimeError("After generating db; %s does not exist" % full_file_name)
-
-    return full_file_name, table_name_list
+    return copy.deepcopy(AgnTruth._files_written)
 
 
 def get_pointing_htmid(pointing_dir, opsim_db_name,
