@@ -95,7 +95,8 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                        pointing_dir, opsim_db_name,
                        ra_colname='descDitheredRA',
                        dec_colname='descDitheredDec',
-                       sql_file_name=None):
+                       sql_file_name=None,
+                       bp_dict=None):
 
     t0_master = time.time()
 
@@ -103,7 +104,6 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
         raise RuntimeError('%s does not exist' % sql_file_name)
 
 
-    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
     sn_simulator = SneSimulator(bp_dict)
     sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
 

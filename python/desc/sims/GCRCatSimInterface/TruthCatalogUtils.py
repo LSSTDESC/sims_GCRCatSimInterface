@@ -1,11 +1,13 @@
 import numpy as np
 import os
 import sqlite3
+import time
 
-from lsst.sims.catalogs.decorators import cached
+from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.utils import findHtmid, halfSpaceFromRaDec
+from lsst.sims.photUtils import Sed, getImsimFluxNorm
 from . import sprinklerCompound_DC2_truth
 from . import TwinklesCompoundInstanceCatalog_DC2
 from . import SQLSubCatalogMixin
@@ -32,12 +34,54 @@ class _SprinkledTruth(object):
         InstanceCatalog.write_header(self, file_handle)
 
 class _SersicTruth(_SprinkledTruth):
-    column_outputs = ['uniqueId', 'galaxy_id', 'htmid',
+    column_outputs = ['uniqueId', 'galaxy_id',
                       'raJ2000', 'decJ2000', 'redshift',
-                      'sedFilepath', 'magNorm',
-                      'majorAxis', 'minorAxis',
-                      'positionAngle',
-                      'internalAv', 'internalRv']
+                      'umag']#, 'gmag', 'rmag', 'imag',
+                      #'zmag', 'ymag']
+
+    _bp_dict = None
+
+    #def get_umag(self):
+    #    return np.random.random_sample(len(self.column_by_name('raJ2000')))
+
+    @compound('umag', 'gmag', 'rmag', 'imag', 'zmag', 'ymag')
+    def get_SersicMagnitudes(self):
+        # list of columns that need to be requested
+        # so that the sprinkler will work
+        self.column_by_name('majorAxis')
+        self.column_by_name('minorAxis')
+        self.column_by_name('positionAngle')
+        self.column_by_name('is_sprinkled')
+
+        self.column_by_name('internalAv')
+        self.column_by_name('internalRv')
+        self.column_by_name('galacticAv')
+        self.column_by_name('galacticRv')
+
+        sed_name = self.column_by_name('sedFilepath')
+        redshift = self.column_by_name('redshift')
+        magnorm = self.column_by_name('magNorm')
+
+        sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
+
+        if not hasattr(self, '_gal_ct'):
+            self._gal_ct = 0
+
+        t_start = time.time()
+        output = np.zeros((6,len(sed_name)), dtype=float)
+        for i_obj in range(len(sed_name)):
+            spec = Sed()
+            spec.readSED_flambda(os.path.join(sed_dir, sed_name[i_obj]))
+            fnorm = getImsimFluxNorm(spec, magnorm[i_obj])
+            spec.multiplyFluxNorm(fnorm)
+            spec.redshiftSED(redshift[i_obj], dimming=True)
+            mag_arr = self._bp_dict.magListForSed(spec)
+            output[:,i_obj] = mag_arr
+        self._gal_ct += len(sed_name)
+        print('did %d upto %d in %e seconds' %
+        (len(sed_name), self._gal_ct, time.time()-t_start))
+
+        return output
 
 
 class _ZPointTruth(_SprinkledTruth):
@@ -61,12 +105,12 @@ class _ZPointTruth(_SprinkledTruth):
         return np.where(np.char.find(var, 'None')==0, 0, 1)
 
 class BulgeTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasBulge', 'sprinkling_switch', 'sedFilepath']
+    cannot_be_null = ['hasBulge', 'sedFilepath']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'bulge'
 
 class DiskTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasDisk', 'sprinkling_switch', 'sedFilepath']
+    cannot_be_null = ['hasDisk', 'sedFilepath']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'disk'
 
@@ -90,7 +134,7 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
 
 def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
                              agn_db=None, yaml_file='proto-dc2_v4.6.1',
-                             out_dir=None):
+                             out_dir=None, bp_dict=None):
     """
     This method writes out a sqlite database that contains truth information
     on all of the sprinkled sources.  It will return the name of the database
@@ -106,6 +150,9 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
         raise RuntimeError("%s is not a valid dir" % out_dir)
 
     twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
+
+    BulgeTruth._bp_dict = bp_dict
+    DiskTruth._bp_dict = bp_dict
 
     cat_class_list = [BulgeTruth, DiskTruth, AgnTruth]
     db_class_list = [bulgeDESCQAObject,
@@ -141,6 +188,11 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
         cursor = connection.cursor()
         index_cmd = 'CREATE INDEX htmid_indx ON %s (htmid, is_sn, is_agn)' % (AgnTruth._table_name)
         cursor.execute(index_cmd)
+        connection.commit()
+
+        cursor.execute('CREATE INDEX gal_id_bulge ON bulge (galaxy_id)')
+        connection.commit()
+        cursor.execute('CREATE INDEX gal_id_disk ON disk (galaxy_id)')
         connection.commit()
 
     full_file_name = os.path.join(out_dir, cat_class_list[0]._file_name)
