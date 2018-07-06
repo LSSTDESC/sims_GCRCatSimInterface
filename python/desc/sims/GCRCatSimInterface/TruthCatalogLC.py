@@ -45,8 +45,13 @@ class SneSimulator(object):
                 filter_name = int_to_filter[filter_arr[i_time]]
                 if mjd < sn_obj.mintime() or mjd > sn_obj.maxtime():
                     continue
-                mm = sn_obj.catsimBandMag(self._bp_dict[filter_name], mjd)
-                mags[i_obj][i_time] = mm
+                bp = self._bp_dict[filter_name]
+                sn_sed = sn_obj.SNObjectSED(mjd, bandpass=bp,
+                                            applyExtinction=False)
+                ff = sn_sed.calcFlux(bp)
+                if ff>1.0e-300:
+                    mm = sn_sed.magFromFlux(ff)
+                    mags[i_obj][i_time] = mm
 
         return mags
 
