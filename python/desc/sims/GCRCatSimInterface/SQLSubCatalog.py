@@ -9,7 +9,8 @@ class SQLSubCatalogMixin(SubCatalogMixin):
 
     _table_name = None
     _file_name = None
-    _files_written = {}
+    _files_written = set()
+    _tables_created = set()
 
     def _create_table(self, file_name):
         """
@@ -49,9 +50,8 @@ class SQLSubCatalogMixin(SubCatalogMixin):
             cursor.execute(creation_cmd)
             conn.commit()
 
-        if file_name not in self._files_written:
-            self._files_written[file_name] = []
-        self._files_written[file_name].append(self._table_name)
+        self._files_written.add(file_name)
+        self._tables_created.add(self._table_name)
 
     def _write_recarray(self, input_recarray, file_handle):
         """
@@ -78,9 +78,7 @@ class SQLSubCatalogMixin(SubCatalogMixin):
             if os.path.exists(full_file_name):
                 os.unlink(full_file_name)
 
-        if (full_file_name not in self._files_written or
-            self._table_name not in self._files_written[full_file_name]):
-
+        if self._table_name not in self._tables_created:
             self._create_table(full_file_name)
 
         col_dict = {}
