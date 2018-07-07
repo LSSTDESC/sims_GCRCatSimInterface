@@ -28,6 +28,7 @@ assert os.path.isfile(agn_db)
 
 obs = ObservationMetaData(pointingRA=55.064,
                           pointingDec=-29.783,
+                          mjd=59580.0,
                           boundType='circle',
                           boundLength=args.fov)
 
