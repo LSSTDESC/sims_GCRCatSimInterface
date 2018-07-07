@@ -51,7 +51,7 @@ class _SersicTruth(_SprinkledTruth):
         self.column_by_name('majorAxis')
         self.column_by_name('minorAxis')
         self.column_by_name('positionAngle')
-        self.column_by_name('is_sprinkled')
+        is_sprinkled = self.column_by_name('is_sprinkled')
 
         self.column_by_name('internalAv')
         self.column_by_name('internalRv')
@@ -69,7 +69,8 @@ class _SersicTruth(_SprinkledTruth):
 
         t_start = time.time()
         output = np.zeros((6,len(sed_name)), dtype=float)
-        for i_obj in range(len(sed_name)):
+        valid = np.where(is_sprinkled==1)
+        for i_obj in valid[0]:
             spec = Sed()
             spec.readSED_flambda(os.path.join(sed_dir, sed_name[i_obj]))
             fnorm = getImsimFluxNorm(spec, magnorm[i_obj])
@@ -105,12 +106,12 @@ class _ZPointTruth(_SprinkledTruth):
         return np.where(np.char.find(var, 'None')==0, 0, 1)
 
 class BulgeTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasBulge', 'sedFilepath']
+    cannot_be_null = ['hasBulge', 'sedFilepath', 'sprinkling_switch']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'bulge'
 
 class DiskTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasDisk', 'sedFilepath']
+    cannot_be_null = ['hasDisk', 'sedFilepath', 'sprinkling_switch']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'disk'
 
@@ -177,7 +178,7 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
 
     cat.sed_dir = None
 
-    cat.write_catalog(os.path.join(out_dir,'params.txt'), chunk_size=100000)
+    cat.write_catalog(os.path.join(out_dir,'params.txt'), chunk_size=10000)
 
     txt_name = os.path.join(out_dir, 'params.txt')
     if os.path.exists(txt_name):
