@@ -18,7 +18,7 @@ if args.fov is None:
 
 bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
 
-yaml_file = 'proto-dc2_v4.6.1'
+yaml_file = 'proto-dc2_v2.1.2'
 
 agn_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
 assert os.path.isdir(agn_dir)
@@ -28,7 +28,6 @@ assert os.path.isfile(agn_db)
 
 obs = ObservationMetaData(pointingRA=55.064,
                           pointingDec=-29.783,
-                          mjd=62746.27986361111106817,
                           boundType='circle',
                           boundLength=args.fov)
 
@@ -43,25 +42,22 @@ h5_name = os.path.join(os.environ['SCRATCH'], 'sql_lc_test_small', 'agn_lc.db')
 if os.path.exists(h5_name):
     os.unlink(h5_name)
 
-if args.sql_dir is None:
-    sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
-                               prefix='sprinkled_sql_')
+#sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
+#                           prefix='sprinkled_sql_')
 
 
-    t_start = time.time()
-    (sql_file_name, table_names) = write_sprinkled_param_db(obs,
+t_start = time.time()
+(sql_file_name, table_names) = write_sprinkled_param_db(obs,
                                                  field_ra=55.064,
                                                  field_dec=-29.783,
                                                  agn_db=agn_db,
                                                  yaml_file=yaml_file,
-                                                 out_dir=sql_dir,
+                                                 out_dir=args.sql_dir,
                                                  bp_dict=bp_dict)
 
-    print('\nwrote\n%s\n' % sql_file_name)
-    print('fov %e in %e sec' % (args.fov, time.time()-t_start))
-    exit()
-else:
-    sql_file_name = os.path.join(args.sql_dir, 'sprinkled_objects.sqlite')
+print('\nwrote\n%s\n' % sql_file_name)
+print('fov %e in %e sec' % (args.fov, time.time()-t_start))
+exit()
 
 write_sprinkled_lc(h5_name, obs,
                    pointing_dir, opsim_db,
