@@ -183,9 +183,6 @@ if __name__ == "__main__":
                     print('output %d in %.2e hrs; 10 million in %.2e' %
                           (row_ct, duration, predicted))
 
-                    if iteration > 2:
-                        exit()
-
             if len(p_list) > 0:
                 for p in p_list:
                     p.join()
