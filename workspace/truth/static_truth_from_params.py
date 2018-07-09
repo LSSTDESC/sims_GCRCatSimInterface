@@ -122,15 +122,15 @@ if __name__ == "__main__":
     query += 'FROM bulge as b '
     query += 'LEFT JOIN disk as d ON d.galaxy_id=b.galaxy_id '
 
-    query += 'UNION ALL'
+    query += 'UNION ALL '
 
-    query = 'SELECT b.sedFile, b.magNorm, '
+    query += 'SELECT b.sedFile, b.magNorm, '
     query += 'd.sedFile, d.magNorm, '
     query += 'd.redshift, d.galaxy_id, '
     query += 'd.raJ2000, d.decJ2000 '
 
     query += 'FROM disk as d '
-    query += 'LEFT JOIN bulge as b ON d.galaxy_id=b.galaxy_id '
+    query += 'LEFT JOIN bulge as b ON b.galaxy_id=d.galaxy_id '
     query += 'WHERE b.galaxy_id IS NULL'
 
     chunk_size = 10000
