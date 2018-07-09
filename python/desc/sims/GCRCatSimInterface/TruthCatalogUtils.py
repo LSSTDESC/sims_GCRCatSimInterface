@@ -40,7 +40,8 @@ class _SersicTruth(_SprinkledTruth):
     column_outputs = ['uniqueId', 'galaxy_id',
                       'raJ2000', 'decJ2000', 'redshift',
                       'magNorm', 'sedFile', 'internalAv',
-                      'internalRv', 'galacticAv', 'galacticRv']
+                      'internalRv', 'galacticAv', 'galacticRv',
+                      'is_sprinkled']
 
     _bp_dict = None
     _t_start = None
