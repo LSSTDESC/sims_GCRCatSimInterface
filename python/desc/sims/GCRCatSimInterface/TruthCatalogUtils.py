@@ -39,10 +39,32 @@ class _SprinkledTruth(object):
 class _SersicTruth(_SprinkledTruth):
     column_outputs = ['uniqueId', 'galaxy_id',
                       'raJ2000', 'decJ2000', 'redshift',
-                      'umag', 'gmag', 'rmag', 'imag',
-                      'zmag', 'ymag']
+                      'magNorm', 'sedFile', 'internalAv',
+                      'internalRv', 'galacticAv', 'galacticRv']
 
     _bp_dict = None
+    _t_start = None
+    _sersic_ct = 0
+
+    @cached
+    def get_sedFile(self):
+        self.column_by_name('is_sprinkled')
+        self.column_by_name('majorAxis')
+        self.column_by_name('minorAxis')
+        self.column_by_name('positionAngle')
+        if self._t_start is None:
+            self._t_start = time.time()
+
+        out = self.column_by_name('sedFilepath')
+        self._sersic_ct += len(out)
+
+        if self._sersic_ct > 0:
+            duration = (time.time()-self._t_start)/3600.0
+            prediction = 8.0e6*duration/self._sersic_ct
+            print('%d in %.2e hrs; 8 million in %.2e' %
+            (self._sersic_ct, duration,prediction))
+
+        return out
 
     @compound('umag', 'gmag', 'rmag', 'imag', 'zmag', 'ymag')
     def get_SersicMagnitudes(self):
@@ -106,12 +128,12 @@ class _ZPointTruth(_SprinkledTruth):
         return np.where(np.char.find(var, 'None')==0, 0, 1)
 
 class BulgeTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasBulge', 'sedFilepath', 'sprinkling_switch']
+    cannot_be_null = ['hasBulge', 'sedFilepath']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'bulge'
 
 class DiskTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasDisk', 'sedFilepath', 'sprinkling_switch']
+    cannot_be_null = ['hasDisk', 'sedFilepath']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'disk'
 
