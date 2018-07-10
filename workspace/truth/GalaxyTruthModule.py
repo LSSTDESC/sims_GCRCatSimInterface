@@ -3,13 +3,15 @@ import numpy as np
 import healpy as hp
 import multiprocessing as mp
 import sqlite3
-import argparse
 
 import time
 
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import BandpassDict
 from lsst.sims.photUtils import Sed, getImsimFluxNorm
+
+
+__all__ = ["write_galaxies_to_truth"]
 
 
 def _fluxes(sed_name, mag_norm, redshift):
@@ -34,17 +36,24 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
     row_ct = 0
     for k in mag_dict.keys():
-        mm_arr = mag_dict[k]
-        pp_arr = position_dict[k]
+        mm = mag_dict[k]
+        pp = position_dict[k]
         row_ct += len(pp_arr)
-        assert len(mm_arr) == len(pp_arr)
-        values = ((int(pp[0]), pp[1], int(pp[2]), pp[3], pp[4],
-                   int(pp[5]), int(pp[6]),
-                   mm[0], mm[1], mm[2], mm[3], mm[4], mm[5])
-                  for pp, mm in zip(pp_arr, mm_arr))
+        assert len(mm) == len(pp['ra'])
 
-        cursor.executemany('''INSERT INTO static_galaxies
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
+        values = ((int(pp['healpix'][i_obj]),
+                   int(pp['galaxy_id'][i_obj]),
+                   0,
+                   int(pp['has_agn'][i_obj]),
+                   int(pp['is_sprinkled'][i_obj]),
+                   pp['ra'][i_obj], pp['dec'][i_obj],
+                   pp['redshift'][i_obj],
+                   mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
+                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5])
+                  for i_obj in range(len(pp['ra'])))
+
+        cursor.executemany('''INSERT INTO truth
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
         conn.commit()
 
     return row_ct
@@ -85,41 +94,24 @@ def calculate_mags(galaxy_list, out_dict):
     out_dict[i_process] = out_mags
 
 
-if __name__ == "__main__":
+def write_galaxies_to_truth(n_side=2048, input=None, output=None
+                            n_procs=10, clobber=False):
 
-    n_side = 2048
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--input', type=str, default=None,
-                        help='sqlite database containing parameters')
-
-    parser.add_argument('--output', type=str, default=None,
-                        help='sqlite database to write')
-
-    parser.add_argument('--n_procs', type=int, default=10,
-                        help='number of processes; default=10')
-
-    parser.add_argument('--clobber', dest='clobber', action='store_true')
-    parser.set_defaults(clobber=False)
-
-    args = parser.parse_args()
-
-    if args.input is None:
+    if input is None:
         raise RuntimeError("Must specify input database")
 
-    if args.output is None:
+    if output is None:
         raise RuntimeError("Must specify output database")
 
-    if args.output == args.input:
-        raise RuntimeError("args.output == args.input")
+    if output == input:
+        raise RuntimeError("output == input")
 
-    if os.path.isfile(args.output):
-        if args.clobber:
-            os.unlink(args.output)
+    if os.path.isfile(output):
+        if clobber:
+            os.unlink(output)
 
-    if not os.path.isfile(args.input):
-        raise RuntimeError("%s does not exist" % args.input)
+    if not os.path.isfile(input):
+        raise RuntimeError("%s does not exist" % input)
 
     query = 'SELECT b.sedFile, b.magNorm, '
     query += 'd.sedFile, d.magNorm, '
@@ -161,17 +153,10 @@ if __name__ == "__main__":
 
     is_agn_converter = {None: 0, 1:1, 0:0}
 
-    with sqlite3.connect(args.output) as out_conn:
+    with sqlite3.connect(output) as out_conn:
         out_cursor = out_conn.cursor()
-        creation_cmd = 'CREATE TABLE static_galaxies '
-        creation_cmd += '(healpix_id int, redshift float, '
-        creation_cmd += 'galaxy_id int, ra float, dec float, '
-        creation_cmd += 'is_sprinkled int, has_agn int, '
-        creation_cmd += 'u float, g float, r float, i float, z float, y float)'
-        out_cursor.execute(creation_cmd)
-        out_conn.commit()
 
-        with sqlite3.connect(args.input) as in_conn:
+        with sqlite3.connect(input) as in_conn:
             in_cursor = in_conn.cursor()
             query = in_cursor.execute(query)
 
@@ -191,15 +176,18 @@ if __name__ == "__main__":
                                     lonlat=True,
                                     nest=True)
 
-                position_dict[proc.pid] = [(hp_arr[r],
-                                            results[r][6], results[r][7],
-                                            np.degrees(results[r][8]),
-                                            np.degrees(results[r][9]),
-                                            results[r][10],
-                                            is_agn_converter[results[r][11]])
-                                           for r in range(len(results))]
+                local_dict = {}
+                local_dict['healpix'] = hp_arr
+                local_dict['ra'] = np.degrees(ra_arr)
+                local_dict['dec'] = np.degrees(dec_arr)
+                local_dict['redshift'] = np.array([r[6] for r in results])
+                local_dict['galaxy_id'] = np.array([r[7] for r in results])
+                local_dict['is_sprinkled'] = np.array([r[10] for r in results])
+                local_dict['has_agn'] = np.array([r[11] for r in results])
 
-                if len(p_list) >= args.n_procs:
+                position_dict[proc.pid] = local_dict
+
+                if len(p_list) >= n_procs:
                     for p in p_list:
                         p.join()
                     row_ct += write_results(out_conn, out_cursor,

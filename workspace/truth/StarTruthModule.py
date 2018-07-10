@@ -3,7 +3,6 @@ import healpy as hp
 import numpy as np
 import multiprocessing as mp
 import sqlite3
-import argparse
 
 import time
 
@@ -14,24 +13,31 @@ from lsst.sims.photUtils import BandpassDict
 from lsst.sims.photUtils import Sed, getImsimFluxNorm
 from lsst.sims.catUtils.baseCatalogModels import StarObj
 
+
+__all__ = ["write_stars_to_truth"]
+
+
 def write_results(conn, cursor, mag_dict, position_dict):
 
     assert len(mag_dict) == len(position_dict)
 
     row_ct = 0
     for k in mag_dict.keys():
-        mm_arr = mag_dict[k]
-        pp_arr = position_dict[k]
+        mm = mag_dict[k]
+        pp = position_dict[k]
         row_ct += len(pp_arr)
-        if len(mm_arr) != len(pp_arr):
-            raise RuntimeError('%d mm %d pp' % (len(mm_arr), len(pp_arr)))
+        if len(mm) != len(pp['ra']):
+            raise RuntimeError('%d mm %d pp' % (len(mm), len(pp['ra'])))
 
-        values = ((int(pp[0]), int(pp[1]), pp[2], pp[3],
-                   mm[0], mm[1], mm[2], mm[3], mm[4], mm[5])
-                  for pp, mm in zip(pp_arr, mm_arr))
+        values = ((int(pp['healpix'][i_obj]),
+                   int(pp['id'][i_obj]), 1, 0, 0,
+                   pp['ra'][i_obj], pp['dec'][i_obj], 0.0,
+                   mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
+                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5])
+                  for i_obj in range(len(pp['ra'])))
 
-        cursor.executemany('''INSERT INTO stars
-                           VALUES (?,?,?,?,?,?,?,?,?,?)''', values)
+        cursor.executemany('''INSERT INTO truth
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
         conn.commit()
 
     return row_ct
@@ -61,29 +67,15 @@ def calculate_mags(sed_name, mag_norm, out_dict):
     out_dict[i_process] = out_mags
 
 
-if __name__ == "__main__":
+def write_stars_to_truth(output=None,
+                         n_procs=10, n_side=2048, clobber=False):
 
-    n_side = 2048
-
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--output', type=str, default=None,
-                        help='sqlite database to write')
-
-    parser.add_argument('--n_procs', type=int, default=10,
-                        help='number of processes; default=10')
-
-    parser.add_argument('--clobber', dest='clobber', action='store_true')
-    parser.set_defaults(clobber=False)
-
-    args = parser.parse_args()
-
-    if args.output is None:
+    if output is None:
         raise RuntimeError("Must specify output database")
 
-    if os.path.isfile(args.output):
-        if args.clobber:
-            os.unlink(args.output)
+    if os.path.isfile(output):
+        if clobber:
+            os.unlink(output)
 
     obs = ObservationMetaData(pointingRA=55.064,
                               pointingDec=-29.783,
@@ -107,13 +99,8 @@ if __name__ == "__main__":
     row_ct = 0
     iteration = 0
 
-    with sqlite3.connect(args.output) as out_conn:
+    with sqlite3.connect(output) as out_conn:
         out_cursor = out_conn.cursor()
-        creation_cmd = 'CREATE TABLE stars '
-        creation_cmd += '(healpix_id int, uniqueId int, ra float, dec float, '
-        creation_cmd += 'u float, g float, r float, i float, z float, y float)'
-        out_cursor.execute(creation_cmd)
-        out_conn.commit()
 
         data_iter = db.query_columns(colnames=['simobjid', 'sedFilename',
                                                'magNorm', 'ra', 'decl'],
@@ -134,13 +121,13 @@ if __name__ == "__main__":
                                 lonlat=True,
                                 nest=True)
 
-            position_dict[proc.pid] = [(hp_arr[i_star],
-                                        star_chunk['simobjid'][i_star],
-                                        star_chunk['ra'][i_star],
-                                        star_chunk['decl'][i_star])
-                                       for i_star in range(len(star_chunk))]
+            position_dict[proc.pid] = {}
+            position_dict[proc.pid]['healpix'] = hp_arr
+            position_dict[proc.pid]['id'] = star_chunk['simobjid']
+            position_dict[proc.pid]['ra'] = star_chunk['ra']
+            position_dict[proc.pid]['dec'] = star_chunk['decl']
 
-            if len(p_list) >= args.n_procs:
+            if len(p_list) >= n_procs:
                 for p in p_list:
                     p.join()
                 row_ct += write_results(out_conn, out_cursor,
