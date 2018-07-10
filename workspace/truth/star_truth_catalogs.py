@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
             hp_arr = hp.ang2pix(n_side,
                                 np.radians(star_chunk['ra']),
-                                np.radians(star_chunk['dec']),
+                                np.radians(star_chunk['decl']),
                                 lonlat=True,
                                 nest=True)
 
