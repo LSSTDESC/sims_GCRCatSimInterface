@@ -11,6 +11,22 @@ from lsst.sims.photUtils import BandpassDict
 from lsst.sims.photUtils import Sed, getImsimFluxNorm
 
 
+def _fluxes(sed_name, mag_norm, redshift):
+    if not hasattr(_fluxes, '_bp_dict'):
+        bp_dir = getPackageDir('throughputs')
+        bp_dir = os.path.join(bp_dir, 'imsim', 'goal')
+        _fluxes._bp_dict =  BandpassDict.loadTotalBandpassesFromFiles(bandpassDir=bp_dir)
+
+        _fluxes._sed_dir = getPackageDir('sims_sed_library')
+
+    spec = Sed()
+    spec.readSED_flambda(os.path.join(_fluxes._sed_dir, sed_name))
+    fnorm = getImsimFluxNorm(spec, mag_norm)
+    spec.multiplyFluxNorm(fnorm)
+    spec.redshiftSED(redshift, dimming=True)
+    return _fluxes._bp_dict.fluxListForSed(spec)
+
+
 def write_results(conn, cursor, mag_dict, position_dict):
 
     assert len(mag_dict) == len(position_dict)
@@ -21,7 +37,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
         pp_arr = position_dict[k]
         row_ct += len(pp_arr)
         assert len(mm_arr) == len(pp_arr)
-        values = ((pp[0], int(pp[1]), pp[2], pp[3], int(pp4]), int(pp5),
+        values = ((pp[0], int(pp[1]), pp[2], pp[3], int(pp[4]), int(pp5),
                    mm[0], mm[1], mm[2], mm[3], mm[4], mm[5])
                   for pp, mm in zip(pp_arr, mm_arr))
 
@@ -44,40 +60,19 @@ def calculate_mags(galaxy_list, out_dict):
     """
     i_process = mp.current_process().pid
 
-    bp_dir = getPackageDir('throughputs')
-    bp_dir = os.path.join(bp_dir, 'imsim', 'goal')
-    bp_dict =  BandpassDict.loadTotalBandpassesFromFiles(bandpassDir=bp_dir)
-
-    sed_dir = getPackageDir('sims_sed_library')
-
     bulge_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     disk_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     agn_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
 
     for i_gal, galaxy in enumerate(galaxy_list):
         if galaxy[0] is not None and galaxy[1] is not None:
-            spec = Sed()
-            spec.readSED_flambda(os.path.join(sed_dir, galaxy[0]))
-            fnorm = getImsimFluxNorm(spec, galaxy[1])
-            spec.multiplyFluxNorm(fnorm)
-            spec.redshiftSED(galaxy[6], dimming=True)
-            bulge_fluxes[i_gal] = bp_dict.fluxListForSed(spec)
+            bulge_fluxes[i_gal] = _fluxes(galaxy[0], galaxy[1], galaxy[6])
 
         if galaxy[2] is not None and galaxy[3] is not None:
-            spec = Sed()
-            spec.readSED_flambda(os.path.join(sed_dir, galaxy[2]))
-            fnorm = getImsimFluxNorm(spec, galaxy[3])
-            spec.multiplyFluxNorm(fnorm)
-            spec.redshiftSED(galaxy[6], dimming=True)
-            disk_fluxes[i_gal] = bp_dict.fluxListForSed(spec)
+            disk_fluxes[i_gal] = _fluxes(galaxy[2], galaxy[3], galaxy[6])
 
         if galaxy[4] is not None and galaxy[5] is not None:
-            spec = Sed()
-            spec.readSED_flambda(os.path.join(sed_dir, galaxy[4]))
-            fnorm = getImsimFluxNorm(spec, galaxy[5])
-            spec.multiplyFluxNorm(fnorm)
-            spec.redshiftSED(galaxy[6], dimming=True)
-            agn_fluxes[i_gal] = bp_dict.fluxListForSed(spec)
+            agn_fluxes[i_gal] = _fluxes(galaxy[4], galaxy[5], galaxy[6])
 
     tot_fluxes = bulge_fluxes + disk_fluxes + agn_fluxes
     dummy_sed = Sed()
