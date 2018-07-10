@@ -79,9 +79,8 @@ if __name__ == "__main__":
         raise RuntimeError("Must specify output database")
 
     if os.path.isfile(args.output):
-        if not args.clobber:
-            raise RuntimeError("%s already exists" % args.output)
-        os.unlink(args.output)
+        if args.clobber:
+            os.unlink(args.output)
 
     obs = ObservationMetaData(pointingRA=55.064,
                               pointingDec=-29.783,
