@@ -181,9 +181,9 @@ if __name__ == "__main__":
                 proc.start()
                 p_list.append(proc)
 
-                position_dict[proc.pid] = [(r[4], r[5], r[6],
-                                            r[7], r[8],
-                                            is_agn_converter[r[9]])
+                position_dict[proc.pid] = [(r[6], r[7], r[8],
+                                            r[9], r[10],
+                                            is_agn_converter[r[11]])
                                            for r in results]
 
                 if len(p_list) >= args.n_procs:
