@@ -150,4 +150,4 @@ if __name__ == "__main__":
             write_results(out_conn, out_cursor,
                           mag_dict, position_dict)
 
-    out_cursor.execute('CREATE INDEX unqid ON stars (uniqueId)')
+    out_cursor.execute('CREATE INDEX star_unqid ON stars (uniqueId)')
