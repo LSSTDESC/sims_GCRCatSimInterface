@@ -219,5 +219,5 @@ if __name__ == "__main__":
                 write_results(out_conn, out_cursor,
                               mag_dict, position_dict)
 
-        out_cursor.execute('CREATE INDEX gid ON static_galaxies (galaxy_id)')
-        out_cursor.execute('CREATE INDEX g_hp ON static_galaxies (healpix_id)')
+        #out_cursor.execute('CREATE INDEX gid ON static_galaxies (galaxy_id)')
+        #out_cursor.execute('CREATE INDEX g_hp ON static_galaxies (healpix_id)')
