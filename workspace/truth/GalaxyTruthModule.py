@@ -94,7 +94,7 @@ def calculate_mags(galaxy_list, out_dict):
     out_dict[i_process] = out_mags
 
 
-def write_galaxies_to_truth(n_side=2048, input=None, output=None
+def write_galaxies_to_truth(n_side=2048, input=None, output=None,
                             n_procs=10, clobber=False):
 
     if input is None:
