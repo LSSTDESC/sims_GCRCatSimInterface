@@ -134,7 +134,7 @@ if __name__ == "__main__":
                                 lonlat=True,
                                 nest=True)
 
-            position_dict[proc.pid] = [(hp_arr[i_star]
+            position_dict[proc.pid] = [(hp_arr[i_star],
                                         star_chunk['simobjid'][i_star],
                                         star_chunk['ra'][i_star],
                                         star_chunk['decl'][i_star])
