@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import healpy as np
 import multiprocessing as mp
 import sqlite3
 import argparse
@@ -37,7 +38,8 @@ def write_results(conn, cursor, mag_dict, position_dict):
         pp_arr = position_dict[k]
         row_ct += len(pp_arr)
         assert len(mm_arr) == len(pp_arr)
-        values = ((pp[0], int(pp[1]), pp[2], pp[3], int(pp[4]), int(pp[5]),
+        values = ((int(pp[0]), pp[1], int(pp[2]), pp[3], pp[4],
+                   int(pp[5]), int(pp[6]),
                    mm[0], mm[1], mm[2], mm[3], mm[4], mm[5])
                   for pp, mm in zip(pp_arr, mm_arr))
 
@@ -84,6 +86,8 @@ def calculate_mags(galaxy_list, out_dict):
 
 
 if __name__ == "__main__":
+
+    n_side = 2048
 
     parser = argparse.ArgumentParser()
 
@@ -160,7 +164,8 @@ if __name__ == "__main__":
     with sqlite3.connect(args.output) as out_conn:
         out_cursor = out_conn.cursor()
         creation_cmd = 'CREATE TABLE static_galaxies '
-        creation_cmd += '(redshfit float, galaxy_id int, ra float, dec float, '
+        creation_cmd += '(healpix_id int, redshfit float, '
+        creation_cmd += 'galaxy_id int, ra float, dec float, '
         creation_cmd += 'is_sprinkled int, has_agn int, '
         creation_cmd += 'u float, g float, r float, i float, z float, y float)'
         out_cursor.execute(creation_cmd)
@@ -180,12 +185,19 @@ if __name__ == "__main__":
                 proc.start()
                 p_list.append(proc)
 
-                position_dict[proc.pid] = [(r[6], r[7],
-                                            np.degrees(r[8]),
-                                            np.degrees(r[9]),
-                                            r[10],
-                                            is_agn_converter[r[11]])
-                                           for r in results]
+                hp_arr = np.ang2pix(n_side,
+                                    np.array([r[6] for r in results]),
+                                    np.array([r[7] for r in results]),
+                                    lonlat=True,
+                                    nest=True)
+
+                position_dict[proc.pid] = [(hp_arr[r],
+                                            results[r][6], results[r][7],
+                                            np.degrees(results[r][8]),
+                                            np.degrees(results[r][9]),
+                                            results[r][10],
+                                            is_agn_converter[results[r][11]])
+                                           for r in range(len(results))]
 
                 if len(p_list) >= args.n_procs:
                     for p in p_list:
@@ -208,3 +220,4 @@ if __name__ == "__main__":
                               mag_dict, position_dict)
 
         out_cursor.execute('CREATE INDEX gid ON static_galaxies (galaxy_id)')
+        out_cursor.execute('CREATE INDEX g_hp ON static_galaxies (healpix_id)')

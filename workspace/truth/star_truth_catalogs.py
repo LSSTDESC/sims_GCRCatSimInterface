@@ -1,4 +1,5 @@
 import os
+import healpy as hp
 import numpy as np
 import multiprocessing as mp
 import sqlite3
@@ -25,7 +26,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
         if len(mm_arr) != len(pp_arr):
             raise RuntimeError('%d mm %d pp' % (len(mm_arr), len(pp_arr)))
 
-        values = ((int(pp[0]), pp[1], pp[2],
+        values = ((int(pp[0]), int(pp[1]), pp[2], pp[3],
                    mm[0], mm[1], mm[2], mm[3], mm[4], mm[5])
                   for pp, mm in zip(pp_arr, mm_arr))
 
@@ -61,6 +62,8 @@ def calculate_mags(sed_name, mag_norm, out_dict):
 
 
 if __name__ == "__main__":
+
+    n_side = 2048
 
     parser = argparse.ArgumentParser()
 
@@ -107,7 +110,7 @@ if __name__ == "__main__":
     with sqlite3.connect(args.output) as out_conn:
         out_cursor = out_conn.cursor()
         creation_cmd = 'CREATE TABLE stars '
-        creation_cmd += '(uniqueId int, ra float, dec float, '
+        creation_cmd += '(healpix_id int, uniqueId int, ra float, dec float, '
         creation_cmd += 'u float, g float, r float, i float, z float, y float)'
         out_cursor.execute(creation_cmd)
         out_conn.commit()
@@ -125,10 +128,17 @@ if __name__ == "__main__":
             proc.start()
             p_list.append(proc)
 
-            position_dict[proc.pid] = [(star['simobjid'],
-                                        star['ra'],
-                                        star['decl'])
-                                       for star in star_chunk]
+            hp_arr = hp.ang2pix(n_side,
+                                np.radians(star_chunk['ra']),
+                                np.radians(star_chunk['dec']),
+                                lonlat=True,
+                                nest=True)
+
+            position_dict[proc.pid] = [(hp_arr[i_star]
+                                        star_chunk['simobjid'][i_star],
+                                        star_chunk['ra'][i_star],
+                                        star_chunk['decl'][i_star])
+                                       for i_star in range(len(star_chunk))]
 
             if len(p_list) >= args.n_procs:
                 for p in p_list:
@@ -151,3 +161,4 @@ if __name__ == "__main__":
                           mag_dict, position_dict)
 
     out_cursor.execute('CREATE INDEX star_unqid ON stars (uniqueId)')
+    out_cursor.execute('CREATE INDEX star_hpid ON stars (healpix_id)')
