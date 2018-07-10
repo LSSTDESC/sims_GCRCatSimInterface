@@ -164,7 +164,7 @@ if __name__ == "__main__":
     with sqlite3.connect(args.output) as out_conn:
         out_cursor = out_conn.cursor()
         creation_cmd = 'CREATE TABLE static_galaxies '
-        creation_cmd += '(healpix_id int, redshfit float, '
+        creation_cmd += '(healpix_id int, redshift float, '
         creation_cmd += 'galaxy_id int, ra float, dec float, '
         creation_cmd += 'is_sprinkled int, has_agn int, '
         creation_cmd += 'u float, g float, r float, i float, z float, y float)'
