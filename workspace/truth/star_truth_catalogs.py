@@ -126,8 +126,8 @@ if __name__ == "__main__":
             p_list.append(proc)
 
             position_dict[proc.pid] = [(star['simobjid'],
-                                        star['raJ2000'],
-                                        star['decJ2000'])
+                                        star['ra'],
+                                        star['decl'])
                                        for star in star_chunk]
 
             if len(p_list) >= args.n_procs:
