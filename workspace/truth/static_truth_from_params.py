@@ -185,9 +185,9 @@ if __name__ == "__main__":
                 proc.start()
                 p_list.append(proc)
 
-                hp_arr = hp.ang2pix(n_side,
-                                    np.array([r[6] for r in results]),
-                                    np.array([r[7] for r in results]),
+                ra_arr = np.array([r[8] for r in results])
+                dec_arr = np.array([r[9] for r in results])
+                hp_arr = hp.ang2pix(n_side, ra_arr, dec_arr,
                                     lonlat=True,
                                     nest=True)
 
