@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import healpy as np
+import healpy as hp
 import multiprocessing as mp
 import sqlite3
 import argparse
@@ -185,7 +185,7 @@ if __name__ == "__main__":
                 proc.start()
                 p_list.append(proc)
 
-                hp_arr = np.ang2pix(n_side,
+                hp_arr = hp.ang2pix(n_side,
                                     np.array([r[6] for r in results]),
                                     np.array([r[7] for r in results]),
                                     lonlat=True,
