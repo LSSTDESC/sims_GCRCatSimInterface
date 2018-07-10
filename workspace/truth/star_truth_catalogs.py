@@ -31,7 +31,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
                   for pp, mm in zip(pp_arr, mm_arr))
 
         cursor.executemany('''INSERT INTO stars
-                           VALUES (?,?,?,?,?,?,?,?,?)''', values)
+                           VALUES (?,?,?,?,?,?,?,?,?,?)''', values)
         conn.commit()
 
     return row_ct
