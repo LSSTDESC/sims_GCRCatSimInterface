@@ -21,12 +21,12 @@ def write_results(conn, cursor, mag_dict, position_dict):
         pp_arr = position_dict[k]
         row_ct += len(pp_arr)
         assert len(mm_arr) == len(pp_arr)
-        values = ((pp[0], int(pp[1]), pp[2], pp[3],
+        values = ((pp[0], int(pp[1]), pp[2], pp[3], int(pp4]), int(pp5),
                    mm[0], mm[1], mm[2], mm[3], mm[4], mm[5])
                   for pp, mm in zip(pp_arr, mm_arr))
 
         cursor.executemany('''INSERT INTO static_galaxies
-                           VALUES (?,?,?,?,?,?,?,?,?,?)''', values)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)''', values)
         conn.commit()
 
     return row_ct
@@ -52,6 +52,7 @@ def calculate_mags(galaxy_list, out_dict):
 
     bulge_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     disk_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
+    agn_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
 
     for i_gal, galaxy in enumerate(galaxy_list):
         if galaxy[0] is not None and galaxy[1] is not None:
@@ -59,7 +60,7 @@ def calculate_mags(galaxy_list, out_dict):
             spec.readSED_flambda(os.path.join(sed_dir, galaxy[0]))
             fnorm = getImsimFluxNorm(spec, galaxy[1])
             spec.multiplyFluxNorm(fnorm)
-            spec.redshiftSED(galaxy[4], dimming=True)
+            spec.redshiftSED(galaxy[6], dimming=True)
             bulge_fluxes[i_gal] = bp_dict.fluxListForSed(spec)
 
         if galaxy[2] is not None and galaxy[3] is not None:
@@ -67,10 +68,18 @@ def calculate_mags(galaxy_list, out_dict):
             spec.readSED_flambda(os.path.join(sed_dir, galaxy[2]))
             fnorm = getImsimFluxNorm(spec, galaxy[3])
             spec.multiplyFluxNorm(fnorm)
-            spec.redshiftSED(galaxy[4], dimming=True)
+            spec.redshiftSED(galaxy[6], dimming=True)
             disk_fluxes[i_gal] = bp_dict.fluxListForSed(spec)
 
-    tot_fluxes = bulge_fluxes + disk_fluxes
+        if galaxy[4] is not None and galaxy[5] is not None:
+            spec = Sed()
+            spec.readSED_flambda(os.path.join(sed_dir, galaxy[4]))
+            fnorm = getImsimFluxNorm(spec, galaxy[5])
+            spec.multiplyFluxNorm(fnorm)
+            spec.redshiftSED(galaxy[6], dimming=True)
+            agn_fluxes[i_gal] = bp_dict.fluxListForSed(spec)
+
+    tot_fluxes = bulge_fluxes + disk_fluxes + agn_fluxes
     dummy_sed = Sed()
     valid = np.where(tot_fluxes>0.0)
     valid_mags = dummy_sed.magFromFlux(tot_fluxes[valid])
@@ -116,22 +125,30 @@ if __name__ == "__main__":
 
     query = 'SELECT b.sedFile, b.magNorm, '
     query += 'd.sedFile, d.magNorm, '
+    query += 'a.sedFilepath, a.magNorm, '
     query += 'b.redshift, b.galaxy_id, '
-    query += 'b.raJ2000, b.decJ2000 '
+    query += 'b.raJ2000, b.decJ2000, '
+    query += 'd.is_sprinkled, a.is_agn '
 
     query += 'FROM bulge as b '
     query += 'LEFT JOIN disk as d ON d.galaxy_id=b.galaxy_id '
+    query += 'LEFT JOIN zpoint as a ON d.galaxy_id=a.galaxy_id '
+    query += 'WHERE a.is_agn=1 OR a.galaxy_id IS NULL '
 
     query += 'UNION ALL '
 
     query += 'SELECT b.sedFile, b.magNorm, '
     query += 'd.sedFile, d.magNorm, '
+    query += 'a.sedFilepath, a.magNorm, '
     query += 'd.redshift, d.galaxy_id, '
-    query += 'd.raJ2000, d.decJ2000 '
+    query += 'd.raJ2000, d.decJ2000, '
+    query += 'd.is_sprinkled, a.is_agn '
 
     query += 'FROM disk as d '
     query += 'LEFT JOIN bulge as b ON b.galaxy_id=d.galaxy_id '
-    query += 'WHERE b.galaxy_id IS NULL'
+    query += 'LEFT JOIN zpoint as a on b.galaxy_id=a.galaxy_id '
+    query += 'WHERE b.galaxy_id IS NULL '
+    query += 'AND (a.is_agn=1 OR a.galaxy_id IS NULL)'
 
     chunk_size = 10000
     p_list = []
@@ -144,10 +161,13 @@ if __name__ == "__main__":
     row_ct = 0
     iteration = 0
 
+    is_agn_converter = {None: 0, 1:1, 0:0}
+
     with sqlite3.connect(args.output) as out_conn:
         out_cursor = out_conn.cursor()
         creation_cmd = 'CREATE TABLE static_galaxies '
         creation_cmd += '(redshfit float, galaxy_id int, ra float, dec float, '
+        creation_cmd += 'is_sprinkled int, has_agn int, '
         creation_cmd += 'u float, g float, r float, i float, z float, y float)'
         out_cursor.execute(creation_cmd)
         out_conn.commit()
@@ -166,7 +186,9 @@ if __name__ == "__main__":
                 proc.start()
                 p_list.append(proc)
 
-                position_dict[proc.pid] = [(r[4], r[5], r[6], r[7])
+                position_dict[proc.pid] = [(r[4], r[5], r[6],
+                                            r[7], r[8],
+                                            is_agn_converter[r[9]])
                                            for r in results]
 
                 if len(p_list) >= args.n_procs:
