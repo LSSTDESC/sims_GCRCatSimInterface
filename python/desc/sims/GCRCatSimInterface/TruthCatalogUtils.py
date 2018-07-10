@@ -214,6 +214,8 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
         cursor.execute(index_cmd)
         connection.commit()
 
+        cursor.execute('CREATE INDEX agn_gal_id ON zpoint (galaxy_id, is_sn, is_agn)')
+        connection.commit()
         cursor.execute('CREATE INDEX gal_id_bulge ON bulge (galaxy_id)')
         connection.commit()
         cursor.execute('CREATE INDEX gal_id_disk ON disk (galaxy_id)')
