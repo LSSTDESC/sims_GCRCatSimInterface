@@ -123,7 +123,7 @@ if __name__ == "__main__":
     query += 'a.sedFilepath, a.magNorm, '
     query += 'b.redshift, b.galaxy_id, '
     query += 'b.raJ2000, b.decJ2000, '
-    query += 'd.is_sprinkled, a.is_agn '
+    query += 'b.is_sprinkled, a.is_agn '
 
     query += 'FROM bulge as b '
     query += 'LEFT JOIN disk as d ON d.galaxy_id=b.galaxy_id '
