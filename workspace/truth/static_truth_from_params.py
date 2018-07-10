@@ -37,7 +37,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
         pp_arr = position_dict[k]
         row_ct += len(pp_arr)
         assert len(mm_arr) == len(pp_arr)
-        values = ((pp[0], int(pp[1]), pp[2], pp[3], int(pp[4]), int(pp5),
+        values = ((pp[0], int(pp[1]), pp[2], pp[3], int(pp[4]), int(pp[5]),
                    mm[0], mm[1], mm[2], mm[3], mm[4], mm[5])
                   for pp, mm in zip(pp_arr, mm_arr))
 
