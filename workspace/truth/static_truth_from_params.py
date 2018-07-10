@@ -111,9 +111,8 @@ if __name__ == "__main__":
         raise RuntimeError("args.output == args.input")
 
     if os.path.isfile(args.output):
-        if not args.clobber:
-            raise RuntimeError("%s already exists" % args.output)
-        os.unlink(args.output)
+        if args.clobber:
+            os.unlink(args.output)
 
     if not os.path.isfile(args.input):
         raise RuntimeError("%s does not exist" % args.input)
