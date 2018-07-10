@@ -116,7 +116,7 @@ if __name__ == "__main__":
         out_conn.commit()
 
         data_iter = db.query_columns(colnames=['simobjid', 'sedFilename',
-                                               'magNorm', 'ra', 'decl']
+                                               'magNorm', 'ra', 'decl'],
                                      obs_metadata=obs)
 
         for star_chunk in data_iter:
