@@ -49,7 +49,7 @@ if __name__ == "__main__":
         conn.commit()
         print('made object_id index')
 
-        cursor.execute('CREATE INDEX is_star ON truth (is_star)')
+        cursor.execute('CREATE INDEX is_star ON truth (star)')
         conn.commit()
         print('made is_star index')
 
