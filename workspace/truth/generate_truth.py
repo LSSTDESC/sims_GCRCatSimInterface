@@ -19,8 +19,8 @@ if __name__ == "__main__":
     with sqlite3.connect(db_file) as conn:
         cursor = conn.cursor()
         cmd = '''CREATE TABLE truth
-              (healpix_2048 int, object_id int, star bool,
-               agn bool, sprinkled bool, ra float, dec float,
+              (healpix_2048 int, object_id int, star int,
+               agn int, sprinkled int, ra float, dec float,
                redshift float, u float, g float, r float, i float,
                z float, y float)'''
 

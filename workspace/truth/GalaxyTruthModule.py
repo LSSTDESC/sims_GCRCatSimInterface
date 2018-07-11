@@ -43,9 +43,9 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
         values = ((int(pp['healpix'][i_obj]),
                    int(pp['galaxy_id'][i_obj]),
-                   False,
-                   pp['has_agn'][i_obj],
-                   pp['is_sprinkled'][i_obj],
+                   0,
+                   int(pp['has_agn'][i_obj]),
+                   int(['is_sprinkled'][i_obj]),
                    pp['ra'][i_obj], pp['dec'][i_obj],
                    pp['redshift'][i_obj],
                    mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
@@ -151,7 +151,7 @@ def write_galaxies_to_truth(n_side=2048, input=None, output=None,
     row_ct = 0
     iteration = 0
 
-    is_agn_converter = {None: False, 1:True, 0:False}
+    is_agn_converter = {None:0, 1:1, 0:0}
 
     with sqlite3.connect(output) as out_conn:
         out_cursor = out_conn.cursor()
@@ -182,11 +182,10 @@ def write_galaxies_to_truth(n_side=2048, input=None, output=None,
                 local_dict['dec'] = np.degrees(dec_arr)
                 local_dict['redshift'] = np.array([r[6] for r in results])
                 local_dict['galaxy_id'] = np.array([r[7] for r in results])
-                local_dict['is_sprinkled'] = np.array([True if r[10]==1
-                                                       else False
-                                                       for r in results])
-                local_dict['has_agn'] = np.array([is_agn_converter[r[11]]
-                                                  for r in results])
+                local_dict['is_sprinkled'] = [r[10]
+                                              for r in results]
+                local_dict['has_agn'] = [is_agn_converter[r[11]]
+                                         for r in results]
 
                 position_dict[proc.pid] = local_dict
 
