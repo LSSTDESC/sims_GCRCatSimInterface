@@ -30,7 +30,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
             raise RuntimeError('%d mm %d pp' % (len(mm), len(pp['ra'])))
 
         values = ((int(pp['healpix'][i_obj]),
-                   int(pp['id'][i_obj]), 1, 0, 0,
+                   int(pp['id'][i_obj]), True, False, False,
                    pp['ra'][i_obj], pp['dec'][i_obj], 0.0,
                    mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
                    mm[i_obj][3], mm[i_obj][4], mm[i_obj][5])
