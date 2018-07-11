@@ -27,6 +27,28 @@ if __name__ == "__main__":
         cursor.execute(cmd)
         conn.commit()
 
+        cmd = '''CREATE TABLE column_descriptions
+              (name text, description text)'''
+        cursor.execute(cmd)
+
+        values = (('healpix_2048', 'healpixel containing the object (nside=2048; nested)'),
+                  ('object_id', 'an int uniquely identifying objects (can collide between stars, galaxies, and sprinkled objects)'),
+                  ('star', 'an int; ==1 if a star; ==0 if not'),
+                  ('agn', 'an int; ==1 if galaxy has an AGN; ==0 if not'),
+                  ('sprinkled', 'an int; ==1 if object added by the sprinkler; ==0 if not'),
+                  ('ra', 'in degrees'),
+                  ('dec', 'in degrees'),
+                  ('redshift', 'cosmological only'),
+                  ('u', 'observed lsst u magnitude; no dust extinction at all'),
+                  ('g', 'observed lsst g magnitude; no dust extinction at all'),
+                  ('r', 'observed lsst r magnitude; no dust extinction at all'),
+                  ('i', 'observed lsst i magnitude; no dust extinction at all'),
+                  ('z', 'observed lsst z magnitude; no dust extinction at all'),
+                  ('y', 'observed lsst y magnitude; no dust extinction at all'))
+
+        cursor.executemany('INSERT INTO column_descriptions VALUES (?,?)',values)
+        conn.commit()
+
     write_stars_to_truth(output=db_file,
                          n_side=2048,
                          n_procs=20,
