@@ -146,6 +146,3 @@ def write_stars_to_truth(output=None,
                 p.join()
             write_results(out_conn, out_cursor,
                           mag_dict, position_dict)
-
-    out_cursor.execute('CREATE INDEX star_unqid ON stars (uniqueId)')
-    out_cursor.execute('CREATE INDEX star_hpid ON stars (healpix_id)')
