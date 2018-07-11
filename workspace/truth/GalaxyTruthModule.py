@@ -38,7 +38,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
     for k in mag_dict.keys():
         mm = mag_dict[k]
         pp = position_dict[k]
-        row_ct += len(pp_arr)
+        row_ct += len(pp['ra'])
         assert len(mm) == len(pp['ra'])
 
         values = ((int(pp['healpix'][i_obj]),
