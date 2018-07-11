@@ -53,6 +53,6 @@ if __name__ == "__main__":
         conn.commit()
         print('made is_star index')
 
-        cursor.execute('CREATE INDEX healpix ON truth (healpix)')
+        cursor.execute('CREATE INDEX healpix ON truth (healpix_2048)')
         conn.commit()
         print('made healpix index')
