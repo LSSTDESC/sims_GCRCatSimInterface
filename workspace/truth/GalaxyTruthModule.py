@@ -183,7 +183,8 @@ def write_galaxies_to_truth(n_side=2048, input=None, output=None,
                 local_dict['redshift'] = np.array([r[6] for r in results])
                 local_dict['galaxy_id'] = np.array([r[7] for r in results])
                 local_dict['is_sprinkled'] = np.array([r[10] for r in results])
-                local_dict['has_agn'] = np.array([r[11] for r in results])
+                local_dict['has_agn'] = np.array([is_agn_converter[r[11]]
+                                                  for r in results])
 
                 position_dict[proc.pid] = local_dict
 
