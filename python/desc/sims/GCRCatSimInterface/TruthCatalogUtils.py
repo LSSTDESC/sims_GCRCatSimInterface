@@ -70,46 +70,6 @@ class _SersicTruth(_SprinkledTruth):
 
         return out
 
-    @compound('umag', 'gmag', 'rmag', 'imag', 'zmag', 'ymag')
-    def get_SersicMagnitudes(self):
-        # list of columns that need to be requested
-        # so that the sprinkler will work
-        self.column_by_name('majorAxis')
-        self.column_by_name('minorAxis')
-        self.column_by_name('positionAngle')
-        is_sprinkled = self.column_by_name('is_sprinkled')
-
-        self.column_by_name('internalAv')
-        self.column_by_name('internalRv')
-        self.column_by_name('galacticAv')
-        self.column_by_name('galacticRv')
-
-        sed_name = self.column_by_name('sedFilepath')
-        redshift = self.column_by_name('redshift')
-        magnorm = self.column_by_name('magNorm')
-
-        sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
-
-        if not hasattr(self, '_gal_ct'):
-            self._gal_ct = 0
-
-        t_start = time.time()
-        output = np.zeros((6,len(sed_name)), dtype=float)
-        valid = np.where(is_sprinkled==1)
-        for i_obj in valid[0]:
-            spec = Sed()
-            spec.readSED_flambda(os.path.join(sed_dir, sed_name[i_obj]))
-            fnorm = getImsimFluxNorm(spec, magnorm[i_obj])
-            spec.multiplyFluxNorm(fnorm)
-            spec.redshiftSED(redshift[i_obj], dimming=True)
-            mag_arr = self._bp_dict.magListForSed(spec)
-            output[:,i_obj] = mag_arr
-        self._gal_ct += len(sed_name)
-        print('did %d upto %d in %e seconds' %
-        (len(sed_name), self._gal_ct, time.time()-t_start))
-
-        return output
-
 
 class _ZPointTruth(_SprinkledTruth):
     column_outputs = ['uniqueId', 'galaxy_id', 'htmid',
