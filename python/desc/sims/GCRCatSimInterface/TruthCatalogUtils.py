@@ -307,6 +307,27 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
 
 
 def write_star_truth_db(obs_md, out_file_name, bp_dict):
+    """
+    Write out the truth information for static stellar sources.
+
+    Parameters
+    ----------
+    obs_md is an ObservationMetaData covering the whole survey area
+
+    out_file_name is the name of the sqlite file where the results
+    will be written
+
+    bp_dict is a BandpassDict containing lsst.sims.photUtils.Bandpasses
+    corresponding to the telescope filters.
+
+    Returns
+    -------
+    Nothing
+
+    Writes out a table 'star_truth' containing the RA, Dec,
+    and magnitudes of all of the stars in the survey area to the
+    file specified by out_file_name
+    """
 
     sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
 
