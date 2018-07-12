@@ -15,6 +15,21 @@ __all__ = ["write_galaxies_to_truth"]
 
 
 def _fluxes(sed_name, mag_norm, redshift):
+    """
+    Find the fluxes for a galaxy component
+
+    Parameters
+    ----------
+    sed_name is an SED file name
+
+    mag_norm is a float
+
+    redshift is a float
+
+    Returns
+    -------
+    array of fluxes in ugrizy order
+    """
     if not hasattr(_fluxes, '_bp_dict'):
         bp_dir = getPackageDir('throughputs')
         bp_dir = os.path.join(bp_dir, 'imsim', 'goal')
@@ -31,7 +46,33 @@ def _fluxes(sed_name, mag_norm, redshift):
 
 
 def write_results(conn, cursor, mag_dict, position_dict):
+    """
+    Write galaxy truth results to the truth table
 
+    Parameters
+    ----------
+    conn is a sqlite3 connection to the database
+
+    cursor is a sqlite3.conneciton.cursor() object
+
+    mag_dict is a dict of mags.  It is keyed on the pid of the
+    Process used to process a chunk of magnitudes.  Each value
+    is a 2-D numpy array of shape (n_obj, n_bandpasses).  It is
+    produced by calculate_magnitudes.
+
+    position_dict is a dict keyed on pid of the Process used to
+    process a chunk of stars.  The values are also dicts, these
+    keyed on 'healpix', 'ra', 'dec', 'galaxy_id', 'redshift',
+    'has_agn', 'is_sprinkled', with the values being
+    arrays of those quantities for the corresponding chunk of
+    stars.
+
+    Returns
+    -------
+    None
+
+    Just writes to the database
+    """
     assert len(mag_dict) == len(position_dict)
 
     row_ct = 0
@@ -61,13 +102,16 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
 def calculate_mags(galaxy_list, out_dict):
     """
-    galaxy_list will be a list of tuples as returned by the sqlite3
-    query.  The tuples will be:
+    Calculate the total (bulge+disk+agn) magnitudes of galaxies
 
-    query = 'SELECT b.sedFile, b.magNorm, '
-    query += 'd.sedFile, d.magNorm, '
-    query += 'd.redshift, d.uniqueId, d.galaxy_id, '
-    query += 'd.raJ2000, d.decJ2000 '
+    Parameters
+    ----------
+    galaxy_list is a list of tuples.  The tuples are of the form
+    (bulge.sed_name, bulge.magNorm, disk.sed_name, disk.magNorm
+     agn.sed_name, agn.magNorm)
+
+    out_dict is a Multiprocessing.Manager.dict object that will
+    store the results of this calculation
     """
     i_process = mp.current_process().pid
 
@@ -96,7 +140,30 @@ def calculate_mags(galaxy_list, out_dict):
 
 def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
                             n_procs=10, clobber=False):
+    """
+    Write static galaxy truth to the truth catalog
 
+    Parameters
+    ----------
+    input_db is the path to the sqlite file containing extragalactic
+    parameters as written by write_sprinkled_param_db
+
+    output is the path to the output database
+
+    n_procs is the number of Multiprocessing processes to use when
+    calculating magnitudes
+
+    n_side is the nside parameter for calculating healpix locations
+
+    clobber is a boolean.  If True, delete any already existing databases
+    with the same file name as output (default=False)
+
+    Returns
+    -------
+    None
+
+    Just writes to the database
+    """
     if input is None:
         raise RuntimeError("Must specify input database")
 
