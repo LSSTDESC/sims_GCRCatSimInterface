@@ -65,8 +65,7 @@ t_start = time.time()
                                                  field_dec=-29.783,
                                                  agn_db=agn_db,
                                                  yaml_file=yaml_file,
-                                                 out_dir=args.sql_dir,
-                                                 bp_dict=bp_dict)
+                                                 out_dir=args.sql_dir)
 
 print('\nwrote\n%s\n' % sql_file_name)
 print('fov %e in %e sec' % (args.fov, time.time()-t_start))
