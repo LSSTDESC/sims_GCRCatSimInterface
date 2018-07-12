@@ -154,6 +154,7 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
     if not os.path.isdir(out_dir):
         raise RuntimeError("%s is not a valid dir" % out_dir)
 
+    # needed for the supernovae
     twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
 
     cat_class_list = [BulgeTruth, DiskTruth, AgnTruth]
@@ -181,6 +182,7 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
 
     cat.write_catalog(os.path.join(out_dir,'params.txt'), chunk_size=10000)
 
+    # remove empty text file
     txt_name = os.path.join(out_dir, 'params.txt')
     if os.path.exists(txt_name):
         os.unlink(txt_name)
