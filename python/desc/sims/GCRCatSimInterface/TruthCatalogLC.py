@@ -98,6 +98,62 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                        sql_file_name=None,
                        bp_dict=None):
 
+    """
+    Create database of light curves
+
+    Note: this is still under development.  It has not yet been
+    used for a production-level truth catalog
+
+    Parameters
+    ----------
+    out_file_name is the name of the sqlite file to be written
+
+    total_obs_md is an ObservationMetaData covering the whole
+    survey area
+
+    pointing_dir contains a series of files that are two columns: obshistid, mjd.
+    The files must each have 'visits' in their name.  These specify the pointings
+    for which we are assembling data.  See:
+        https://github.com/LSSTDESC/DC2_Repo/tree/master/data/Run1.1
+    for an example.
+
+    opsim_db_name is the name of the OpSim database to be queried for pointings
+
+    ra_colname is the column used for RA of the pointing (default:
+    descDitheredRA)
+
+    dec_colname is the column used for the Dec of the pointing (default:
+    descDitheredDec)
+
+    sql_file_name is the name of the parameter database produced by
+    write_sprinkled_param_db to be used
+
+    bp_dict is a BandpassDict of the telescope filters to be used
+
+    Returns
+    -------
+    None
+
+    Writes out a database to out_file_name.  The tables of this database and
+    their columns are:
+
+    agn_lc/sn_lc:
+        - uniqueId -- an int unique to all objects
+        - obshistid -- an int unique to all pointings
+        - mag -- the magnitude observed for this object at that pointing
+
+    obs_metadata:
+        - obshistid -- an int unique to all pointings
+        - mjd -- the date of the pointing
+        - filter -- an int corresponding to the telescope filter (0==u, 1==g..)
+
+    sprinkled_objects:
+        - uniqueId -- an int unique to all objects
+        - galaxy_id -- an int indicating the host galaxy
+        - ra -- in degrees
+        - dec -- in degrees
+    """
+
     t0_master = time.time()
 
     if not os.path.isfile(sql_file_name):
