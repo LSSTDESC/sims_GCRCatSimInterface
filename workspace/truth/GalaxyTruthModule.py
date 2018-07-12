@@ -45,7 +45,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
                    int(pp['galaxy_id'][i_obj]),
                    0,
                    int(pp['has_agn'][i_obj]),
-                   int(['is_sprinkled'][i_obj]),
+                   int(pp['is_sprinkled'][i_obj]),
                    pp['ra'][i_obj], pp['dec'][i_obj],
                    pp['redshift'][i_obj],
                    mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
