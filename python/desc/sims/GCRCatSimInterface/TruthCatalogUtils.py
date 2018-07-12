@@ -21,8 +21,7 @@ from . import TwinklesCatalogZPoint_DC2
 from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ["write_sprinkled_param_db",
-           "get_pointing_htmid",
-           "write_star_truth_db"]
+           "get_pointing_htmid"]
 
 
 _truth_trixel_level = 7  # resolution of trixels in which to separate sources
@@ -304,68 +303,3 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
     assert len(obs_data) == len(htmid_bound_dict)
 
     return htmid_bound_dict, mjd_dict, filter_dict
-
-
-def write_star_truth_db(obs_md, out_file_name, bp_dict):
-    """
-    Write out the truth information for static stellar sources.
-
-    Parameters
-    ----------
-    obs_md is an ObservationMetaData covering the whole survey area
-
-    out_file_name is the name of the sqlite file where the results
-    will be written
-
-    bp_dict is a BandpassDict containing lsst.sims.photUtils.Bandpasses
-    corresponding to the telescope filters.
-
-    Returns
-    -------
-    Nothing
-
-    Writes out a table 'star_truth' containing the RA, Dec,
-    and magnitudes of all of the stars in the survey area to the
-    file specified by out_file_name
-    """
-
-    sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
-
-    db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
-                 port=1433, driver='mssql+pymssql')
-
-    colnames = ['ra', 'decl', 'magNorm', 'sedFilename']
-
-    star_iter = db.query_columns(colnames=colnames,
-                                 obs_metadata=obs_md,
-                                 chunk_size=10000)
-
-    with sqlite3.connect(out_file_name) as conn:
-        cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE star_truth
-                          (ra float, dec float,
-                           u float, g float, r float,
-                           i float, z float, y float)''')
-
-        conn.commit()
-
-        for star_chunk in star_iter:
-            mags = np.NaN*np.ones((len(star_chunk), 6), dtype=float)
-            for i_star, star in enumerate(star_chunk):
-                full_name = os.path.join(sed_dir,
-                                         defaultSpecMap[star['sedFilename']])
-                spec = Sed()
-                spec.readSED_flambda(full_name)
-                fnorm = getImsimFluxNorm(spec, star['magNorm'])
-                spec.multiplyFluxNorm(fnorm)
-                mag_list = bp_dict.magListForSed(spec)
-                mags[i_star] = mag_list
-
-            values = ((star_chunk['ra'][i_obj], star_chunk['dec'][i_obj],
-                       mags[i_obj][0], mags[i_obj][1], mags[i_obj][2],
-                       mags[i_obj][3], mags[i_obj][4], mags[i_obj][5])
-                      for i_obj in range(len(star_chunk)))
-
-            cursor.executemany('''INSERT INTO star_truth
-                                  VALUES (?,?,?,?,?,?,?,?)''', values)
-            conn.commit()
