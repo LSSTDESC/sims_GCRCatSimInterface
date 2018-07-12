@@ -1,3 +1,11 @@
+"""
+This is the script that actually generates the
+truth catalog based on the database of
+parameters generated in generate_truth_params.
+
+It took about 1.5 hours to run for CosmoDC2.
+"""
+
 from StarTruthModule import write_stars_to_truth
 from GalaxyTruthModule import write_galaxies_to_truth
 
