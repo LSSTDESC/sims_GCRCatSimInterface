@@ -211,8 +211,40 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
 def get_pointing_htmid(pointing_dir, opsim_db_name,
                        ra_colname = 'descDitheredRA',
                        dec_colname = 'descDitheredDec'):
+    """
+    For a list of OpSim pointings, find dicts mapping those pointings to:
+    - The trixels filling the pointings
+    - The MJDs of the pointings
+    - The telescope filters of the pointings
 
-    radius = 2.0  # field of view in degrees
+    Parameters
+    ----------
+    pointing_dir contains a series of files that are two columns: obshistid, mjd.
+    The files must each have 'visits' in their name.  These specify the pointings
+    for which we are assembling data.  See:
+        https://github.com/LSSTDESC/DC2_Repo/tree/master/data/Run1.1
+    for an example.
+
+    opsim_db_name is the path to the OpSim database from which to take those pointings
+
+    ra_colname is the column used for RA of the pointing (default:
+    descDitheredRA)
+
+    dec_colname is the column used for the Dec of the pointing (default:
+    descDitheredDec)
+
+    Returns
+    -------
+    htmid_bound_dict -- a dict keyed on ObsHistID.  Values are the list of trixels filling
+    the OpSim pointing, as returned by lsst.sims.utils.HalfSpace.findAllTrixels
+
+    mjd_dict -- a dict keyed on ObsHistID.  Values are the MJD(TAI) of the OpSim pointings.
+
+    filter_dict -- a dict keyed on ObsHistID.  Values are the 'ugrizy' filter of the
+    OpSim pointings.
+    """
+
+    radius = 2.0  # field of view of a pointing in degrees
 
     if not os.path.isfile(opsim_db_name):
         raise RuntimeError("%s is not a valid file name" % opsim_db_name)
