@@ -6,8 +6,8 @@ parameters generated in generate_truth_params.
 It took about 1.5 hours to run for CosmoDC2.
 """
 
-from StarTruthModule import write_stars_to_truth
-from GalaxyTruthModule import write_galaxies_to_truth
+from desc.sims.GCRCatSimInterface.StarTruthModule import write_stars_to_truth
+from desc.sims.GCRCatSimInterface.GalaxyTruthModule import write_galaxies_to_truth
 
 import os
 import sqlite3
