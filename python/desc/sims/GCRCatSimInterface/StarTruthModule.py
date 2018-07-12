@@ -131,6 +131,7 @@ def write_stars_to_truth(output=None,
         if clobber:
             os.unlink(output)
 
+    # the survey area
     obs = ObservationMetaData(pointingRA=55.064,
                               pointingDec=-29.783,
                               mjd=59580.0,
@@ -169,6 +170,7 @@ def write_stars_to_truth(output=None,
             proc.start()
             p_list.append(proc)
 
+            # find healpix positions of the stars
             hp_arr = hp.ang2pix(n_side,
                                 np.radians(star_chunk['ra']),
                                 np.radians(star_chunk['decl']),
