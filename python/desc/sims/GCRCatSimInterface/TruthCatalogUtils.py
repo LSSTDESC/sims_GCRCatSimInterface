@@ -91,15 +91,18 @@ class _ZPointTruth(_SprinkledTruth):
         var = self.column_by_name('varParamStr').astype(str)
         return np.where(np.char.find(var, 'None')==0, 0, 1)
 
+
 class BulgeTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
     cannot_be_null = ['hasBulge', 'sedFilepath']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'bulge'
 
+
 class DiskTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
     cannot_be_null = ['hasDisk', 'sedFilepath']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'disk'
+
 
 class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
     cannot_be_null = ['has_params']
@@ -118,6 +121,7 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
                                            magnorm<100.0))),
                             True,
                             None)
+
 
 def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
                              agn_db=None, yaml_file='proto-dc2_v4.6.1',
