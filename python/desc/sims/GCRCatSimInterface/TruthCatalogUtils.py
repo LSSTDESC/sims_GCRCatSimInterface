@@ -130,9 +130,29 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
     This method writes out a sqlite database that contains truth information
     on all of the sprinkled sources.  It will return the name of the database
     and a list of the tables in that database.
-    ----
 
-    obs is an ObservationMetaData
+    Parameters
+    ----------
+    obs is an ObservationMetaData specifying the entire field of view
+
+    field_ra, field_dec are the centers of the survey region in degrees
+
+    agn_db is the path to the database of AGN parameters
+
+    yaml_file is the yaml file denoting the extragalactic catalog
+    to be loaded (defaulte proto-dc2_v4.6.1)
+
+    out_dir is the directory where the output database will be written
+
+    bp_dict is a BandpassDict
+
+    Returns
+    -------
+    None
+
+    Writes a sqlite database out_dir/sprinkled_objects.sqlite containing
+    the parameters needed to calculate truth information for all
+    extragalactic sources.
     """
     if not os.path.isfile(agn_db):
         raise RuntimeError("%s is not a valid file" % agn_db)
