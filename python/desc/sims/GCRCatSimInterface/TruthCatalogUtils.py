@@ -24,7 +24,9 @@ __all__ = ["write_sprinkled_param_db",
            "get_pointing_htmid",
            "write_star_truth_db"]
 
-_truth_trixel_level = 7
+
+_truth_trixel_level = 7  # resolution of trixels in which to separate sources
+
 
 class _SprinkledTruth(object):
 
@@ -35,6 +37,7 @@ class _SprinkledTruth(object):
 
     def write_header(self, file_handle):
         InstanceCatalog.write_header(self, file_handle)
+
 
 class _SersicTruth(_SprinkledTruth):
     column_outputs = ['uniqueId', 'galaxy_id',
