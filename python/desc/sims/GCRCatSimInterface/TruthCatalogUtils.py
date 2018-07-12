@@ -132,7 +132,7 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
 
     Parameters
     ----------
-    obs is an ObservationMetaData specifying the entire field of view
+    obs is an ObservationMetaData specifying the entire survey area
 
     field_ra, field_dec are the centers of the survey region in degrees
 
