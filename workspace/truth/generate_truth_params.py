@@ -1,3 +1,15 @@
+"""
+This is the script that I used to extract parameters on all
+of the extragalactic sources from protoDC2 and store them
+in a sqlite database.
+
+It took about 5 hours to run on protoDC2 running on Cori's
+login node.
+
+To scale it up for cosmoDC2, we will need to parallelize it
+and submit it to the slurm queue.
+"""
+
 import os
 import tempfile
 import time
@@ -59,6 +71,8 @@ t_start = time.time()
 print('\nwrote\n%s\n' % sql_file_name)
 print('fov %e in %e sec' % (args.fov, time.time()-t_start))
 exit()
+
+### NOTHING BELOW HERE ACTUALLY HAPPENS ###
 
 write_sprinkled_lc(h5_name, obs,
                    pointing_dir, opsim_db,
