@@ -46,7 +46,6 @@ class _SersicTruth(_SprinkledTruth):
                       'internalRv', 'galacticAv', 'galacticRv',
                       'is_sprinkled']
 
-    _bp_dict = None
     _t_start = None
     _sersic_ct = 0
 
@@ -125,7 +124,7 @@ class AgnTruth(_ZPointTruth, SQLSubCatalogMixin, TwinklesCatalogZPoint_DC2):
 
 def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
                              agn_db=None, yaml_file='proto-dc2_v4.6.1',
-                             out_dir=None, bp_dict=None):
+                             out_dir=None):
     """
     This method writes out a sqlite database that contains truth information
     on all of the sprinkled sources.  It will return the name of the database
@@ -144,8 +143,6 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
 
     out_dir is the directory where the output database will be written
 
-    bp_dict is a BandpassDict
-
     Returns
     -------
     None
@@ -161,9 +158,6 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
         raise RuntimeError("%s is not a valid dir" % out_dir)
 
     twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
-
-    BulgeTruth._bp_dict = bp_dict
-    DiskTruth._bp_dict = bp_dict
 
     cat_class_list = [BulgeTruth, DiskTruth, AgnTruth]
     db_class_list = [bulgeDESCQAObject,
