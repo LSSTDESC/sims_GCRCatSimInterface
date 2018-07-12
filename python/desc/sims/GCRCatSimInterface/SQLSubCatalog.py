@@ -6,14 +6,33 @@ from . import SubCatalogMixin
 __all__ = ["SQLSubCatalogMixin"]
 
 class SQLSubCatalogMixin(SubCatalogMixin):
+    """
+    This is a SubCatalog mixin class that writes
+    its output to a sqlite database, rather than
+    a text file.
 
-    _table_name = None
-    _file_name = None
-    _files_written = set()
-    _tables_created = set()
+    Note: subcatalogs in the same CompoundInstanceCatalog
+    will all have to write to the same database file.
+    They can, however, write to different tables within
+    that file.
+
+    Writing the catalog more than once will overwrite
+    the database file.
+    """
+
+    _table_name = None  # name of the table to write to
+    _file_name = None  # name of the file to write to
+
+    _files_written = set()   # these need to be shared among daughter
+    _tables_created = set()  # classes, in case multiple catalogs try
+                             # writing to the same database
 
     def _create_table(self, file_name):
         """
+        Create the database table to write to
+
+        Parameters
+        ----------
         file_name is the full path to the file where we will
         make the database
         """
@@ -32,12 +51,16 @@ class SQLSubCatalogMixin(SubCatalogMixin):
         dtype_map[np.str_] = ('text', str)
         dtype_map[np.object_] = ('text', str)
 
-        self._type_casting = {}
+        self._type_casting = {}  # a dict that stores any casts
+                                 # needed for the catalog columns
 
         with sqlite3.connect(file_name) as conn:
             cursor = conn.cursor()
             creation_cmd = '''CREATE TABLE %s ''' % self._table_name
             creation_cmd += '''('''
+
+            # loop over the columns specified for the catalog,
+            # adding them to the table schema
             for i_col, name in enumerate(self.iter_column_names()):
                 col_type = self.column_by_name(name).dtype.type
                 sql_type = dtype_map[col_type][0]
@@ -50,11 +73,17 @@ class SQLSubCatalogMixin(SubCatalogMixin):
             cursor.execute(creation_cmd)
             conn.commit()
 
+        # log that we have written to the database and created the table
         self._files_written.add(file_name)
         self._tables_created.add(self._table_name)
 
     def _write_recarray(self, input_recarray, file_handle):
         """
+        Write the recarray currently being processed by the catalog
+        class into the SQLite database
+
+        Parameters
+        ----------
         input_recarray is a recarray of data to be written
 
         file_handle is the file handle of the main .txt
@@ -74,6 +103,7 @@ class SQLSubCatalogMixin(SubCatalogMixin):
         file_dir = os.path.dirname(file_handle.name)
         full_file_name = os.path.join(file_dir, self._file_name)
 
+        # delete previous iterations of the file
         if full_file_name not in self._files_written:
             if os.path.exists(full_file_name):
                 os.unlink(full_file_name)
