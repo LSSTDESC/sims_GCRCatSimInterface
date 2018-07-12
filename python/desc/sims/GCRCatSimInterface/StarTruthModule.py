@@ -18,6 +18,32 @@ __all__ = ["write_stars_to_truth"]
 
 
 def write_results(conn, cursor, mag_dict, position_dict):
+    """
+    Write star truth results to the truth table
+
+    Parameters
+    ----------
+    conn is a sqlite3 connection to the database
+
+    cursor is a sqlite3.conneciton.cursor() object
+
+    mag_dict is a dict of mags.  It is keyed on the pid of the
+    Process used to process a chunk of magnitudes.  Each value
+    is a 2-D numpy array of shape (n_obj, n_bandpasses).  It is
+    produced by calculate_magnitudes.
+
+    position_dict is a dict keyed on pid of the Process used to
+    process a chunk of stars.  The values are also dicts, these
+    keyed on 'healpix', 'ra', 'dec', 'id' with the values being
+    arrays of those quantities for the corresponding chunk of
+    stars.
+
+    Returns
+    -------
+    None
+
+    Just writes to the database
+    """
 
     assert len(mag_dict) == len(position_dict)
 
@@ -45,7 +71,14 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
 def calculate_mags(sed_name, mag_norm, out_dict):
     """
-    inputs are numpy arrays 
+    Parameters
+    ----------
+    sed_name is a numpy array of SED names
+
+    mag_norm is a numpy array of magNorms
+
+    out_dict is a multiprocessing.Manager.dict() that will
+    store the magnitudes calculated by this process.
     """
     i_process = mp.current_process().pid
 
@@ -69,6 +102,27 @@ def calculate_mags(sed_name, mag_norm, out_dict):
 
 def write_stars_to_truth(output=None,
                          n_procs=10, n_side=2048, clobber=False):
+    """
+    Write static star truth to the truth catalog
+
+    Parameters
+    ----------
+    output is the path to the output database
+
+    n_procs is the number of Multiprocessing processes to use when
+    calculating magnitudes
+
+    n_side is the nside parameter for calculating healpix locations
+
+    clobber is a boolean.  If True, delete any already existing databases
+    with the same file name as output (default=False)
+
+    Returns
+    -------
+    None
+
+    Just writes to the database
+    """
 
     if output is None:
         raise RuntimeError("Must specify output database")
