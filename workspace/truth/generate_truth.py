@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     print('wrote stars')
 
-    write_galaxies_to_truth(input=param_file,
+    write_galaxies_to_truth(input_db=param_file,
                             output=db_file,
                             n_side=2048,
                             n_procs=20,
