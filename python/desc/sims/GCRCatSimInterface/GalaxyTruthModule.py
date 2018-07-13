@@ -164,21 +164,21 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
 
     Just writes to the database
     """
-    if input is None:
+    if input_db is None:
         raise RuntimeError("Must specify input database")
 
     if output is None:
         raise RuntimeError("Must specify output database")
 
-    if output == input:
-        raise RuntimeError("output == input")
+    if output == input_db:
+        raise RuntimeError("output == input_db")
 
     if os.path.isfile(output):
         if clobber:
             os.unlink(output)
 
-    if not os.path.isfile(input):
-        raise RuntimeError("%s does not exist" % input)
+    if not os.path.isfile(input_db):
+        raise RuntimeError("%s does not exist" % input_db)
 
     query = 'SELECT b.sedFile, b.magNorm, '
     query += 'd.sedFile, d.magNorm, '
@@ -223,7 +223,7 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
     with sqlite3.connect(output) as out_conn:
         out_cursor = out_conn.cursor()
 
-        with sqlite3.connect(input) as in_conn:
+        with sqlite3.connect(input_db) as in_conn:
             in_cursor = in_conn.cursor()
             query = in_cursor.execute(query)
 
