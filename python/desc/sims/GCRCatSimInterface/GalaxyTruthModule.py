@@ -237,16 +237,16 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
                 proc.start()
                 p_list.append(proc)
 
-                ra_arr = np.array([r[8] for r in results])
-                dec_arr = np.array([r[9] for r in results])
+                ra_arr = np.degrees(np.array([r[8] for r in results]))
+                dec_arr = np.degrees(np.array([r[9] for r in results]))
                 hp_arr = hp.ang2pix(n_side, ra_arr, dec_arr,
                                     lonlat=True,
                                     nest=True)
 
                 local_dict = {}
                 local_dict['healpix'] = hp_arr
-                local_dict['ra'] = np.degrees(ra_arr)
-                local_dict['dec'] = np.degrees(dec_arr)
+                local_dict['ra'] = ra_arr
+                local_dict['dec'] = dec_arr
                 local_dict['redshift'] = np.array([r[6] for r in results])
                 local_dict['galaxy_id'] = np.array([r[7] for r in results])
                 local_dict['is_sprinkled'] = [r[10]
