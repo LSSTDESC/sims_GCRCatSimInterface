@@ -91,7 +91,8 @@ def write_results(conn, cursor, mag_dict, position_dict):
                    pp['redshift'][i_obj],
                    mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
                    mm[i_obj][3], mm[i_obj][4], mm[i_obj][5])
-                  for i_obj in range(len(pp['ra'])))
+                  for i_obj in range(len(pp['ra']))
+                  if not np.isnan(mm[i_obj][0]))
 
         cursor.executemany('''INSERT INTO truth
                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
