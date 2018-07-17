@@ -91,13 +91,13 @@ class _ZPointTruth(_SprinkledTruth):
 
 
 class BulgeTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasBulge', 'sedFilepath']
+    cannot_be_null = ['hasBulge', 'sedFilepath', 'magNorm']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'bulge'
 
 
 class DiskTruth(_SersicTruth, SQLSubCatalogMixin, PhoSimDESCQA):
-    cannot_be_null = ['hasDisk', 'sedFilepath']
+    cannot_be_null = ['hasDisk', 'sedFilepath', 'magNorm']
     _file_name = 'sprinkled_objects.sqlite'
     _table_name = 'disk'
 
