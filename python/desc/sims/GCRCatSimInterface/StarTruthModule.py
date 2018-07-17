@@ -159,7 +159,8 @@ def write_stars_to_truth(output=None,
 
         data_iter = db.query_columns(colnames=['simobjid', 'sedFilename',
                                                'magNorm', 'ra', 'decl'],
-                                     obs_metadata=obs)
+                                     obs_metadata=obs,
+                                     chunk_size = 10000)
 
         for star_chunk in data_iter:
 
