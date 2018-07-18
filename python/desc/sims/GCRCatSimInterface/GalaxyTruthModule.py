@@ -189,8 +189,8 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
     query += 'b.is_sprinkled, a.is_agn '
 
     query += 'FROM bulge as b '
-    query += 'LEFT JOIN disk as d ON d.galaxy_id=b.galaxy_id '
-    query += 'LEFT JOIN zpoint as a ON d.galaxy_id=a.galaxy_id '
+    query += 'LEFT JOIN disk as d ON b.galaxy_id=d.galaxy_id '
+    query += 'LEFT JOIN zpoint as a ON b.galaxy_id=a.galaxy_id '
     query += 'WHERE a.is_agn=1 OR a.galaxy_id IS NULL '
 
     query += 'UNION ALL '
@@ -203,8 +203,8 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
     query += 'd.is_sprinkled, a.is_agn '
 
     query += 'FROM disk as d '
-    query += 'LEFT JOIN bulge as b ON b.galaxy_id=d.galaxy_id '
-    query += 'LEFT JOIN zpoint as a on b.galaxy_id=a.galaxy_id '
+    query += 'LEFT JOIN bulge as b ON d.galaxy_id=b.galaxy_id '
+    query += 'LEFT JOIN zpoint as a on d.galaxy_id=a.galaxy_id '
     query += 'WHERE b.galaxy_id IS NULL '
     query += 'AND (a.is_agn=1 OR a.galaxy_id IS NULL)'
 
