@@ -122,33 +122,51 @@ if __name__ == "__main__":
         else:
             os.unlink(out_file_name)
 
-
     cat = GCRCatalogs.load_catalog(args.yaml_file)
 
-    cat_qties = cat.get_quantities(['redshift_true',
-                                    'blackHoleMass', 'blackHoleAccretionRate',
-                                    'galaxy_id'])
+    qty_list = cat.list_all_quantities()
 
-    valid = np.where(np.logical_and(cat_qties['blackHoleMass']>0.0,
-                                    cat_qties['blackHoleAccretionRate']>0.0))
+    use_direct_eddington = ('blackHoleEddingtonRatio' in qty_list)
+
+    if use_direct_eddington:
+        cat_qties = cat.get_quantities(['redshift_true',
+                                        'blackHoleMass',
+                                        'blackHoleEddingtonRatio',
+                                        'galaxy_id'])
+
+        valid = np.where(np.logical_and(cat_qties['blackHoleMass']>0.0,
+                                        cat_qties['blackHoleEddingtonRatio']>0.0))
+    else:
+        cat_qties = cat.get_quantities(['redshift_true',
+                                        'blackHoleMass',
+                                        'blackHoleAccretionRate',
+                                        'galaxy_id'])
+
+        valid = np.where(np.logical_and(cat_qties['blackHoleMass']>0.0,
+                                        cat_qties['blackHoleAccretionRate']>0.0))
+
+        accretion_rate = cat_qties['blackHoleAccretionRate'][valid]
 
     redshift = cat_qties['redshift_true'][valid]
     bhm = cat_qties['blackHoleMass'][valid]
-    accretion_rate = cat_qties['blackHoleAccretionRate'][valid]
     galaxy_id = cat_qties['galaxy_id'][valid]
 
     del cat_qties
     gc.collect()
+
+    if use_direct_eddington:
+        log_edd_ratio = np.log10(cat_qties['blackHoleEddingtonRatio'][valid])
+    else:
+        log_edd_ratio = log_Eddington_ratio(bhm, accretion_rate)
 
     # sort by galaxy_id so that random scatter in AGN parameters
     # is reproducible
     sorted_dex = np.argsort(galaxy_id)
     redshift = redshift[sorted_dex]
     bhm = bhm[sorted_dex]
-    accretion_rate = accretion_rate[sorted_dex]
     galaxy_id = galaxy_id[sorted_dex]
+    log_edd_ratio = log_edd_ratio[sorted_dex]
 
-    log_edd_ratio = log_Eddington_ratio(bhm, accretion_rate)
     abs_mag_i = M_i_from_L_Mass(log_edd_ratio, np.log10(bhm))
 
     obs_mag_i = get_m_i(abs_mag_i, redshift)
