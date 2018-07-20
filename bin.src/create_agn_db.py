@@ -132,30 +132,33 @@ if __name__ == "__main__":
         cat_qties = cat.get_quantities(['redshift_true',
                                         'blackHoleMass',
                                         'blackHoleEddingtonRatio',
-                                        'galaxy_id'])
+                                        'galaxy_id'],
+                                        filters=[(lambda x: x>0.0,
+                                                  'blackHoleMass'),
+                                                 (lambda x: x>0.0,
+                                                  'blackHoleEddingtonRatio')])
 
-        valid = np.where(np.logical_and(cat_qties['blackHoleMass']>0.0,
-                                        cat_qties['blackHoleEddingtonRatio']>0.0))
     else:
         cat_qties = cat.get_quantities(['redshift_true',
                                         'blackHoleMass',
                                         'blackHoleAccretionRate',
-                                        'galaxy_id'])
+                                        'galaxy_id'],
+                                       filters=[(lambda x: x>0.0,
+                                                 'blackHoleMass'),
+                                                (lambda x: x>0.0,
+                                                 'blackHoleAccretionRate')])
 
-        valid = np.where(np.logical_and(cat_qties['blackHoleMass']>0.0,
-                                        cat_qties['blackHoleAccretionRate']>0.0))
+        accretion_rate = cat_qties['blackHoleAccretionRate']
 
-        accretion_rate = cat_qties['blackHoleAccretionRate'][valid]
-
-    redshift = cat_qties['redshift_true'][valid]
-    bhm = cat_qties['blackHoleMass'][valid]
-    galaxy_id = cat_qties['galaxy_id'][valid]
+    redshift = cat_qties['redshift_true']
+    bhm = cat_qties['blackHoleMass']
+    galaxy_id = cat_qties['galaxy_id']
 
     del cat_qties
     gc.collect()
 
     if use_direct_eddington:
-        log_edd_ratio = np.log10(cat_qties['blackHoleEddingtonRatio'][valid])
+        log_edd_ratio = np.log10(cat_qties['blackHoleEddingtonRatio'])
     else:
         log_edd_ratio = log_Eddington_ratio(bhm, accretion_rate)
 
