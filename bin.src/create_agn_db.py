@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     cat = GCRCatalogs.load_catalog(args.yaml_file)
 
-    qty_list = cat.list_all_quantities()
+    qty_list = cat.list_all_quantities(include_native=True)
 
     use_direct_eddington = ('blackHoleEddingtonRatio' in qty_list)
 
