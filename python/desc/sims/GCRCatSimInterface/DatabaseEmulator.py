@@ -110,11 +110,10 @@ class DESCQAChunkIterator(object):
                              for name in self._colnames
                              if descqa_catalog.has_quantity(self._column_map[name][0])]
 
-            self._loaded_qties = descqa_catalog.get_quantities(qty_name_list,
-                                                               native_filters=native_filters)
-
-            for name in qty_name_list:
-                self._loaded_qties[name] = self._loaded_qties[name][self._data_indices]
+            self._loaded_qties = {name:
+                                  descqa_catalog.get_quantities([name],
+                                        native_filters=native_filters)[name][self._data_indices]
+                                  for name in qty_name_list}
 
             # since we are only keeping the objects that will ultimately go into
             # the catalog, we now change self._data_indices to range from 0
