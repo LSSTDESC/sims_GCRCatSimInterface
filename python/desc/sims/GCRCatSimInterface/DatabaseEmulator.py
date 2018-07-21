@@ -92,26 +92,45 @@ class DESCQAChunkIterator(object):
         self._default_values = default_values
         self._chunk_size = int(chunk_size) if chunk_size else None
         self._data_indices = None
+        self._loaded_qties = None
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        if self._data_indices is None:
-            self._init_data_indices()
 
         descqa_catalog = self._descqa_obj._catalog
+
+        if self._data_indices is None:
+            if self._loaded_qties is not None:
+                raise RuntimeError("data_indices is None, but loaded_qties isn't "
+                                   "in DESCQAChunkIterator")
+            self._init_data_indices()
+            qty_name_list = [self._column_map[name][0]
+                             for name in self._colnames
+                             if descqa_catalog.has_quantity(self._column_map[name][0])]
+            self._loaded_qties = descqa_catalog.get_quantities(qty_name_list)
+            for name in qty_name_list:
+                self._loaded_qties[name] = self._loaded_qties[name][self._data_indices]
+
+            # since we are only keeping the objects that will ultimately go into
+            # the catalog, we now change self._data_indices to range from 0
+            # to the length of the final catalog; the indices relative to the
+            # extragalactic catalog have been forgotten
+            self._data_indices = np.arange(0, len(self._data_indices), dtype=int)
 
         data_indices_this = self._data_indices[:self._chunk_size]
 
         if not data_indices_this.size:
+            self._loaded_qties = None
+            self._data_indices = None
             raise StopIteration
 
         self._data_indices = self._data_indices[self._chunk_size:]
 
         # temporarily suppress divide by zero warnings
         with np.errstate(divide='ignore', invalid='ignore'):
-            chunk = dict_to_numpy_array({name: self._descqa_obj._catalog[self._column_map[name][0]][data_indices_this]
+            chunk = dict_to_numpy_array({name: self._loaded_qties[self._column_map[name][0]][data_indices_this]
                                         for name in self._colnames
                                         if descqa_catalog.has_quantity(self._column_map[name][0])})
 
