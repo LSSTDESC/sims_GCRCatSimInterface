@@ -5,10 +5,12 @@ __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQA
            "deg2rad_double", "arcsec2rad", "SNFileDBObject"]
 
 import numpy as np
+import healpy
 from lsst.sims.catalogs.db import fileDBObject
 
 _GCR_IS_AVAILABLE = True
 try:
+    from GCR import GCRQuery
     from GCR import dict_to_numpy_array
     import GCRCatalogs
 except ImportError:
@@ -183,6 +185,7 @@ class DESCQAChunkIterator(object):
         """
 
         native_filters = None
+        descqa_catalog = self._descqa_obj._catalog
 
         if self._obs_metadata is None or self._obs_metadata._boundLength is None:
             self._data_indices = np.arange(self._descqa_obj._catalog['raJ2000'].size)
@@ -194,8 +197,28 @@ class DESCQAChunkIterator(object):
             except (TypeError, IndexError):
                 radius_rad = self._obs_metadata._boundLength
 
-            ra_dec = self._descqa_obj._catalog.get_quantities(['raJ2000', 'decJ2000'],
-                                                              native_filters=native_filters)
+            if 'healpix_pixels' in dir(descqa_catalog):
+                print('filtering on healpixel')
+                ra_rad = self._obs_metadata._pointingRA
+                dec_rad = self._obs_metadata._pointingDec
+                vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                               np.cos(dec_rad)*np.sin(ra_rad),
+                               np.sin(dec_rad)])
+                healpix_list = healpy.query_disc(8, vv, radius_rad,
+                                                 inclusive=True,
+                                                 nest=False)
+
+                healpix_filter = GCRQuery('healpix_pixel==%d' % healpix_list[0])
+                for hh in healpix_list[1:]:
+                    healpix_filter = healpix_filter | GCRQuery('healpix_pixel==%d' % hh)
+
+                if native_filters is None:
+                    native_filters = [healpix_filter]
+                else:
+                    native_filters.append(healpix_filter)
+
+            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000'],
+                                                   native_filters=native_filters)
 
             ra = ra_dec['raJ2000']
             dec = ra_dec['decJ2000']
