@@ -126,6 +126,7 @@ class DESCQAChunkIterator(object):
                 for name in raw_qties.keys():
                     self._loaded_qties[name] = raw_qties[name][self._data_indices]
 
+            print('loaded all quantities')
             # since we are only keeping the objects that will ultimately go into
             # the catalog, we now change self._data_indices to range from 0
             # to the length of the final catalog; the indices relative to the
@@ -208,6 +209,7 @@ class DESCQAChunkIterator(object):
                                                  inclusive=True,
                                                  nest=False)
 
+                print('healpix list ',healpix_list)
                 healpix_filter = GCRQuery('healpix_pixel==%d' % healpix_list[0])
                 for hh in healpix_list[1:]:
                     healpix_filter = healpix_filter | GCRQuery('healpix_pixel==%d' % hh)
