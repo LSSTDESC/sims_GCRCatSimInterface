@@ -195,7 +195,9 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     def _find_closest_sed(colors_this):
         return np.argmin(np.sum((sed_from_galacticus_mags._sed_colors - colors_this)**2, axis=1))
 
-    galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_star by (N_mag - 1)
+    with np.errstate(invalid='ignore', divide='ignore'):
+        galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_star by (N_mag - 1)
+
     sed_idx = np.fromiter(
         (_find_closest_sed(colors_this) for colors_this in galacticus_colors),
         np.int,
