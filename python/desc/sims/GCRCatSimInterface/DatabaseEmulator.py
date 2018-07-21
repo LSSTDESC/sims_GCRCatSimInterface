@@ -105,11 +105,14 @@ class DESCQAChunkIterator(object):
             if self._loaded_qties is not None:
                 raise RuntimeError("data_indices is None, but loaded_qties isn't "
                                    "in DESCQAChunkIterator")
-            self._init_data_indices()
+            native_filters = self._init_data_indices()
             qty_name_list = [self._column_map[name][0]
                              for name in self._colnames
                              if descqa_catalog.has_quantity(self._column_map[name][0])]
-            self._loaded_qties = descqa_catalog.get_quantities(qty_name_list)
+
+            self._loaded_qties = descqa_catalog.get_quantities(qty_name_list,
+                                                               native_filters=native_filters)
+
             for name in qty_name_list:
                 self._loaded_qties[name] = self._loaded_qties[name][self._data_indices]
 
@@ -165,6 +168,13 @@ class DESCQAChunkIterator(object):
     next = __next__
 
     def _init_data_indices(self):
+        """
+        Do the spatial filtering of extragalactic catalog data.
+        Return whatever native_filters need to be applied to
+        the GCR get_quantities() call.
+        """
+
+        native_filters = None
 
         if self._obs_metadata is None or self._obs_metadata._boundLength is None:
             self._data_indices = np.arange(self._descqa_obj._catalog['raJ2000'].size)
@@ -176,8 +186,11 @@ class DESCQAChunkIterator(object):
             except (TypeError, IndexError):
                 radius_rad = self._obs_metadata._boundLength
 
-            ra = self._descqa_obj._catalog['raJ2000']
-            dec = self._descqa_obj._catalog['decJ2000']
+            ra_dec = self._descqa_obj._catalog.get_quantities(['raJ2000', 'decJ2000'],
+                                                              native_filters=native_filters)
+
+            ra = ra_dec['raJ2000']
+            dec = ra_dec['decJ2000']
 
             self._data_indices = np.where(_angularSeparation(ra, dec, \
                     self._obs_metadata._pointingRA, \
@@ -185,6 +198,8 @@ class DESCQAChunkIterator(object):
 
         if self._chunk_size is None:
             self._chunk_size = self._data_indices.size
+
+        return native_filters
 
 
 class DESCQAObject(object):
