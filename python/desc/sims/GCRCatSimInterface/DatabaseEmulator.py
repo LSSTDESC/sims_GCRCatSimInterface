@@ -142,8 +142,8 @@ class DESCQAChunkIterator(object):
         # temporarily suppress divide by zero warnings
         with np.errstate(divide='ignore', invalid='ignore'):
             chunk = dict_to_numpy_array({name: self._loaded_qties[self._column_map[name][0]][data_indices_this]
-                                        for name in self._colnames
-                                        if descqa_catalog.has_quantity(self._column_map[name][0])})
+                                         for name in self._colnames
+                                         if descqa_catalog.has_quantity(self._column_map[name][0])})
 
         need_to_append_defaults = False
         for name in self._colnames:
