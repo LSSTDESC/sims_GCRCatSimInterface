@@ -190,7 +190,6 @@ class DESCQAChunkIterator(object):
                 radius_rad = self._obs_metadata._boundLength
 
             if 'healpix_pixels' in dir(descqa_catalog):
-                print('filtering on healpixel')
                 ra_rad = self._obs_metadata._pointingRA
                 dec_rad = self._obs_metadata._pointingDec
                 vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
@@ -200,7 +199,6 @@ class DESCQAChunkIterator(object):
                                                  inclusive=True,
                                                  nest=False)
 
-                print('healpix list ',healpix_list)
                 healpix_filter = GCRQuery('healpix_pixel==%d' % healpix_list[0])
                 for hh in healpix_list[1:]:
                     healpix_filter = healpix_filter | GCRQuery('healpix_pixel==%d' % hh)
