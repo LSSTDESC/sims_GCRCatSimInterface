@@ -4,6 +4,7 @@ import numpy as np
 import GCRCatalogs
 import scipy.spatial as scipy_spatial
 from lsst.utils import getPackageDir
+from lsst.sims.utils import defaultSpecMap
 from lsst.sims.photUtils import BandpassDict, Bandpass, Sed, CosmologyObject
 
 __all__ = ["sed_filter_names_from_catalog", "sed_from_galacticus_mags"]
@@ -128,7 +129,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     for sed_file_name in os.listdir(_galaxy_sed_dir):
         spec = Sed()
         spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
-        sed_names.append(sed_file_name)
+        sed_names.append(defaultSpecMap[sed_file_name])
         sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
         sed_mag_norm.append(spec.calcMag(imsim_bp))
 

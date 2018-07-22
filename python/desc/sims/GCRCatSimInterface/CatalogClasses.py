@@ -316,7 +316,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
 
     @cached
-    def get_sedFilename(self):
+    def get_sedFilepath(self):
         raw_filename = self.column_by_name('sedFilename_dc2')
         fitted_filename = self.column_by_name('sedFilename_fitted')
         return np.where(np.char.find(raw_filename.astype('str'), 'None')==0,
