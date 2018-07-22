@@ -295,6 +295,7 @@ class InstanceCatalogWriter(object):
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
+            print('wrote disks')
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
             agn_db.field_ra = self.protoDC2_ra
