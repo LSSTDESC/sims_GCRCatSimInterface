@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import GCRCatalogs
+import scipy.spatial as scipy_spatial
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import BandpassDict, Bandpass, Sed, CosmologyObject
 
@@ -164,7 +165,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     a numpy array of SED names and a numpy array of magNorms.
     """
 
-    if (not hasattr(sed_from_galacticus_mags, '_sed_colors') or
+    if (not hasattr(sed_from_galacticus_mags, '_color_tree') or
         not np.allclose(wav_min, sed_from_galacticus_mags._wav_min,
                         atol=1.0e-10, rtol=0.0) or
         not np.allclose(wav_width, sed_from_galacticus_mags._wav_width,
@@ -179,7 +180,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         sed_from_galacticus_mags._sed_names = sed_names
         sed_from_galacticus_mags._mag_norm = sed_mag_norm # N_sed
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
-        sed_from_galacticus_mags._sed_colors = sed_colors # N_sed by (N_mag - 1)
+        sed_from_galacticus_mags._color_tree = scipy_spatial.cKDTree(sed_colors)
         sed_from_galacticus_mags._wav_min = wav_min
         sed_from_galacticus_mags._wav_width = wav_width
 
@@ -192,17 +193,16 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     galacticus_mags_t = np.asarray(galacticus_mags).T # N_star by N_mag
     assert galacticus_mags_t.shape == (len(redshift), sed_from_galacticus_mags._sed_mags.shape[1])
 
-    def _find_closest_sed(colors_this):
-        return np.argmin(np.sum((sed_from_galacticus_mags._sed_colors - colors_this)**2, axis=1))
-
     with np.errstate(invalid='ignore', divide='ignore'):
         galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_star by (N_mag - 1)
 
-    sed_idx = np.fromiter(
-        (_find_closest_sed(colors_this) for colors_this in galacticus_colors),
-        np.int,
-        len(galacticus_colors),
-    ) # N_star
+    (sed_dist,
+     sed_idx) = sed_from_galacticus_mags._color_tree.query(galacticus_colors, k=1)
+
+    # cKDTree returns an invalid index (==len(tree_data)) in cases
+    # where the distance is not finite
+    sed_idx = np.where(sed_idx<len(sed_from_galacticus_mags._sed_names),
+                       sed_idx, 0)
 
     distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(redshift=redshift)
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
