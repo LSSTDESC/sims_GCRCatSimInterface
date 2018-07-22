@@ -113,18 +113,10 @@ class DESCQAChunkIterator(object):
                              if descqa_catalog.has_quantity(self._column_map[name][0])]
 
             self._loaded_qties = {}
-            n_names = len(qty_name_list)
-            d_name = 10
-            for first_name in range(0, n_names, d_name):
-                last_name = first_name + d_name
-                if n_names-last_name < d_name:
-                    last_name = n_names
-
-                raw_qties = descqa_catalog.get_quantities(qty_name_list[first_name:last_name],
+            for name in qty_name_list:
+                raw_qties = descqa_catalog.get_quantities(name,
                                                           native_filters=native_filters)
-
-                for name in raw_qties.keys():
-                    self._loaded_qties[name] = raw_qties[name][self._data_indices]
+                self._loaded_qties[name] = raw_qties[name][self._data_indices]
 
             print('loaded all quantities')
             # since we are only keeping the objects that will ultimately go into
