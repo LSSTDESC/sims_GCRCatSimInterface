@@ -137,7 +137,10 @@ if __name__ == "__main__":
                                         filters=[(lambda x: x>0.0,
                                                   'blackHoleMass'),
                                                  (lambda x: x>0.0,
-                                                  'blackHoleEddingtonRatio')])
+                                                  'blackHoleEddingtonRatio'),
+                                                 (lambda x:
+                                                     np.log10(x)>args.mbh_cut,
+                                                    'blackHoleMass')])
 
     else:
         cat_qties = cat.get_quantities(['redshift_true',
@@ -147,7 +150,10 @@ if __name__ == "__main__":
                                        filters=[(lambda x: x>0.0,
                                                  'blackHoleMass'),
                                                 (lambda x: x>0.0,
-                                                 'blackHoleAccretionRate')])
+                                                 'blackHoleAccretionRate'),
+                                                (lambda x:
+                                                    np.log10()>args.mbh_cut,
+                                                    'blackHoleMass')])
 
         accretion_rate_full = cat_qties['blackHoleAccretionRate']
 
