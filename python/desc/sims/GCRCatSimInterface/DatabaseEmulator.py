@@ -309,8 +309,8 @@ class DESCQAObject(object):
 
         gc is a GCR catalog instance
         """
-        gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
-        gc.add_modifier_on_derived_quantities('decJ2000', deg2rad_double, 'dec_true')
+        gc.add_derived_quantity('raJ2000', deg2rad_double, 'ra_true')
+        gc.add_derived_quantity('decJ2000', deg2rad_double, 'dec_true')
 
     def _transform_catalog(self, gc):
         """
@@ -339,12 +339,12 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('gamma2', gc.get_quantity_modifier('shear_2_phosim'))
         gc.add_quantity_modifier('kappa', gc.get_quantity_modifier('convergence'))
 
-        gc.add_modifier_on_derived_quantities('positionAngle', np.radians, 'position_angle_true')
+        gc.add_derived_quantity('positionAngle', np.radians, 'position_angle_true')
 
-        gc.add_modifier_on_derived_quantities('majorAxis::disk', arcsec2rad, 'size_disk_true')
-        gc.add_modifier_on_derived_quantities('minorAxis::disk', arcsec2rad, 'size_minor_disk_true')
-        gc.add_modifier_on_derived_quantities('majorAxis::bulge', arcsec2rad, 'size_bulge_true')
-        gc.add_modifier_on_derived_quantities('minorAxis::bulge', arcsec2rad, 'size_minor_bulge_true')
+        gc.add_derived_quantity('majorAxis::disk', arcsec2rad, 'size_disk_true')
+        gc.add_derived_quantity('minorAxis::disk', arcsec2rad, 'size_minor_disk_true')
+        gc.add_derived_quantity('majorAxis::bulge', arcsec2rad, 'size_bulge_true')
+        gc.add_derived_quantity('minorAxis::bulge', arcsec2rad, 'size_minor_bulge_true')
 
         gc.add_quantity_modifier('sindex::disk', gc.get_quantity_modifier('sersic_disk'))
         gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
@@ -375,9 +375,9 @@ class DESCQAObject(object):
         """
         # Hacky solution, the number of knots replaces the sersic index,
         # keeping the rest of the sersic parameters, which are directly applicable
-        gc.add_modifier_on_derived_quantities('sindex::knots', lambda x:x, 'n_knots')
-        gc.add_modifier_on_derived_quantities('majorAxis::knots', arcsec2rad, 'size_disk_true')
-        gc.add_modifier_on_derived_quantities('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
+        gc.add_derived_quantity('sindex::knots', lambda x:x, 'n_knots')
+        gc.add_derived_quantity('majorAxis::knots', arcsec2rad, 'size_disk_true')
+        gc.add_derived_quantity('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
 
         # Apply flux correction for the random walk
         add_postfix = []
@@ -386,8 +386,8 @@ class DESCQAObject(object):
                 # The epsilon value is to keep the disk component, so that
                 # the random sequence in extinction parameters is preserved
                 eps = np.finfo(np.float32).eps
-                gc.add_modifier_on_derived_quantities(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
-                gc.add_modifier_on_derived_quantities(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
+                gc.add_derived_quantity(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
+                gc.add_derived_quantity(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
                 add_postfix.append(name)
 
         # Returning these columns so that they can be registered for postfix filtering
