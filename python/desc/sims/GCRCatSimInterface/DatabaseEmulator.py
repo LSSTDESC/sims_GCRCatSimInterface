@@ -140,6 +140,11 @@ class DESCQAChunkIterator(object):
             self._data_indices = None
             raise StopIteration
 
+        print('    chunk %d %d %d' %
+        (data_indices_this[0],
+         data_indices_this[-1],
+         self._data_indices[-1]))
+
         self._data_indices = self._data_indices[self._chunk_size:]
 
         # temporarily suppress divide by zero warnings
