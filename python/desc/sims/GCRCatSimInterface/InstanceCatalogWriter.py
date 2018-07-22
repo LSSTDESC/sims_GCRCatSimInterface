@@ -283,6 +283,7 @@ class InstanceCatalogWriter(object):
             cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
             print('wrote bulges')
+            exit()
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
             disk_db.field_ra = self.protoDC2_ra
