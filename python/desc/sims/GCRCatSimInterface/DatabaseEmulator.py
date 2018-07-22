@@ -93,6 +93,7 @@ class DESCQAChunkIterator(object):
         self._colnames = colnames
         self._default_values = default_values
         self._chunk_size = int(chunk_size) if chunk_size else None
+        self._native_filters = None
         self._data_indices = None
         self._loaded_qties = None
 
@@ -107,7 +108,7 @@ class DESCQAChunkIterator(object):
             if self._loaded_qties is not None:
                 raise RuntimeError("data_indices is None, but loaded_qties isn't "
                                    "in DESCQAChunkIterator")
-            native_filters = self._init_data_indices()
+            self._init_data_indices()
             qty_name_list = [self._column_map[name][0]
                              for name in self._colnames
                              if descqa_catalog.has_quantity(self._column_map[name][0])]
@@ -115,7 +116,7 @@ class DESCQAChunkIterator(object):
             self._loaded_qties = {}
             for name in qty_name_list:
                 raw_qties = descqa_catalog.get_quantities(name,
-                                                          native_filters=native_filters)
+                                                          native_filters=self._native_filters)
                 self._loaded_qties[name] = raw_qties[name][self._data_indices]
 
             # since we are only keeping the objects that will ultimately go into
@@ -172,11 +173,9 @@ class DESCQAChunkIterator(object):
     def _init_data_indices(self):
         """
         Do the spatial filtering of extragalactic catalog data.
-        Return whatever native_filters need to be applied to
-        the GCR get_quantities() call.
         """
 
-        native_filters = None
+        self._native_filters = None
         descqa_catalog = self._descqa_obj._catalog
 
         if self._obs_metadata is None or self._obs_metadata._boundLength is None:
@@ -203,13 +202,13 @@ class DESCQAChunkIterator(object):
                 for hh in healpix_list[1:]:
                     healpix_filter = healpix_filter | GCRQuery('healpix_pixel==%d' % hh)
 
-                if native_filters is None:
-                    native_filters = [healpix_filter]
+                if self._native_filters is None:
+                    self._native_filters = [healpix_filter]
                 else:
-                    native_filters.append(healpix_filter)
+                    self._native_filters.append(healpix_filter)
 
             ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000'],
-                                                   native_filters=native_filters)
+                                                   native_filters=self._native_filters)
 
             ra = ra_dec['raJ2000']
             dec = ra_dec['decJ2000']
@@ -220,8 +219,6 @@ class DESCQAChunkIterator(object):
 
         if self._chunk_size is None:
             self._chunk_size = self._data_indices.size
-
-        return native_filters
 
 
 class DESCQAObject(object):
