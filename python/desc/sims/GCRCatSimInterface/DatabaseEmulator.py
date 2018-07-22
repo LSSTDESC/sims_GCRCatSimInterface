@@ -118,7 +118,6 @@ class DESCQAChunkIterator(object):
                                                           native_filters=native_filters)
                 self._loaded_qties[name] = raw_qties[name][self._data_indices]
 
-            print('loaded all quantities')
             # since we are only keeping the objects that will ultimately go into
             # the catalog, we now change self._data_indices to range from 0
             # to the length of the final catalog; the indices relative to the
@@ -131,11 +130,6 @@ class DESCQAChunkIterator(object):
             self._loaded_qties = None
             self._data_indices = None
             raise StopIteration
-
-        print('    chunk %d %d %d' %
-        (data_indices_this[0],
-         data_indices_this[-1],
-         self._data_indices[-1]))
 
         self._data_indices = self._data_indices[self._chunk_size:]
 
