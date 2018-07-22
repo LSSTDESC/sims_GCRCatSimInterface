@@ -189,7 +189,7 @@ class DESCQAChunkIterator(object):
             except (TypeError, IndexError):
                 radius_rad = self._obs_metadata._boundLength
 
-            if 'healpix_pixels' in dir(descqa_catalog):
+            if 'healpix_pixel' in descqa_catalog._native_filter_quantities:
                 ra_rad = self._obs_metadata._pointingRA
                 dec_rad = self._obs_metadata._pointingDec
                 vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
