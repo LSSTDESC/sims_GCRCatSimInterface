@@ -198,14 +198,19 @@ class DESCQAChunkIterator(object):
                                                  inclusive=True,
                                                  nest=False)
 
-                healpix_filter = GCRQuery('healpix_pixel==%d' % healpix_list[0])
-                for hh in healpix_list[1:]:
-                    healpix_filter = healpix_filter | GCRQuery('healpix_pixel==%d' % hh)
+                healpix_filter = None
+                for hh in healpix_list:
+                    local_filter = GCRQuery('healpix_pixel==%d' % hh)
+                    if healpix_filter is None:
+                        healpix_filter = local_filter
+                    else:
+                        healpix_filter |= local_filter
 
-                if self._native_filters is None:
-                    self._native_filters = [healpix_filter]
-                else:
-                    self._native_filters.append(healpix_filter)
+                if healpix_filter is not None:
+                    if self._native_filters is None:
+                        self._native_filters = [healpix_filter]
+                    else:
+                        self._native_filters.append(healpix_filter)
 
             ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000'],
                                                    native_filters=self._native_filters)
