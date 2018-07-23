@@ -5,10 +5,12 @@ __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQA
            "deg2rad_double", "arcsec2rad", "SNFileDBObject"]
 
 import numpy as np
+import healpy
 from lsst.sims.catalogs.db import fileDBObject
 
 _GCR_IS_AVAILABLE = True
 try:
+    from GCR import GCRQuery
     from GCR import dict_to_numpy_array
     import GCRCatalogs
 except ImportError:
@@ -91,29 +93,52 @@ class DESCQAChunkIterator(object):
         self._colnames = colnames
         self._default_values = default_values
         self._chunk_size = int(chunk_size) if chunk_size else None
+        self._native_filters = None
         self._data_indices = None
+        self._loaded_qties = None
 
     def __iter__(self):
         return self
 
     def __next__(self):
-        if self._data_indices is None:
-            self._init_data_indices()
 
         descqa_catalog = self._descqa_obj._catalog
+
+        if self._data_indices is None:
+            if self._loaded_qties is not None:
+                raise RuntimeError("data_indices is None, but loaded_qties isn't "
+                                   "in DESCQAChunkIterator")
+            self._init_data_indices()
+            qty_name_list = [self._column_map[name][0]
+                             for name in self._colnames
+                             if descqa_catalog.has_quantity(self._column_map[name][0])]
+
+            self._loaded_qties = {}
+            for name in qty_name_list:
+                raw_qties = descqa_catalog.get_quantities(name,
+                                                          native_filters=self._native_filters)
+                self._loaded_qties[name] = raw_qties[name][self._data_indices]
+
+            # since we are only keeping the objects that will ultimately go into
+            # the catalog, we now change self._data_indices to range from 0
+            # to the length of the final catalog; the indices relative to the
+            # extragalactic catalog have been forgotten
+            self._data_indices = np.arange(0, len(self._data_indices), dtype=int)
 
         data_indices_this = self._data_indices[:self._chunk_size]
 
         if not data_indices_this.size:
+            self._loaded_qties = None
+            self._data_indices = None
             raise StopIteration
 
         self._data_indices = self._data_indices[self._chunk_size:]
 
         # temporarily suppress divide by zero warnings
         with np.errstate(divide='ignore', invalid='ignore'):
-            chunk = dict_to_numpy_array({name: self._descqa_obj._catalog[self._column_map[name][0]][data_indices_this]
-                                        for name in self._colnames
-                                        if descqa_catalog.has_quantity(self._column_map[name][0])})
+            chunk = dict_to_numpy_array({name: self._loaded_qties[self._column_map[name][0]][data_indices_this]
+                                         for name in self._colnames
+                                         if descqa_catalog.has_quantity(self._column_map[name][0])})
 
         need_to_append_defaults = False
         for name in self._colnames:
@@ -146,6 +171,12 @@ class DESCQAChunkIterator(object):
     next = __next__
 
     def _init_data_indices(self):
+        """
+        Do the spatial filtering of extragalactic catalog data.
+        """
+
+        self._native_filters = None
+        descqa_catalog = self._descqa_obj._catalog
 
         if self._obs_metadata is None or self._obs_metadata._boundLength is None:
             self._data_indices = np.arange(self._descqa_obj._catalog['raJ2000'].size)
@@ -157,8 +188,35 @@ class DESCQAChunkIterator(object):
             except (TypeError, IndexError):
                 radius_rad = self._obs_metadata._boundLength
 
-            ra = self._descqa_obj._catalog['raJ2000']
-            dec = self._descqa_obj._catalog['decJ2000']
+            if 'healpix_pixel' in descqa_catalog._native_filter_quantities:
+                ra_rad = self._obs_metadata._pointingRA
+                dec_rad = self._obs_metadata._pointingDec
+                vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                               np.cos(dec_rad)*np.sin(ra_rad),
+                               np.sin(dec_rad)])
+                healpix_list = healpy.query_disc(8, vv, radius_rad,
+                                                 inclusive=True,
+                                                 nest=False)
+
+                healpix_filter = None
+                for hh in healpix_list:
+                    local_filter = GCRQuery('healpix_pixel==%d' % hh)
+                    if healpix_filter is None:
+                        healpix_filter = local_filter
+                    else:
+                        healpix_filter |= local_filter
+
+                if healpix_filter is not None:
+                    if self._native_filters is None:
+                        self._native_filters = [healpix_filter]
+                    else:
+                        self._native_filters.append(healpix_filter)
+
+            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000'],
+                                                   native_filters=self._native_filters)
+
+            ra = ra_dec['raJ2000']
+            dec = ra_dec['decJ2000']
 
             self._data_indices = np.where(_angularSeparation(ra, dec, \
                     self._obs_metadata._pointingRA, \
@@ -251,8 +309,8 @@ class DESCQAObject(object):
 
         gc is a GCR catalog instance
         """
-        gc.add_modifier_on_derived_quantities('raJ2000', deg2rad_double, 'ra_true')
-        gc.add_modifier_on_derived_quantities('decJ2000', deg2rad_double, 'dec_true')
+        gc.add_derived_quantity('raJ2000', deg2rad_double, 'ra_true')
+        gc.add_derived_quantity('decJ2000', deg2rad_double, 'dec_true')
 
     def _transform_catalog(self, gc):
         """
@@ -281,12 +339,12 @@ class DESCQAObject(object):
         gc.add_quantity_modifier('gamma2', gc.get_quantity_modifier('shear_2_phosim'))
         gc.add_quantity_modifier('kappa', gc.get_quantity_modifier('convergence'))
 
-        gc.add_modifier_on_derived_quantities('positionAngle', np.radians, 'position_angle_true')
+        gc.add_derived_quantity('positionAngle', np.radians, 'position_angle_true')
 
-        gc.add_modifier_on_derived_quantities('majorAxis::disk', arcsec2rad, 'size_disk_true')
-        gc.add_modifier_on_derived_quantities('minorAxis::disk', arcsec2rad, 'size_minor_disk_true')
-        gc.add_modifier_on_derived_quantities('majorAxis::bulge', arcsec2rad, 'size_bulge_true')
-        gc.add_modifier_on_derived_quantities('minorAxis::bulge', arcsec2rad, 'size_minor_bulge_true')
+        gc.add_derived_quantity('majorAxis::disk', arcsec2rad, 'size_disk_true')
+        gc.add_derived_quantity('minorAxis::disk', arcsec2rad, 'size_minor_disk_true')
+        gc.add_derived_quantity('majorAxis::bulge', arcsec2rad, 'size_bulge_true')
+        gc.add_derived_quantity('minorAxis::bulge', arcsec2rad, 'size_minor_bulge_true')
 
         gc.add_quantity_modifier('sindex::disk', gc.get_quantity_modifier('sersic_disk'))
         gc.add_quantity_modifier('sindex::bulge', gc.get_quantity_modifier('sersic_bulge'))
@@ -317,9 +375,9 @@ class DESCQAObject(object):
         """
         # Hacky solution, the number of knots replaces the sersic index,
         # keeping the rest of the sersic parameters, which are directly applicable
-        gc.add_modifier_on_derived_quantities('sindex::knots', lambda x:x, 'n_knots')
-        gc.add_modifier_on_derived_quantities('majorAxis::knots', arcsec2rad, 'size_disk_true')
-        gc.add_modifier_on_derived_quantities('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
+        gc.add_derived_quantity('sindex::knots', lambda x:x, 'n_knots')
+        gc.add_derived_quantity('majorAxis::knots', arcsec2rad, 'size_disk_true')
+        gc.add_derived_quantity('minorAxis::knots', arcsec2rad, 'size_minor_disk_true')
 
         # Apply flux correction for the random walk
         add_postfix = []
@@ -328,8 +386,8 @@ class DESCQAObject(object):
                 # The epsilon value is to keep the disk component, so that
                 # the random sequence in extinction parameters is preserved
                 eps = np.finfo(np.float32).eps
-                gc.add_modifier_on_derived_quantities(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
-                gc.add_modifier_on_derived_quantities(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
+                gc.add_derived_quantity(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
+                gc.add_derived_quantity(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
                 add_postfix.append(name)
 
         # Returning these columns so that they can be registered for postfix filtering

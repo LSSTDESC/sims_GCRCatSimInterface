@@ -286,8 +286,9 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                'Neither appear to be in self._cannot_be_null.\n'
                                'self._cannot_be_null: %s' % self._cannot_be_null)
 
-        mag_array = np.array([-2.5*np.log10(self.column_by_name(name))
-                              for name in flux_names])
+        with np.errstate(divide='ignore', invalid='ignore'):
+            mag_array = np.array([-2.5*np.log10(self.column_by_name(name))
+                                  for name in flux_names])
 
         redshift_array = self.column_by_name('true_redshift')
 
@@ -315,7 +316,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
 
     @cached
-    def get_sedFilename(self):
+    def get_sedFilepath(self):
         raw_filename = self.column_by_name('sedFilename_dc2')
         fitted_filename = self.column_by_name('sedFilename_fitted')
         return np.where(np.char.find(raw_filename.astype('str'), 'None')==0,
