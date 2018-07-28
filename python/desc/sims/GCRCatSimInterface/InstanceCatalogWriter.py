@@ -71,7 +71,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
         in lsst.sims.catalogs.db.CatalogDBObject
     sedRootDir : string
         root directory for writing spectra corresponding to pointings. The spectra
-        will be written to the directory `sedRootDir/Dynamic/`
+       will be written to the directory `sedRootDir/Dynamic/`
     idColKey : string, defaults to values for Run1.1
         describes the input parameters to the database as interpreted from the
         csv file.
@@ -118,14 +118,9 @@ class InstanceCatalogWriter(object):
     """
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
-<<<<<<< HEAD
-                 protoDC2_ra=0, protoDC2_dec=0,
-                 agn_db_name=None, sprinkler=False):
-=======
                  imsim_catalog=False, protoDC2_ra=0, protoDC2_dec=0,
                  agn_db_name=None, sprinkler=False, host_image_dir=None,
                  host_data_dir=None):
->>>>>>> Added Nan's lensing files
         """
         Parameters
         ----------
@@ -234,17 +229,14 @@ class InstanceCatalogWriter(object):
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
         knots_name = 'knots_cat_%d.txt' % obsHistID
-<<<<<<< HEAD
 
         # keep track of all of the non-supernova InstanceCatalogs that
         # have been written so that we can remember to includeobj them
         # in the PhoSim catalog
         written_catalog_names = []
-=======
         sprinkled_host_name = 'spr_hosts_%d.txt' % obsHistID
->>>>>>> Added Nan's lensing files
-
-	# SN Data
+	
+     	# SN Data
         snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
         sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
         sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
@@ -259,20 +251,15 @@ class InstanceCatalogWriter(object):
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
-<<<<<<< HEAD
         sn_names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-                        for snpop in snpopcsvs)
-=======
-        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
                          for snpop in snpopcsvs)
         object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
-        make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, cat_name),
-                            imsim_catalog=self.imsim_catalog,
-                            object_catalogs=object_catalogs)
->>>>>>> Added Nan's lensing files
+ #       make_instcat_header(self.star_db, obs_md,
+ #                           os.path.join(out_dir, cat_name),
+ #                           imsim_catalog=self.imsim_catalog,
+ #                           object_catalogs=object_catalogs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -400,8 +387,6 @@ class InstanceCatalogWriter(object):
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
 
-<<<<<<< HEAD
-=======
             host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
             host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
                                     os.path.join(self.host_data_dir, 'agn_host_bulge.csv.gz'),
@@ -416,8 +401,6 @@ class InstanceCatalogWriter(object):
                                     os.path.join(self.host_data_dir, 'sne_host_disk.csv.gz'),
                                     os.path.join(out_dir, sprinkled_host_name), append=True)
 
-        
->>>>>>> Added Nan's lensing files
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
             phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
@@ -430,9 +413,9 @@ class InstanceCatalogWriter(object):
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
-        object_catalogs = written_catalog_names + \
+        object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
                           ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
-
+          
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, phosim_cat_name),
                             object_catalogs=object_catalogs)
