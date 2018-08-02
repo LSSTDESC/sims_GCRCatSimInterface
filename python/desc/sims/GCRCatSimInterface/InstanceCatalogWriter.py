@@ -136,6 +136,8 @@ class InstanceCatalogWriter(object):
             Minimum number of objects for phosim.py to simulate a chip.
         proper_motion: bool [True]
             Flag to enable application of proper motion to stars.
+        imsim_catalog: bool [False]
+            Flag to write an imsim-style object catalog.
         protoDC2_ra: float [0]
             Desired RA (J2000 degrees) of protoDC2 center.
         protoDC2_dec: float [0]
@@ -159,6 +161,7 @@ class InstanceCatalogWriter(object):
         self.min_mag = min_mag
         self.minsource = minsource
         self.proper_motion = proper_motion
+        self.imsim_catalog = imsim_catalog
         self.protoDC2_ra = protoDC2_ra
         self.protoDC2_dec = protoDC2_dec
 
@@ -224,7 +227,7 @@ class InstanceCatalogWriter(object):
         # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
 
-        phosim_cat_name = 'phosim_cat_%d.txt' % obsHistID
+        cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
@@ -251,15 +254,15 @@ class InstanceCatalogWriter(object):
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
-        sn_names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
                          for snpop in snpopcsvs)
         object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
 
- #       make_instcat_header(self.star_db, obs_md,
- #                           os.path.join(out_dir, cat_name),
+        make_instcat_header(self.star_db, obs_md,
+                            os.path.join(out_dir, cat_name),
  #                           imsim_catalog=self.imsim_catalog,
- #                           object_catalogs=object_catalogs)
+                            object_catalogs=object_catalogs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -403,22 +406,24 @@ class InstanceCatalogWriter(object):
 
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
-            phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
+            phosimcatalog = snphosimcat(snpop, tableName=names[i],
                                         sedRootDir=out_dir, obs_metadata=obs_md,
                                         objectIDtype=i+42)
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = sn_names[i] +'_cat_{}.txt'.format(obsHistID)
+            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
-        object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
-          
-        make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, phosim_cat_name),
-                            object_catalogs=object_catalogs)
+            object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
+                                ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+
+ #       if self.imsim_catalog:
+#
+ #           imsim_cat = 'imsim_cat_%i.txt' % obsHistID
+  #          command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
+  #          subprocess.check_call(command, shell=True)  
 
         if os.path.exists(os.path.join(out_dir, gal_name)):
             full_name = os.path.join(out_dir, gal_name)

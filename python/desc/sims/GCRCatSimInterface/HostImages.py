@@ -15,10 +15,17 @@ class hostImage(object):
 
 
     def format_catalog(self, df_line, fits_file_name, image_dir):
-        #Formats the output instance catalog to include entries for the FITS stamps produced by generate_lensed_host_***.py
-		# df_line is  
-		# fits_file_name is the filename of the FITS stamp
-		# image_dir is the location of the FITS stamps 
+        """Formats the output instance catalog to include entries for the FITS stamps produced by generate_lensed_host_***.py
+		
+		Parameters: 
+		-----------
+		df_line: string
+			pandas data frame line
+		fits_file_name: string
+			the filename of the FITS stamp
+		image_dir: string 
+			the location of the FITS stamps 
+        	"""
         fits_info = fits_file_name.split('_')
         lens_id = np.int(fits_info[0])
         sys_magNorm = np.float(fits_info[1])
@@ -41,20 +48,26 @@ class hostImage(object):
                                                                       sys_magNorm,
                                                                       df_line['sedFilepath'],
                                                                       df_line['redshift'],
-                                                                      str(sys_id) + "_" + str(sys_magNorm) + "_" + str(gal_type) + ".fits",
+                                                                      str(lens_id) + "_" + str(sys_magNorm) + "_" + str(gal_type) + ".fits",
                                                                       df_line['internalAv'],
                                                                       df_line['internalRv'],
                                                                       df_line['galacticAv'],
                                                                       df_line['galacticRv'])
 
-
+       
         return cat_str
 
     def write_host_cat(self, image_dir, input_cat, output_cat, append=False):
-       #Adds entries for each lensed host FITS stamp to output instance catalog
-	   # image_dir (STR) is the location of the FITS stamps 
-	   # input_cat (STR) is the list of FITS stamps to be read in
-	   # output_cat (STR) is the location of the output instance catalogs
+        """Adds entries for each lensed host FITS stamp to output instance catalog
+        Parameters:
+        -----------
+        image_dir: string
+            the location of the FITS stamps 
+        input_cat: string
+            the list of FITS stamps to be read in
+        output_cat: string
+            the location of the output instance catalogs """
+        
         host_df = pd.read_csv(input_cat)
         ang_sep_list = []
         image_list = os.listdir(image_dir)
