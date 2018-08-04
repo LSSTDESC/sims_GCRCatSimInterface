@@ -25,11 +25,11 @@ def load_in_data_agn():
     """
     agn_host_bulge = pd.read_csv(os.path.join(data_dir,'agn_host_bulge.csv.gz'))
     agn_host_disk = pd.read_csv(os.path.join(data_dir, 'agn_host_disk.csv.gz'))
-    
+
     idx = agn_host_bulge['image_number'] == 0
     ahb_purged = agn_host_bulge[:][idx]
     ahd_purged = agn_host_disk[:][idx]
-    
+
     lens_list = pyfits.open(os.path.join(twinkles_data_dir,
                                          'twinkles_lenses_v2.fits'))
 
@@ -39,9 +39,9 @@ def load_in_data_agn():
 def create_cats_agns(index, hdu_list, ahb_list, ahd_list):
     """
     Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
-    
-    Parameters: 
-        -----------
+
+    Parameters:
+    -----------
     index: int
         Index for pandas data frame
     hdu_list:
@@ -50,7 +50,7 @@ def create_cats_agns(index, hdu_list, ahb_list, ahd_list):
         row of data frame that contains lens galaxy parameters for the galactic bulge
     ahd_list:
         row of data frame that contains lens galaxy parameters for the galactic disk """
-    
+
     twinkles_ID = ahd['twinkles_system'][index]
     UID_lens = ahd['uniqueId_lens'][index]
     Ra_lens = ahd['raPhoSim_lens'][index]

@@ -57,7 +57,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     """convenience function for writing out phosim instance catalogs for
     different SN populations in DC2 Run 1.1 that have been serialized to
     csv files.
-
+make_inst
     Parameters:
     -----------
     fname : string
@@ -146,6 +146,10 @@ class InstanceCatalogWriter(object):
             Filename of the agn parameter sqlite db file.
         sprinkler: bool [False]
             Flag to enable the Sprinkler.
+        host_image_dir: string
+            The location of the FITS images of lensed AGN/SNe hosts produced by generate_lensed_hosts_***.py
+        host_data_dir: string
+            Location of csv file of lensed host data created by the sprinkler
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
@@ -227,7 +231,7 @@ class InstanceCatalogWriter(object):
         # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
 
-        cat_name = 'phosim_cat_%d.txt' % obsHistID
+        phosim_cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
@@ -254,15 +258,15 @@ class InstanceCatalogWriter(object):
                          sncsv_hosted_uDDF,
                          sncsv_hosted_pDC2])
 
-        names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
+        sn_names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
                          for snpop in snpopcsvs)
-        object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+  #      object_catalogs = written_catalog_names + [sprinkled_host_name]+ \
+  #                        ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
-        make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, cat_name),
+  #      make_instcat_header(self.star_db, obs_md,
+  #                          os.path.join(out_dir, phosim_cat_name),
  #                           imsim_catalog=self.imsim_catalog,
-                            object_catalogs=object_catalogs)
+  #                          object_catalogs=object_catalogs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -283,7 +287,7 @@ class InstanceCatalogWriter(object):
         written_catalog_names.append(star_name)
 
         # TODO: Find a better way of checking for catalog type
-        if 'knots' in self.descqa_catalog:
+        if 'knoimsimts' in self.descqa_catalog:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
             knots_db.field_ra = self.protoDC2_ra
             knots_db.field_dec = self.protoDC2_dec
@@ -406,24 +410,30 @@ class InstanceCatalogWriter(object):
 
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
-            phosimcatalog = snphosimcat(snpop, tableName=names[i],
+            phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
                                         sedRootDir=out_dir, obs_metadata=obs_md,
                                         objectIDtype=i+42)
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = names[i] +'_cat_{}.txt'.format(obsHistID)
+            snOutFile = sn_names[i] +'_cat_{}.txt'.format(obsHistID)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
-            object_catalogs = [star_name, gal_name, sprinkled_host_name] + \
-                                ['{}_cat_{}.txt'.format(x, obsHistID) for x in names]
+        object_catalogs = written_catalog_names + [sprinkled_host_name]+\
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
- #       if self.imsim_catalog:
-#
- #           imsim_cat = 'imsim_cat_%i.txt' % obsHistID
-  #          command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
-  #          subprocess.check_call(command, shell=True)  
+        if self.imsim_catalog:
+            imsim_cat = 'imsim_cat_%i.txt' % obsHistID
+            command = 'cd %(out_dir)s; cat %(cat_name)s %(star_name)s %(gal_name)s %(knots_name)s > %(imsim_cat)s' % locals()
+            subprocess.check_call(command, shell=True) 
+
+        make_instcat_header(self.star_db, obs_md,
+                            os.path.join(out_dir, phosim_cat_name),
+                            imsim_catalog=self.imsim_catalog,
+                            object_catalogs=object_catalogs)
+
+   
 
         if os.path.exists(os.path.join(out_dir, gal_name)):
             full_name = os.path.join(out_dir, gal_name)
@@ -445,7 +455,7 @@ class InstanceCatalogWriter(object):
             os.unlink(full_name)
 
 
-def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
+def make_instcat_header(star_db, obs_md, outfile, imsim_catalog, object_catalogs=(),
                         nsnap=1, vistime=30., minsource=100):
     """
     Write the header part of an instance catalog.
@@ -456,6 +466,8 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
         InstanceCatalog object for stars.  Connects to the UW fatboy db server.
     obs_md: lsst.sims.utils.ObservationMetaData
         Observation metadata object.
+    imsim_catalog: string
+        Name of imsim catalog if imsim_catalog = TRUE in main routine
     object_catalogs: sequence [()]
         Object catalog names to include in base phosim instance catalog.
         Defaults to an empty tuple.
