@@ -1,6 +1,3 @@
-#matplotlib inline
-#config InlineBackend.figure_format = 'retina'
-
 import numpy as np
 import os
 import pylab as pl
@@ -11,7 +8,7 @@ import pandas as pd
 import scipy.special as ss
 import om10_lensing_equations as ole
 
-outdefault = os.path.join(os.path.abspath("../")+'/data/outputs')
+outdefault = os.path.join(os.path.dirname(__file__),'../data','outputs')
 parser = argparse.ArgumentParser(description='The location of the desired output directory')
 parser.add_argument("--outdir", dest='outdir1', type=str, default = outdefault,
                     help='Output location for FITS stamps')
@@ -133,7 +130,9 @@ def check_random_locations():
     return 0
 
 def load_in_data_sne():
-"""Reads in catalogs of host galaxy bulge and disk as well as om10 lenses """
+    """
+    Reads in catalogs of host galaxy bulge and disk as well as om10 lenses
+    """
 
     sne_host_bulge = pd.read_csv(os.path.join(data_dir,'sne_host_bulge.csv.gz'))
     sne_host_disk = pd.read_csv(os.path.join(data_dir,'sne_host_disk.csv.gz'))
@@ -152,7 +151,8 @@ def load_in_data_sne():
 
 
 def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
-"""Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
+    """
+    Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
     Parameters: 
         -----------
     index: int
@@ -343,7 +343,11 @@ if __name__ == '__main__':
 
     hdulist, ahb, ahd = load_in_data_sne()
 
+    message_row = 0
+    message_freq = 50
     for i, row in ahb.iterrows():
-        print ("working on system ", i , "of", max(ahb.index))
+        if i >= message_row:
+            print ("working on system ", i , "of", max(ahb.index))
+            message_row += message_freq
         lensP, srcPb, srcPd = create_cats_sne(i, hdulist, ahb, ahd)
         generate_lensed_host(xi1, xi2, lensP, srcPb, srcPd)      

@@ -1,6 +1,3 @@
-#matplotlib inline
-#config InlineBackend.figure_format = 'retina'
-
 import numpy as np
 import os
 import argparse
@@ -11,18 +8,20 @@ import pandas as pd
 import scipy.special as ss
 import om10_lensing_equations as ole
 
-outdefault = os.path.join(os.path.abspath("../")+'/data/outputs')
+outdefault = os.path.join(os.path.dirname(__file__),'../data','outputs')
 parser = argparse.ArgumentParser(description='The location of the desired output directory')
 parser.add_argument("--outdir", dest='outdir1', type=str, default = outdefault,
                     help='Output location for FITS stamps')
 args = parser.parse_args()
 outdir = args.outdir1
 data_dir = os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data')
-print('woof',data_dir)
 twinkles_data_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
 
 def load_in_data_agn():
-"""Reads in catalogs of host galaxy bulge and disk as well as om10 lenses	"""
+
+    """
+    Reads in catalogs of host galaxy bulge and disk as well as om10 lenses
+    """
     agn_host_bulge = pd.read_csv(os.path.join(data_dir,'agn_host_bulge.csv.gz'))
     agn_host_disk = pd.read_csv(os.path.join(data_dir, 'agn_host_disk.csv.gz'))
     
@@ -37,7 +36,9 @@ def load_in_data_agn():
 
 
 def create_cats_agns(index, hdu_list, ahb_list, ahd_list):
-"""Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
+    """
+    Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
+    
     Parameters: 
         -----------
     index: int
@@ -157,7 +158,8 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
 
 
 def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
-    """Does ray tracing of light from host galaxies using a non-singular isothermal ellipsoid profile.  
+    """Does ray tracing of light from host galaxies using
+    a non-singular isothermal ellipsoid profile.  
     Ultimately writes out a FITS image of the result of the ray tracing.	"""
     dsx  = 0.01
     xlc1 = lens_P['xl1']                # x position of the lens, arcseconds
@@ -211,7 +213,11 @@ if __name__ == '__main__':
 
     hdulist, ahb, ahd = load_in_data_agn()
 
+    message_row = 0
+    message_freq = 50
     for i, row in ahb.iterrows():
-        print ("working on system ", i , "of", max(ahb.index))
+        if i >= message_row:
+            print ("working on system ", i , "of", max(ahb.index))
+            message_row += message_freq
         lensP, srcPb, srcPd = create_cats_agns(i, hdulist, ahb, ahd)
         generate_lensed_host(xi1, xi2, lensP, srcPb, srcPd)    
