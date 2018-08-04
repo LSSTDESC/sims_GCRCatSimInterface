@@ -67,4 +67,3 @@ with warnings.catch_warnings():
 
     for obsHistID in args.ids:
         instcat_writer.write_catalog(obsHistID, out_dir=args.out_dir, fov=args.fov)
-
