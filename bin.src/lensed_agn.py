@@ -4,7 +4,9 @@ import os
 
 parser = argparse.ArgumentParser(description='FITS stamp generator')
 parser.add_argument('--outdir', type=str,
-                    help='Output location for FITS stamps', default=os.path.join(os.path.abspath("../")+'/data/outputs'))
+                    help='Output location for FITS stamps',
+                    default=os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 
+                                         'data', 'outputs'))
 
 args = parser.parse_args()
 

@@ -8,14 +8,15 @@ import pandas as pd
 import scipy.special as ss
 import om10_lensing_equations as ole
 
-outdefault = os.path.join(os.path.dirname(__file__),'../data','outputs')
+data_dir = os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data')
+twinkles_data_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
+outdefault = os.path.join(data_dir,'outputs')
+
 parser = argparse.ArgumentParser(description='The location of the desired output directory')
 parser.add_argument("--outdir", dest='outdir1', type=str, default = outdefault,
                     help='Output location for FITS stamps')
 args = parser.parse_args()
 outdir = args.outdir1
-data_dir = os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data')
-twinkles_data_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
 
 def load_in_data_agn():
 
