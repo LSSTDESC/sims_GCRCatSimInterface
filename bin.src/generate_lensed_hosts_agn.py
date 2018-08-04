@@ -1,6 +1,3 @@
-#matplotlib inline
-#config InlineBackend.figure_format = 'retina'
-
 import numpy as np
 import os
 import argparse
@@ -11,25 +8,28 @@ import pandas as pd
 import scipy.special as ss
 import om10_lensing_equations as ole
 
-outdefault = os.path.join(os.path.abspath("../")+'/data/outputs')
+data_dir = os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data')
+twinkles_data_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
+outdefault = os.path.join(data_dir,'outputs')
+
 parser = argparse.ArgumentParser(description='The location of the desired output directory')
 parser.add_argument("--outdir", dest='outdir1', type=str, default = outdefault,
                     help='Output location for FITS stamps')
 args = parser.parse_args()
 outdir = args.outdir1
-data_dir = os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data')
-print('woof',data_dir)
-twinkles_data_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
 
 def load_in_data_agn():
-#Reads in catalogs of host galaxy bulge and disk as well as om10 lenses	
+
+    """
+    Reads in catalogs of host galaxy bulge and disk as well as om10 lenses
+    """
     agn_host_bulge = pd.read_csv(os.path.join(data_dir,'agn_host_bulge.csv.gz'))
     agn_host_disk = pd.read_csv(os.path.join(data_dir, 'agn_host_disk.csv.gz'))
-    
+
     idx = agn_host_bulge['image_number'] == 0
     ahb_purged = agn_host_bulge[:][idx]
     ahd_purged = agn_host_disk[:][idx]
-    
+
     lens_list = pyfits.open(os.path.join(twinkles_data_dir,
                                          'twinkles_lenses_v2.fits'))
 
@@ -37,8 +37,20 @@ def load_in_data_agn():
 
 
 def create_cats_agns(index, hdu_list, ahb_list, ahd_list):
-#Takes input catalogs and isolates lensing parameters as well as ra and dec of lens
-    
+    """
+    Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
+
+    Parameters:
+    -----------
+    index: int
+        Index for pandas data frame
+    hdu_list:
+        row of data frame that contains lens parameters
+    ahb_list:
+        row of data frame that contains lens galaxy parameters for the galactic bulge
+    ahd_list:
+        row of data frame that contains lens galaxy parameters for the galactic disk """
+
     twinkles_ID = ahd['twinkles_system'][index]
     UID_lens = ahd['uniqueId_lens'][index]
     Ra_lens = ahd['raPhoSim_lens'][index]
@@ -147,8 +159,9 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
 
 
 def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
-    #Does ray tracing of light from host galaxies using a non-singular isothermal ellipsoid profile.  
-    #Ultimately writes out a FITS image of the result of the ray tracing.	
+    """Does ray tracing of light from host galaxies using
+    a non-singular isothermal ellipsoid profile.  
+    Ultimately writes out a FITS image of the result of the ray tracing.	"""
     dsx  = 0.01
     xlc1 = lens_P['xl1']                # x position of the lens, arcseconds
     xlc2 = lens_P['xl2']                # y position of the lens, arcseconds
@@ -176,7 +189,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
 
     os.makedirs(os.path.join(outdir,'agn_lensed_bulges'), exist_ok=True)
 
-    fits_limg_b = os.path.join(outdir,'agn_lensed_bulges/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_b) + "_bulge.fits" #\
+    fits_limg_b = os.path.join(outdir,'agn_lensed_bulges/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_b) + "_bulge.fits" 
  
     pyfits.writeto(fits_limg_b, lensed_image_b.astype("float32"), overwrite=True)
 
@@ -186,7 +199,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
 
     os.makedirs(os.path.join(outdir,'agn_lensed_disks'), exist_ok=True)
 
-    fits_limg_d = os.path.join(outdir,'agn_lensed_disks/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_d) + "_disk.fits"#\
+    fits_limg_d = os.path.join(outdir,'agn_lensed_disks/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_d) + "_disk.fits"
  
     pyfits.writeto(fits_limg_d, lensed_image_d.astype("float32"), overwrite=True)
 
@@ -201,7 +214,11 @@ if __name__ == '__main__':
 
     hdulist, ahb, ahd = load_in_data_agn()
 
+    message_row = 0
+    message_freq = 50
     for i, row in ahb.iterrows():
-        print ("working on system ", i , "of", max(ahb.index))
+        if i >= message_row:
+            print ("working on system ", i , "of", max(ahb.index))
+            message_row += message_freq
         lensP, srcPb, srcPd = create_cats_agns(i, hdulist, ahb, ahd)
         generate_lensed_host(xi1, xi2, lensP, srcPb, srcPd)    
