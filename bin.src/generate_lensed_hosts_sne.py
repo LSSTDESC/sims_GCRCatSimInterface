@@ -21,19 +21,12 @@ data_dir = os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data')
 twinkles_data_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
 
 def random_location(Reff_src, qs, phs, ns):
-    """Sample a random (x, y) location from the surface brightness
-    profile of the galaxy. The input parameters are Sersic parameters for the host galaxy.
-    Parameters: 
-    -----------
-    Reff_src: float 
-        the effective radius in arcseconds, the radius within which half of the light is contained
-    qs: float
-        axis ratio of the source, b/a
-    phs: float
-        position angle of the galaxy in degrees
-    ns: int
-        Sersic index 
-    """
+    #Sample a random (x, y) location from the surface brightness
+    #profile of the galaxy. The input parameters are Sersic parameters for the host galaxy.
+    #Reff_src is the effective radius in arcseconds, the radius within which half of the light is contained
+    #qs is axis ratio of the source, b/a
+    #phs is position angle of the galaxy in degrees
+    #ns is Sersic index 
     phs_rad = np.deg2rad(phs-90)
 
     bn = ss.gammaincinv(2. * ns, 0.5)
@@ -52,7 +45,6 @@ def random_location(Reff_src, qs, phs, ns):
 
 
 def check_random_locations():
-    """Defines a random location to compare to"""
     
     npoints = 100000
     Reff_disk = 0.2
@@ -133,7 +125,7 @@ def check_random_locations():
     return 0
 
 def load_in_data_sne():
-"""Reads in catalogs of host galaxy bulge and disk as well as om10 lenses """
+#Reads in catalogs of host galaxy bulge and disk as well as om10 lenses 
 
     sne_host_bulge = pd.read_csv(os.path.join(data_dir,'sne_host_bulge.csv.gz'))
     sne_host_disk = pd.read_csv(os.path.join(data_dir,'sne_host_disk.csv.gz'))
@@ -152,18 +144,7 @@ def load_in_data_sne():
 
 
 def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
-"""Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
-    Parameters: 
-        -----------
-    index: int
-        Index for pandas data frame
-    hdu_list:
-        row of data frame that contains lens parameters
-    ahb_list:
-        row of data frame that contains lens galaxy parameters for the galactic bulge
-    ahd_list:
-        row of data frame that contains lens galaxy parameters for the galactic disk """
-  
+    #Takes input catalogs and isolates lensing parameters as well as ra and dec of lens        
     twinkles_ID = ahb_list['twinkles_system'][index]
     UID_lens = ahb_list['uniqueId_lens'][index]
     Ra_lens = ahb_list['raPhoSim_lens'][index]
@@ -270,8 +251,8 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
 
 
 def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
-    """Does ray tracing of light from host galaxies using a non-singular isothermal ellipsoid profile.  
-    Ultimately writes out a FITS image of the result of the ray tracing.      """
+    #Does ray tracing of light from host galaxies using a non-singular isothermal ellipsoid profile.  
+    #Ultimately writes out a FITS image of the result of the ray tracing.      
     dsx = 0.01
     xlc1 = lens_P['xl1']                # x position of the lens, arcseconds
     xlc2 = lens_P['xl2']                # y position of the lens, arcseconds
@@ -318,8 +299,8 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
 
 
 def cross_check_with_lensed_sne(twinkles_ID):
-    """ stack the lensed hosts and lensed points to verify the calculation
-     make some plots."""
+    # stack the lensed hosts and lensed points to verify the calculation
+    # make some plots.
     sne_lens_cats = pd.read_csv(os.path.join(twinkles_data_dir,
                                              'dc2_sne_cat.csv'))
     ximgs = np.zeros((5))
