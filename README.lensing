@@ -1,0 +1,29 @@
+To generate the FITS files of the lensed hosts, you will need to run the following commands only once:
+
+python sims_GCRCatSimInterface/bin.src/generate_lensed_hosts_agn.py
+python sims_GCRCatSimInterface/bin.src/generate_lensed_hosts_sne.py
+
+You can change the default location of these directories by running the commands instead with the arguments:
+
+python sims_GCRCatSimInterface/bin.src/generate_lensed_hosts_agn.py --outdir <path_to_output>
+python sims_GCRCatSimInterface/bin.src/generate_lensed_hosts_sne.py --outdir <path_to_output>
+
+The default location of the output is sims_GCRCatSimInterface/data/outputs. There are 4 subdirectories, called:
+"<path_to_output>/agn_lensed_bulges"
+"<path_to_output>/agn_lensed_disks"
+"<path_to_output>/sne_lensed_bulges"
+"<path_to_output>/sne_lensed_disks"
+
+The FITS stamps that are generated are named as "<SystemID>_<Lensed magnitude>_<bulge/disk>.fits"
+
+The data read in by these programs are located in the top level data directory.
+
+They are the files:
+
+"data/agn_host_bulge.csv.gz"
+"data/agn_host_disk.csv.gz"
+"data/sne_host_bulge.csv.gz"
+"data/sne_host_disk.csv.gz"
+
+These files contain the host galaxy components for the latest set of cached DC2 sprinkled galaxy ids.
+NOTE: If not running Twinkles repo tagged version DC2-Run1.2-v2 then these may be out of date.
