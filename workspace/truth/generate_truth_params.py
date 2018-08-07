@@ -25,6 +25,10 @@ parser.add_argument('--sql_dir', type=str, default=None)
 parser.add_argument('--sql_file', type=str, default='sprinkled_objects.sqlite')
 parser.add_argument('--fov', type=float, default=None)
 parser.add_argument('--yaml', type=str, default='proto-dc2_v2.1.2')
+parser.add_argument('--agn', type=str,
+                    default=os.path.join('/global/projecta/projectdirs',
+                                         'lsst/groups/SSim/DC2',
+                                         'agn_db_mbh_7.0_m_i_30.0.sqlite'))
 args = parser.parse_args()
 
 if args.fov is None:
@@ -32,11 +36,7 @@ if args.fov is None:
 
 bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
 
-agn_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
-assert os.path.isdir(agn_dir)
-
-agn_db = os.path.join(agn_dir, 'agn_db_mbh_7.0_m_i_30.0.sqlite')
-assert os.path.isfile(agn_db)
+assert os.path.isfile(args.agn)
 
 obs = ObservationMetaData(pointingRA=55.064,
                           pointingDec=-29.783,
@@ -63,7 +63,7 @@ t_start = time.time()
 (sql_file_name, table_names) = write_sprinkled_param_db(obs,
                                                  field_ra=55.064,
                                                  field_dec=-29.783,
-                                                 agn_db=agn_db,
+                                                 agn_db=args.agn,
                                                  yaml_file=args.yaml,
                                                  out_dir=args.sql_dir,
                                                  out_file=args.sql_file)
