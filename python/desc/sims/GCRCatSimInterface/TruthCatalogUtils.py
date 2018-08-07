@@ -43,7 +43,8 @@ class _SersicTruth(_SprinkledTruth):
                       'raJ2000', 'decJ2000', 'redshift',
                       'magNorm', 'sedFile', 'internalAv',
                       'internalRv', 'galacticAv', 'galacticRv',
-                      'is_sprinkled']
+                      'is_sprinkled',
+                      'shear1', 'shear2', 'kappa']
 
     _t_start = None
     _sersic_ct = 0
@@ -75,7 +76,8 @@ class _ZPointTruth(_SprinkledTruth):
                       'sedFilepath', 'magNorm',
                       'varParamStr', 'sn_truth_params',
                       'sn_t0',
-                      'is_sprinkled', 'is_sn', 'is_agn']
+                      'is_sprinkled', 'is_sn', 'is_agn',
+                      'shear1', 'shear2', 'kappa']
 
     override_formats = {'varParamStr': '%s', 'sn_truth_params': '%s'}
 
