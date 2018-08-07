@@ -24,14 +24,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--sql_dir', type=str, default=None)
 parser.add_argument('--sql_file', type=str, default='sprinkled_objects.sqlite')
 parser.add_argument('--fov', type=float, default=None)
+parser.add_argument('--yaml', type=str, default='proto-dc2_v2.1.2')
 args = parser.parse_args()
 
 if args.fov is None:
     raise RuntimeError("must specify fov")
 
 bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
-
-yaml_file = 'proto-dc2_v2.1.2'
 
 agn_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
 assert os.path.isdir(agn_dir)
@@ -65,7 +64,7 @@ t_start = time.time()
                                                  field_ra=55.064,
                                                  field_dec=-29.783,
                                                  agn_db=agn_db,
-                                                 yaml_file=yaml_file,
+                                                 yaml_file=args.yaml,
                                                  out_dir=args.sql_dir,
                                                  out_file=args.sql_file)
 
