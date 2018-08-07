@@ -22,6 +22,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--sql_dir', type=str, default=None)
+parser.add_argument('--sql_file', type=str, default='sprinkled_objects.sqlite')
 parser.add_argument('--fov', type=float, default=None)
 args = parser.parse_args()
 
@@ -65,7 +66,8 @@ t_start = time.time()
                                                  field_dec=-29.783,
                                                  agn_db=agn_db,
                                                  yaml_file=yaml_file,
-                                                 out_dir=args.sql_dir)
+                                                 out_dir=args.sql_dir,
+                                                 out_file=args.sql_file)
 
 print('\nwrote\n%s\n' % sql_file_name)
 print('fov %e in %e sec' % (args.fov, time.time()-t_start))
