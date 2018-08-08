@@ -11,14 +11,19 @@ from desc.sims.GCRCatSimInterface.GalaxyTruthModule import write_galaxies_to_tru
 
 import os
 import sqlite3
+import argparse
 
 if __name__ == "__main__":
 
-    db_dir = '/astro/store/pogo3/danielsf/desc_dc2_truth'
-    assert os.path.isdir(db_dir)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--param_file', type=str,
+                        default=os.path.join('/astro/store/pogo3',
+                                             'danielsf/desc_dc2_truth',
+                                             'sprinkled_objects.sqlite'))
 
-    param_file = os.path.join(db_dir, 'sprinkled_objects.sqlite')
-    assert os.path.isfile(param_file)
+    args = parser.parse_args()
+
+    assert os.path.isfile(args.param_file)
 
     db_file = os.path.join(db_dir, 'proto_dc2_truth_star_gal.db')
     if os.path.isfile(db_file):
@@ -64,7 +69,7 @@ if __name__ == "__main__":
 
     print('wrote stars')
 
-    write_galaxies_to_truth(input_db=param_file,
+    write_galaxies_to_truth(input_db=args.param_file,
                             output=db_file,
                             n_side=2048,
                             n_procs=20,
