@@ -9,6 +9,7 @@ import time
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import BandpassDict
 from lsst.sims.photUtils import Sed, getImsimFluxNorm
+from lsst.sims.utils import defaultSpecMap
 
 
 __all__ = ["write_galaxies_to_truth"]
@@ -38,7 +39,10 @@ def _fluxes(sed_name, mag_norm, redshift):
         _fluxes._sed_dir = getPackageDir('sims_sed_library')
 
     spec = Sed()
-    spec.readSED_flambda(os.path.join(_fluxes._sed_dir, sed_name))
+    full_sed_name = os.path.join(_fluxes._sed_dir, sed_name)
+    if not os.path.isfile(full_sed_name):
+        full_sed_name = os.path.join(_fluxes._sed_dir, defaultSpecMap[sed_name])
+    spec.readSED_flambda(full_sed_name)
     fnorm = getImsimFluxNorm(spec, mag_norm)
     spec.multiplyFluxNorm(fnorm)
     spec.redshiftSED(redshift, dimming=True)
