@@ -120,6 +120,12 @@ def calculate_mags(galaxy_list, out_dict):
     disk_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     agn_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
 
+    magnification = np.array([1.0/((1.0-g[14])**2-g[12]**2-g[13]**2)
+                              for g in galaxy_list])
+
+    assert magnification.min() >= 0.0
+    assert len(np.where(np.isfinite(magnification))[0]) == len(magnification)
+
     for i_gal, galaxy in enumerate(galaxy_list):
         if galaxy[0] is not None and galaxy[1] is not None:
             bulge_fluxes[i_gal] = _fluxes(galaxy[0], galaxy[1], galaxy[6])
@@ -130,7 +136,7 @@ def calculate_mags(galaxy_list, out_dict):
         if galaxy[4] is not None and galaxy[5] is not None:
             agn_fluxes[i_gal] = _fluxes(galaxy[4], galaxy[5], galaxy[6])
 
-    tot_fluxes = bulge_fluxes + disk_fluxes + agn_fluxes
+    tot_fluxes = magnification*(bulge_fluxes + disk_fluxes + agn_fluxes)
     dummy_sed = Sed()
     valid = np.where(tot_fluxes>0.0)
     valid_mags = dummy_sed.magFromFlux(tot_fluxes[valid])
@@ -186,7 +192,8 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
     query += 'a.sedFilepath, a.magNorm, '
     query += 'b.redshift, b.galaxy_id, '
     query += 'b.raJ2000, b.decJ2000, '
-    query += 'b.is_sprinkled, a.is_agn '
+    query += 'b.is_sprinkled, a.is_agn, '
+    query += 'b.shear1, b.shear2, b.kappa '
 
     query += 'FROM bulge as b '
     query += 'LEFT JOIN disk as d ON b.galaxy_id=d.galaxy_id '
@@ -200,7 +207,8 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
     query += 'a.sedFilepath, a.magNorm, '
     query += 'd.redshift, d.galaxy_id, '
     query += 'd.raJ2000, d.decJ2000, '
-    query += 'd.is_sprinkled, a.is_agn '
+    query += 'd.is_sprinkled, a.is_agn, '
+    query += 'd.shear1, d.shear2, d.kappa '
 
     query += 'FROM disk as d '
     query += 'LEFT JOIN bulge as b ON d.galaxy_id=b.galaxy_id '
