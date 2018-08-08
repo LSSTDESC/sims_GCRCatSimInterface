@@ -140,7 +140,11 @@ def calculate_mags(galaxy_list, out_dict):
         if galaxy[4] is not None and galaxy[5] is not None:
             agn_fluxes[i_gal] = _fluxes(galaxy[4], galaxy[5], galaxy[6])
 
-    tot_fluxes = magnification*(bulge_fluxes + disk_fluxes + agn_fluxes)
+    tot_fluxes = bulge_fluxes + disk_fluxes + agn_fluxes
+
+    for i_filter in range(6):
+        tot_fluxes[:,i_filter] *= magnification
+
     dummy_sed = Sed()
     valid = np.where(tot_fluxes>0.0)
     valid_mags = dummy_sed.magFromFlux(tot_fluxes[valid])
