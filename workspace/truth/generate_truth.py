@@ -3,7 +3,7 @@ This is the script that actually generates the
 truth catalog based on the database of
 parameters generated in generate_truth_params.
 
-It took about 1.5 hours to run for CosmoDC2.
+It took about 1.5 hours to run for protoDC2.
 """
 
 from desc.sims.GCRCatSimInterface.StarTruthModule import write_stars_to_truth
