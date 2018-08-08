@@ -20,16 +20,19 @@ if __name__ == "__main__":
                         default=os.path.join('/astro/store/pogo3',
                                              'danielsf/desc_dc2_truth',
                                              'sprinkled_objects.sqlite'))
+    parser.add_argument('--out_file', type=str,
+                       default=os.path.join('/astro/store/pogo3',
+                                            'danielsf/desc_dc2_truth',
+                                            'proto_dc2_truth_star_gal.db'))
 
     args = parser.parse_args()
 
     assert os.path.isfile(args.param_file)
 
-    db_file = os.path.join(db_dir, 'proto_dc2_truth_star_gal.db')
-    if os.path.isfile(db_file):
-        os.unlink(db_file)
+    if os.path.isfile(args.out_file):
+        os.unlink(args.out_file)
 
-    with sqlite3.connect(db_file) as conn:
+    with sqlite3.connect(args.out_file) as conn:
         cursor = conn.cursor()
         cmd = '''CREATE TABLE truth
               (healpix_2048 int, object_id int, star int,
@@ -62,7 +65,7 @@ if __name__ == "__main__":
         cursor.executemany('INSERT INTO column_descriptions VALUES (?,?)',values)
         conn.commit()
 
-    write_stars_to_truth(output=db_file,
+    write_stars_to_truth(output=args.out_file,
                          n_side=2048,
                          n_procs=20,
                          clobber=False)
@@ -70,14 +73,14 @@ if __name__ == "__main__":
     print('wrote stars')
 
     write_galaxies_to_truth(input_db=args.param_file,
-                            output=db_file,
+                            output=args.out_file,
                             n_side=2048,
                             n_procs=20,
                             clobber=False)
 
     print('wrote galaxies')
 
-    with sqlite3.connect(db_file) as conn:
+    with sqlite3.connect(args.out_file) as conn:
         cursor = conn.cursor()
 
         cursor.execute('CREATE INDEX obj_id ON truth (object_id)')
