@@ -205,7 +205,7 @@ if __name__ == "__main__":
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
-                          (galaxy_id, magNorm real, varParamStr text)''')
+                          (galaxy_id int, magNorm real, varParamStr text)''')
 
         connection.commit()
 
