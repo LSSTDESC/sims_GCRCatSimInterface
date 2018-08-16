@@ -6,6 +6,11 @@ from lsst.sims.utils import angularSeparation
 __all__ = ['hostImage']
 
 class hostImage(object):
+    """Takes FITS stamps and includes them in instance catalogs
+    hostImage takes the following arguments:
+    ra_center: the right ascension of the center of the field
+    dec_center: the declination of the center of the field
+    fov: the field of view of the field being simulated"""
 
     def __init__(self, ra_center, dec_center, fov):
 
@@ -15,7 +20,8 @@ class hostImage(object):
 
 
     def format_catalog(self, df_line, fits_file_name, image_dir):
-        """Formats the output instance catalog to include entries for the FITS stamps produced by generate_lensed_host_***.py
+        """Formats the output instance catalog to include entries for the FITS 
+        stamps produced by generate_lensed_host_***.py
 		
 		Parameters: 
 		-----------

@@ -175,6 +175,7 @@ class InstanceCatalogWriter(object):
         self.star_db = StarObj(database='LSSTCATSIM',
                                host='fatboy.phys.washington.edu',
                                port=1433, driver='mssql+pymssql')
+        self.sprinkler = sprinkler
 
         if agn_db_name is None:
             raise IOError("Need to specify an Proto DC2 AGN database.")
@@ -184,7 +185,7 @@ class InstanceCatalogWriter(object):
             else:
                 raise IOError("Path to Proto DC2 AGN database does not exist.")
 
-        if host_image_dir is None:
+        if host_image_dir is None and self.sprinkler is not False:
             raise IOError("Need to specify the name of the host image directory.")
         else:
             if os.path.exists(host_image_dir):
@@ -192,15 +193,13 @@ class InstanceCatalogWriter(object):
             else:
                 raise IOError("Path to host image directory does not exist.")
 
-        if host_data_dir is None:
+        if host_data_dir is None and self.sprinkler is not False:
             raise IOError("Need to specify the name of the host data directory.")
         else:
             if os.path.exists(host_data_dir):
                 self.host_data_dir = host_data_dir
             else:
-                raise IOError("Path to host data directory does not exist.")
-
-        self.sprinkler = sprinkler
+                raise IOError("Path to host data directory does not exist.")    
 
         self.instcats = get_instance_catalogs()
 
@@ -329,6 +328,9 @@ class InstanceCatalogWriter(object):
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
+
+            object_catalogs = written_catalog_names +\
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
         else:
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
@@ -380,8 +382,7 @@ class InstanceCatalogWriter(object):
             written_catalog_names.append('bulge_'+gal_name)
             written_catalog_names.append('disk_'+gal_name)
             written_catalog_names.append('agn_'+gal_name)
-            written_catalog_names.append('agn_'+gal_name)
-
+            
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
             host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
@@ -397,6 +398,8 @@ class InstanceCatalogWriter(object):
             host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_disks'),
                                     os.path.join(self.host_data_dir, 'sne_host_disk.csv.gz'),
                                     os.path.join(out_dir, sprinkled_host_name), append=True)
+            object_catalogs = written_catalog_names + [sprinkled_host_name]+\
+                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
         # SN instance catalogs
         for i, snpop in enumerate(snpopcsvs):
@@ -409,9 +412,6 @@ class InstanceCatalogWriter(object):
             snOutFile = sn_names[i] +'_cat_{}.txt'.format(obsHistID)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
-
-        object_catalogs = written_catalog_names + [sprinkled_host_name]+\
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, phosim_cat_name),

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 import os
 import argparse
@@ -6,7 +7,7 @@ import subprocess as sp
 import astropy.io.fits as pyfits
 import pandas as pd
 import scipy.special as ss
-import om10_lensing_equations as ole
+from desc.sims.GCRCatSimInterface import om10_lensing_equations as ole
 
 data_dir = os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data')
 twinkles_data_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
@@ -22,6 +23,13 @@ def load_in_data_agn():
 
     """
     Reads in catalogs of host galaxy bulge and disk as well as om10 lenses
+
+    Returns:
+    -----------
+    lens_list: data array for lenses.  Includes t0, x, y, sigma, gamma, e, theta_e     
+    ahb_purged: Data array for galaxy bulges.  Includes prefix, uniqueId, raPhoSim, decPhoSim, phosimMagNorm   
+    ahd_purged: Data array for galaxy disks.  Includes prefix, uniqueId, raPhoSim, decPhoSim, phosimMagNorm
+
     """
     agn_host_bulge = pd.read_csv(os.path.join(data_dir,'agn_host_bulge.csv.gz'))
     agn_host_disk = pd.read_csv(os.path.join(data_dir, 'agn_host_disk.csv.gz'))
@@ -49,7 +57,14 @@ def create_cats_agns(index, hdu_list, ahb_list, ahd_list):
     ahb_list:
         row of data frame that contains lens galaxy parameters for the galactic bulge
     ahd_list:
-        row of data frame that contains lens galaxy parameters for the galactic disk """
+        row of data frame that contains lens galaxy parameters for the galactic disk 
+
+    Returns:
+    -----------
+    lens_cat: Data array that includes lens parameters
+    srcsP_bulge: Data array that includes parameters for galactic bulge
+    srcsP_disk: Data array that includes parameters for galactic disk
+    """
 
     twinkles_ID = ahd['twinkles_system'][index]
     UID_lens = ahd['uniqueId_lens'][index]
@@ -139,7 +154,21 @@ def create_cats_agns(index, hdu_list, ahb_list, ahd_list):
 
 
 def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
-    #Defines a magnitude of lensed host galaxy using 2d Sersic profile	
+    """Defines a magnitude of lensed host galaxy using 2d Sersic profile 
+    Parameters:
+    -----------
+    xi1: x-position of lensed image
+    xi2: y-position of lensed image
+    yi1: x-position of source
+    yi2: y-position of source
+    source_cat: source parameters
+    lens_cat: lens parameters, from create_cats_sne()
+
+    Returns:
+    -----------
+    mag_lensed: Lensed magnitude for host galaxy
+    g_limage: Original magnitude for host galaxy
+    """
     #----------------------------------------------------------------------
     ysc1     = source_cat['ys1']        # x position of the source, arcseconds
     ysc2     = source_cat['ys2']        # y position of the source, arcseconds
@@ -159,9 +188,20 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
 
 
 def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
-    """Does ray tracing of light from host galaxies using
-    a non-singular isothermal ellipsoid profile.  
-    Ultimately writes out a FITS image of the result of the ray tracing.	"""
+    """Does ray tracing of light from host galaxies using a non-singular isothermal ellipsoid profile.  
+    Ultimately writes out a FITS image of the result of the ray tracing.      
+    Parameters:
+    -----------
+    xi1: x-position of lens
+    xi2: y-position of lens
+    lens_P: Data array of lens parameters (takes output from create_cats_sne)  
+    srcP_b: Data array of source bulge parameters (takes output from create_cats_sne) 
+    srcP_d: Data array of source disk parameters (takes output from create_cats_sne) 
+
+    Returns:
+    -----------
+
+    """
     dsx  = 0.01
     xlc1 = lens_P['xl1']                # x position of the lens, arcseconds
     xlc2 = lens_P['xl2']                # y position of the lens, arcseconds
@@ -171,7 +211,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
     zs   = srcP_b['zs']                 # redshift of the source
     rle  = ole.re_sv(vd, zl, zs)        # Einstein radius of lens, arcseconds.
     ql   = lens_P['ql']                 # axis ratio b/a
-    le   = ole.e2le(1.0 - ql)           # scale factor due to projection of ellpsoid
+    le   = ole.e2le(1.0 - ql)           # scale factor due to projection of ellipsoid
     phl  = lens_P['phl']                # position angle of the lens, degree
     eshr = lens_P['gamma']              # external shear
     eang = lens_P['phg']                # position angle of external shear
