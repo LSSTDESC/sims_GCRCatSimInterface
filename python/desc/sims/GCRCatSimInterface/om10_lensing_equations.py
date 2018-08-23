@@ -4,7 +4,7 @@ import pylab as pl
 from scipy.interpolate import interp1d
 #--------------------------------------------------------------------
 from astropy.cosmology import WMAP7 as p15
-"""I import WMAP7 cosmology (http://docs.astropy.org/en/stable/cosmology/) as it is the cosmology being usedfor DC2.  
+"""I import WMAP7 cosmology (http://docs.astropy.org/en/stable/cosmology/) as it is the cosmology being used for DC2.  
 It uses H0 = 70.4, Omega_M = 0.272 and flat universe."""
 
 __all__ = ['Dc', 'Dc2', 're_sv','e2le', 'make_r_coor', 'alphas_sie', 'sersic_2d']

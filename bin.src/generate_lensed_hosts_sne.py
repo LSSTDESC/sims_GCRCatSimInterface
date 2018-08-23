@@ -275,17 +275,17 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
     """Defines a magnitude of lensed host galaxy using 2d Sersic profile 
     Parameters:
     -----------
-    xi1: x-position of lensed image
-    xi2: y-position of lensed image
-    yi1: x-position of source
-    yi2: y-position of source
+    xi1: x-position of lens
+    xi2: y-position of lens
+    yi1: x-position of source bulge or disk
+    yi2: y-position of source bulge or disk
     source_cat: source parameters
     lens_cat: lens parameters, from create_cats_sne()
 
     Returns:
     -----------
-    mag_lensed: Lensed magnitude for host galaxy
-    g_limage: Original magnitude for host galaxy
+    mag_lensed: Lensed magnitude of host galaxy
+    g_limage: Lensed image (array of electron counts)
     """
     #----------------------------------------------------------------------
     ysc1     = source_cat['ys1']        # x position of the source, arcseconds

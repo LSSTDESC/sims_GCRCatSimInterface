@@ -31,7 +31,10 @@ class hostImage(object):
 			the filename of the FITS stamp
 		image_dir: string 
 			the location of the FITS stamps 
-        	"""
+		Returns:
+		-----------
+		cat_str: a string containing the line of parameters to go into an instance file
+         	"""
         fits_info = fits_file_name.split('_')
         lens_id = np.int(fits_info[0])
         sys_magNorm = np.float(fits_info[1])
