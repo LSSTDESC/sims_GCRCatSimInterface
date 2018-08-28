@@ -185,9 +185,6 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
 
     mag_lensed = mag_tot - 2.5*np.log(np.sum(g_limage)/np.sum(g_source))
 
-    print('meow')
-    print(g_limage)
-    print(g_source)
     return mag_lensed, g_limage
 
 
