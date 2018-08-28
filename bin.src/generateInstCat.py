@@ -14,7 +14,7 @@ parser.add_argument('--host_image_dir', type=str,
                     default=os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'], 'data', 'outputs'))
 parser.add_argument('--host_data_dir', type=str,
                     help='Name of csv file of lensed host data created by the sprinkler.', 
-                    default=os.path.join(os.environ['TWINKLES_DIR'],'data'))
+                    default=os.path.join(os.environ['SIMS_GCRCATSIMINTERFACE_DIR'],'data'))
 parser.add_argument('--descqa_catalog', type=str, default='protoDC2',
                     help='the desired DESCQA catalog')
 parser.add_argument('--out_dir', type=str, help='directory where output will be written',

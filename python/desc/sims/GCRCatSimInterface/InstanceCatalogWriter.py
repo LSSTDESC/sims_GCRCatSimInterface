@@ -232,7 +232,6 @@ class InstanceCatalogWriter(object):
         bright_star_name = 'bright_stars_%d.txt' % obsHistID
         gal_name = 'gal_cat_%d.txt' % obsHistID
         knots_name = 'knots_cat_%d.txt' % obsHistID
-        
         # keep track of all of the non-supernova InstanceCatalogs that
         # have been written so that we can remember to includeobj them
         # in the PhoSim catalog
@@ -382,7 +381,6 @@ class InstanceCatalogWriter(object):
             written_catalog_names.append('bulge_'+gal_name)
             written_catalog_names.append('disk_'+gal_name)
             written_catalog_names.append('agn_'+gal_name)
-            
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
             host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)

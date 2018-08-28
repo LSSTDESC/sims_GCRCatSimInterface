@@ -8,9 +8,10 @@ __all__ = ['hostImage']
 class hostImage(object):
     """Takes FITS stamps and includes them in instance catalogs
     hostImage takes the following arguments:
-    ra_center: the right ascension of the center of the field
-    dec_center: the declination of the center of the field
-    fov: the field of view of the field being simulated"""
+    ra_center: Right ascension of the center of the field (in degrees)
+    dec_center: Declination of the center of the field (in degrees)
+    fov: Field-of-view angular radius (in degrees).  2 degrees will cover
+        the LSST focal plane."""
 
     def __init__(self, ra_center, dec_center, fov):
 
@@ -57,7 +58,7 @@ class hostImage(object):
                                                                       sys_magNorm,
                                                                       df_line['sedFilepath'],
                                                                       df_line['redshift'],
-                                                                      str(lens_id) + "_" + str(sys_magNorm) + "_" + str(gal_type) + ".fits",
+                                                                      str(image_dir)+'/'+str(lens_id) + "_" + str(sys_magNorm) + "_" + str(gal_type) + ".fits",
                                                                       df_line['internalAv'],
                                                                       df_line['internalRv'],
                                                                       df_line['galacticAv'],

@@ -36,8 +36,8 @@ def random_location(Reff_src, qs, phs, ns):
     
     Returns:
     -----------
-    dx: horizontal coordinate of random location 
-    dy: vertical coordinate of random location
+    dx: horizontal coordinate of random location (pixel coordinates) 
+    dy: vertical coordinate of random location (pixel coordinates)
     """
     phs_rad = np.deg2rad(phs-90)
 
@@ -275,10 +275,10 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
     """Defines a magnitude of lensed host galaxy using 2d Sersic profile 
     Parameters:
     -----------
-    xi1: x-position of lens
-    xi2: y-position of lens
-    yi1: x-position of source bulge or disk
-    yi2: y-position of source bulge or disk
+    xi1: x-position of lens (pixel coordinates)
+    xi2: y-position of lens (pixel coordinates)
+    yi1: x-position of source bulge or disk (pixel coordinates)
+    yi2: y-position of source bulge or disk (pixel coordinates)
     source_cat: source parameters
     lens_cat: lens parameters, from create_cats_sne()
 
@@ -310,8 +310,8 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
     Ultimately writes out a FITS image of the result of the ray tracing.      
     Parameters:
     -----------
-    xi1: x-position of lens
-    xi2: y-position of lens
+    xi1: x-position of lens (pixel coordinates)
+    xi2: y-position of lens (pixel coordinates)
     lens_P: Data array of lens parameters (takes output from create_cats_sne)  
     srcP_b: Data array of source bulge parameters (takes output from create_cats_sne) 
     srcP_d: Data array of source disk parameters (takes output from create_cats_sne) 

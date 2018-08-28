@@ -157,10 +157,10 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
     """Defines a magnitude of lensed host galaxy using 2d Sersic profile 
     Parameters:
     -----------
-    xi1: x-position of lens
-    xi2: y-position of lens
-    yi1: x-position of source bulge or disk
-    yi2: y-position of source bulge or disk
+    xi1: x-position of lens (pixel coordinates)
+    xi2: y-position of lens (pixel coordinates)
+    yi1: x-position of source bulge or disk (pixel coordinates)
+    yi2: y-position of source bulge or disk (pixel coordinates)
     source_cat: source parameters
     lens_cat: lens parameters, from create_cats_sne()
 
@@ -179,11 +179,15 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
     ns       = source_cat['ns']         # index of the source
 
     #----------------------------------------------------------------------
+
     g_limage = ole.sersic_2d(yi1,yi2,ysc1,ysc2,Reff_arc,qs,phs,ns)
     g_source = ole.sersic_2d(xi1,xi2,ysc1,ysc2,Reff_arc,qs,phs,ns)
 
     mag_lensed = mag_tot - 2.5*np.log(np.sum(g_limage)/np.sum(g_source))
 
+    print('meow')
+    print(g_limage)
+    print(g_source)
     return mag_lensed, g_limage
 
 
@@ -192,8 +196,8 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
     Ultimately writes out a FITS image of the result of the ray tracing.      
     Parameters:
     -----------
-    xi1: x-position of lens
-    xi2: y-position of lens
+    xi1: x-position of lens (pixel coordinates)
+    xi2: y-position of lens (pixel coordinates)
     lens_P: Data array of lens parameters (takes output from create_cats_sne)  
     srcP_b: Data array of source bulge parameters (takes output from create_cats_sne) 
     srcP_d: Data array of source disk parameters (takes output from create_cats_sne) 
@@ -224,7 +228,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
     yi1 = xi1 - ai1
     yi2 = xi2 - ai2
     #----------------------------------------------------------------------------
-
+    
     lensed_mag_b, lensed_image_b = lensed_sersic_2d(xi1,xi2,yi1,yi2,srcP_b,lens_P)
 
     os.makedirs(os.path.join(outdir,'agn_lensed_bulges'), exist_ok=True)
