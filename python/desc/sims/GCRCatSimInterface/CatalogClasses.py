@@ -207,6 +207,18 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     @cached
     def get_hasDisk(self):
         output = np.where(self.column_by_name('stellar_mass_disk')>0.0, 1.0, None)
+        gid = self.column_by_name('galaxy_id')
+        magNorm = self.column_by_name('magNorm')
+        ra = self.column_by_name('raJ2000')
+        dec = self.column_by_name('decJ2000')
+        unq = self.column_by_name('uniqueId')
+        desired = 154597
+        if desired in gid:
+            dex = np.where(gid==desired)
+            print('\n\n%d hasdisk %s magnorm %s' %
+            (gid[dex], str(output[dex]), str(magNorm[dex])))
+            print('ra %.11f dec %.11f' % (ra[dex], dec[dex]))
+            print('unq %d' % unq[dex])
         return output
 
     @cached
