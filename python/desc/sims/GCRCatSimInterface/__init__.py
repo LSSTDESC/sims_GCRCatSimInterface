@@ -7,4 +7,6 @@ from .AGNModule import *
 from .CompoundCatalogDBObjectClasses import *
 from .CompoundInstanceCatalogClasses import *
 from .TwinklesClasses import *
+from .HostImages import *
+from .om10_lensing_equations import * 
 from .InstanceCatalogWriter import *
