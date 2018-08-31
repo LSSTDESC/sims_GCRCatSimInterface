@@ -301,8 +301,8 @@ class DESCQAObject(object):
 
         gc is a GCR catalog instance
         """
-        gc.add_derived_quantity('raJ2000', deg2rad_double, 'ra_true')
-        gc.add_derived_quantity('decJ2000', deg2rad_double, 'dec_true')
+        gc.add_derived_quantity('raJ2000', deg2rad_double, 'ra')
+        gc.add_derived_quantity('decJ2000', deg2rad_double, 'dec')
 
     def _transform_catalog(self, gc):
         """
