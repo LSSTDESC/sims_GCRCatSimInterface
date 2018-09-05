@@ -16,14 +16,6 @@ try:
 except ImportError:
     _GCR_IS_AVAILABLE = False
 
-
-_ALPHA_Q_ADD_ON_IS_AVAILABLE = True
-try:
-    from GCRCatalogs.alphaq_addon import AlphaQAddonCatalog
-except ImportError:
-    _ALPHA_Q_ADD_ON_IS_AVAILABLE = False
-
-
 _LSST_IS_AVAILABLE = True
 try:
     from lsst.sims.utils import _angularSeparation
@@ -32,7 +24,6 @@ except ImportError:
     from astropy.coordinates import SkyCoord
     def _angularSeparation(ra1, dec1, ra2, dec2):
         return SkyCoord(ra1, dec1, unit="radian").separation(SkyCoord(ra2, dec2, unit="radian")).radian
-
 
 def deg2rad_double(x):
     return np.deg2rad(x).astype(np.float64)
@@ -352,8 +343,11 @@ class DESCQAObject(object):
         additional_postfix = ()
 
         # Test for random walk specific addon
-        if _ALPHA_Q_ADD_ON_IS_AVAILABLE:
-            if isinstance(gc, AlphaQAddonCatalog):
+        # This gets activated only if the catalog is a composite, and only if one
+        # of the composite catalogs is a knots catalog
+        cat_info = gc.get_catalog_info()
+        if cat_info['subclass_name'] == composite.CompositeReader:
+            if 'knots' in [c['catalog_name'] for c in cat_info['catalogs']]:
                 additional_postfix += self._transform_knots(gc)
 
         return additional_postfix
