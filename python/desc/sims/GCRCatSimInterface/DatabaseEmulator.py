@@ -5,6 +5,7 @@ __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQA
            "deg2rad_double", "arcsec2rad", "SNFileDBObject"]
 
 import numpy as np
+import re
 import healpy
 from lsst.sims.catalogs.db import fileDBObject
 
@@ -375,10 +376,12 @@ class DESCQAObject(object):
 
         # Apply flux correction for the random walk
         add_postfix = []
+        disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
         for name in gc.list_all_native_quantities():
             # To account for the new composite catalog API,where name is a tuple
             parent, name = name
-            if 'SEDs/diskLuminositiesStellar:SED' in name:
+            disk_match = disk_re.match(name)
+            if disk_match is not None:
                 # The epsilon value is to keep the disk component, so that
                 # the random sequence in extinction parameters is preserved
                 eps = np.finfo(np.float32).eps
