@@ -5,7 +5,6 @@ __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQA
            "deg2rad_double", "arcsec2rad", "SNFileDBObject"]
 
 import numpy as np
-import re
 import healpy
 from lsst.sims.catalogs.db import fileDBObject
 from .SedFitter import disk_re
@@ -348,9 +347,9 @@ class DESCQAObject(object):
         # This gets activated only if the catalog is a composite, and only if one
         # of the composite catalogs is a knots catalog
         cat_info = gc.get_catalog_info()
-        if cat_info['subclass_name'] == 'composite.CompositeReader':
-            if 'knots' in [c['catalog_name'] for c in cat_info['catalogs']]:
-                additional_postfix += self._transform_knots(gc)
+        if (cat_info.get('subclass_name') == 'composite.CompositeReader'
+            and any('knots' in c.get('catalog_name', '') for c in cat_info.get('catalogs', []))):
+            additional_postfix += self._transform_knots(gc)
 
         return additional_postfix
 
@@ -377,8 +376,8 @@ class DESCQAObject(object):
 
         # Apply flux correction for the random walk
         add_postfix = []
-        
-        for name in gc.list_all_native_quantities():
+
+        for name in gc.list_all_quantities(include_native=True):
             # To account for the new composite catalog API,where name is a tuple
             parent, name = name
             disk_match = disk_re.match(name)
