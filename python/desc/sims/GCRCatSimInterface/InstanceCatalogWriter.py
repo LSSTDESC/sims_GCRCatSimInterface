@@ -199,7 +199,7 @@ class InstanceCatalogWriter(object):
             if os.path.exists(host_data_dir):
                 self.host_data_dir = host_data_dir
             else:
-                raise IOError("Path to host data directory does not exist.")    
+                raise IOError("Path to host data directory does not exist.")
 
         self.instcats = get_instance_catalogs()
 
@@ -274,7 +274,6 @@ class InstanceCatalogWriter(object):
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
         written_catalog_names.append(star_name)
 
-        # TODO: Find a better way of checking for catalog type
         if 'knots' in self.descqa_catalog:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
             knots_db.field_ra = self.protoDC2_ra

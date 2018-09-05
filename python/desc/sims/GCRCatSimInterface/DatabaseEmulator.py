@@ -7,6 +7,7 @@ __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQA
 import numpy as np
 import healpy
 from lsst.sims.catalogs.db import fileDBObject
+from .SedFitter import disk_re
 
 _GCR_IS_AVAILABLE = True
 try:
@@ -16,14 +17,6 @@ try:
 except ImportError:
     _GCR_IS_AVAILABLE = False
 
-
-_ALPHA_Q_ADD_ON_IS_AVAILABLE = True
-try:
-    from GCRCatalogs.alphaq_addon import AlphaQAddonCatalog
-except ImportError:
-    _ALPHA_Q_ADD_ON_IS_AVAILABLE = False
-
-
 _LSST_IS_AVAILABLE = True
 try:
     from lsst.sims.utils import _angularSeparation
@@ -32,7 +25,6 @@ except ImportError:
     from astropy.coordinates import SkyCoord
     def _angularSeparation(ra1, dec1, ra2, dec2):
         return SkyCoord(ra1, dec1, unit="radian").separation(SkyCoord(ra2, dec2, unit="radian")).radian
-
 
 def deg2rad_double(x):
     return np.deg2rad(x).astype(np.float64)
@@ -290,7 +282,7 @@ class DESCQAObject(object):
 
         if self._columns_need_postfix:
             self._columns_need_postfix += _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix]
-        else:
+        elif self._postfix:
             self._columns_need_postfix = _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix]
 
         self._catalog_id = yaml_file_name + self._cat_cache_suffix
@@ -352,9 +344,12 @@ class DESCQAObject(object):
         additional_postfix = ()
 
         # Test for random walk specific addon
-        if _ALPHA_Q_ADD_ON_IS_AVAILABLE:
-            if isinstance(gc, AlphaQAddonCatalog):
-                additional_postfix += self._transform_knots(gc)
+        # This gets activated only if the catalog is a composite, and only if one
+        # of the composite catalogs is a knots catalog
+        cat_info = gc.get_catalog_info()
+        if (cat_info.get('subclass_name') == 'composite.CompositeReader'
+            and any('knots' in c.get('catalog_name', '') for c in cat_info.get('catalogs', []))):
+            additional_postfix += self._transform_knots(gc)
 
         return additional_postfix
 
@@ -381,8 +376,12 @@ class DESCQAObject(object):
 
         # Apply flux correction for the random walk
         add_postfix = []
-        for name in gc.list_all_native_quantities():
-            if 'SEDs/diskLuminositiesStellar:SED' in name:
+
+        for name in gc.list_all_quantities(include_native=True):
+            # To account for the new composite catalog API,where name is a tuple
+            parent, name = name
+            disk_match = disk_re.match(name)
+            if disk_match is not None:
                 # The epsilon value is to keep the disk component, so that
                 # the random sequence in extinction parameters is preserved
                 eps = np.finfo(np.float32).eps
