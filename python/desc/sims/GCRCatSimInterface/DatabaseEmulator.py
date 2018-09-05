@@ -346,7 +346,7 @@ class DESCQAObject(object):
         # This gets activated only if the catalog is a composite, and only if one
         # of the composite catalogs is a knots catalog
         cat_info = gc.get_catalog_info()
-        if cat_info['subclass_name'] == composite.CompositeReader:
+        if cat_info['subclass_name'] == 'composite.CompositeReader':
             if 'knots' in [c['catalog_name'] for c in cat_info['catalogs']]:
                 additional_postfix += self._transform_knots(gc)
 
