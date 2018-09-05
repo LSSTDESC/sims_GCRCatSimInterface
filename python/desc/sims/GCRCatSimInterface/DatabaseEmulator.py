@@ -282,7 +282,7 @@ class DESCQAObject(object):
 
         if self._columns_need_postfix:
             self._columns_need_postfix += _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix]
-        else:
+        elif self._postfix:
             self._columns_need_postfix = _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix]
 
         self._catalog_id = yaml_file_name + self._cat_cache_suffix
