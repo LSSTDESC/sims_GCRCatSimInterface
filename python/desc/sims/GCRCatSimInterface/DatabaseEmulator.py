@@ -8,6 +8,7 @@ import numpy as np
 import re
 import healpy
 from lsst.sims.catalogs.db import fileDBObject
+from .SedFitter import disk_re
 
 _GCR_IS_AVAILABLE = True
 try:
@@ -376,7 +377,7 @@ class DESCQAObject(object):
 
         # Apply flux correction for the random walk
         add_postfix = []
-        disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
+        
         for name in gc.list_all_native_quantities():
             # To account for the new composite catalog API,where name is a tuple
             parent, name = name
