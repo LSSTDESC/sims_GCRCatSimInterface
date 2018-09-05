@@ -376,6 +376,8 @@ class DESCQAObject(object):
         # Apply flux correction for the random walk
         add_postfix = []
         for name in gc.list_all_native_quantities():
+            # To account for the new composite catalog API,where name is a tuple
+            parent, name = name
             if 'SEDs/diskLuminositiesStellar:SED' in name:
                 # The epsilon value is to keep the disk component, so that
                 # the random sequence in extinction parameters is preserved
