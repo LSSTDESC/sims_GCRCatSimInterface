@@ -377,9 +377,7 @@ class DESCQAObject(object):
         # Apply flux correction for the random walk
         add_postfix = []
 
-        for name in gc.list_all_quantities(include_native=True):
-            # To account for the new composite catalog API,where name is a tuple
-            parent, name = name
+        for name in gc.list_all_quantities():
             disk_match = disk_re.match(name)
             if disk_match is not None:
                 # The epsilon value is to keep the disk component, so that
