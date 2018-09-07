@@ -2,7 +2,8 @@
 This script will define classes that enable CatSim to interface with GCR
 """
 __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject",
-           "deg2rad_double", "arcsec2rad", "SNFileDBObject"]
+           "deg2rad_double", "arcsec2rad", "SNFileDBObject",
+           "AGN_postprocessing_mixin", "agnDESCQAObject"]
 
 import numpy as np
 import healpy
@@ -521,3 +522,89 @@ class SNFileDBObject(fileDBObject):
                ('Tredshift', 'z_in'),
                ('redshift', 'z_in'),
               ]
+
+
+class AGN_postprocessing_mixin(object):
+
+    def _postprocess_results(self, master_chunk):
+        """
+        query the database specified by agn_params_db to
+        find the AGN varParamStr associated with each AGN
+        """
+
+        if self.agn_objid is None:
+            gid_name = 'galaxy_id'
+            varpar_name = 'varParamStr'
+            magnorm_name = 'magNorm'
+        else:
+            gid_name = self.agn_objid + '_' + 'galaxy_id'
+            varpar_name = self.agn_objid + '_' + 'varParamStr'
+            magnorm_name = self.agn_objid + '_' + 'magNorm'
+
+        if self.agn_params_db is None:
+            return(master_chunk)
+
+        if not os.path.exists(self.agn_params_db):
+            raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
+
+        if not hasattr(self, '_agn_dbo'):
+            self._agn_dbo = DBObject(database=self.agn_params_db,
+                                     driver='sqlite')
+
+            self._agn_dtype = np.dtype([('galaxy_id', int),
+                                        ('magNorm', float),
+                                        ('varParamStr', str, 500)])
+
+        gid_arr = master_chunk[gid_name].astype(float)
+
+        gid_min = np.nanmin(gid_arr)
+        gid_max = np.nanmax(gid_arr)
+
+        query = 'SELECT galaxy_id, magNorm, varParamStr '
+        query += 'FROM agn_params '
+        query += 'WHERE galaxy_id BETWEEN %d AND %d ' % (gid_min, gid_max)
+        query += 'ORDER BY galaxy_id'
+
+        agn_data_iter = self._agn_dbo.get_arbitrary_chunk_iterator(query,
+                                                        dtype=self._agn_dtype,
+                                                        chunk_size=1000000)
+
+
+        m_sorted_dex = np.argsort(gid_arr)
+        m_sorted_id = gid_arr[m_sorted_dex]
+        for agn_chunk in agn_data_iter:
+
+            # find the indices of the elements in master_chunk
+            # that correspond to elements in agn_chunk
+            m_elements = np.in1d(m_sorted_id, agn_chunk['galaxy_id'])
+            m_dex = m_sorted_dex[m_elements]
+
+            # find the indices of the elements in agn_chunk
+            # that correspond to elements in master_chunk
+            a_dex = np.in1d(agn_chunk['galaxy_id'], m_sorted_id)
+
+            # make sure we have matched elements correctly
+            np.testing.assert_array_equal(agn_chunk['galaxy_id'][a_dex],
+                                          master_chunk[gid_name][m_dex])
+
+            if varpar_name in master_chunk.dtype.names:
+                master_chunk[varpar_name][m_dex] = agn_chunk['varParamStr'][a_dex]
+
+            if magnorm_name in master_chunk.dtype.names:
+                master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
+
+        return self._final_pass(master_chunk)
+
+
+class agnDESCQAObject(AGN_postprocessing_mixin):
+    objectTypeId = 127
+    objid = 'agn'
+    _columns_need_postfix = False
+
+    descqaDefaultValues = {'is_sprinkled': (0, int),
+                           'varParamStr': (None, (str, 500)),
+                           'magNorm': (np.NaN, np.float),
+                           'sedFilename': ('agn.spec', (str, 500))}
+
+    agn_params_db = None
+    agn_objid = None
