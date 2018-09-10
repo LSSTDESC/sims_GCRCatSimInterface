@@ -223,11 +223,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                'or a bulge catalog\n'
                                'self._cannot_be_null %s' % self._cannot_be_null)
 
-        # this is a hack to replace anomalous values of dust extinction
-        # with more reasonable values
-        if not hasattr(self, '_dust_rng'):
-            self._dust_rng = np.random.RandomState(182314)
-
         # temporarily suppress divide by zero warnings
         with np.errstate(divide='ignore', invalid='ignore'):
             av_name = 'A_v_%s' % lum_type
@@ -240,15 +235,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                 rv_name = 'R_v'
             rv_list = copy.copy(self.column_by_name(rv_name))
 
-            offensive_av = np.where(np.logical_or(np.isnan(av_list),
-                                    np.logical_or(av_list<0.001, av_list>3.1)))
-
-            av_list[offensive_av] = self._dust_rng.random_sample(len(offensive_av[0]))*3.1+0.001
-
-            offensive_rv = np.where(np.logical_or(np.isnan(rv_list),
-                                    np.logical_or(rv_list<1.0, rv_list>5.0)))
-
-            rv_list[offensive_rv] = self._dust_rng.random_sample(len(offensive_rv[0]))*4.0+1.0
+            min_rv = 0.01
+            rv_list = np.where(np.abs(rv_list)>min_rv, rv_list, min_rv)
 
         return np.array([av_list, rv_list])
 
