@@ -7,7 +7,6 @@ import os
 import copy
 import subprocess
 from collections import namedtuple
-import gzip
 import numpy as np
 import h5py
 
@@ -428,10 +427,7 @@ class InstanceCatalogWriter(object):
             full_name = os.path.join(out_dir, orig_name)
             if not os.path.exists(full_name):
                 continue
-            with open(full_name, 'rb') as input_file:
-                with gzip.open(full_name+'.gz', 'wb') as output_file:
-                    output_file.writelines(input_file)
-            os.unlink(full_name)
+            subprocess.call(['gzip', full_name])
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
