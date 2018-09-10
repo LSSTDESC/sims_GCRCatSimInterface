@@ -217,7 +217,7 @@ if __name__ == "__main__":
         for i_start in range(0, full_size, chunk_size):
             i_end = i_start + chunk_size
             if full_size-i_end<chunk_size:
-                i_end = full_size-1
+                i_end = full_size
             duration = (time.time()-t_start)/3600.0
             per = duration/(1+i_start)
             predicted = full_size*per
