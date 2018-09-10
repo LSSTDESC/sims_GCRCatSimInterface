@@ -186,7 +186,7 @@ class DESCQAChunkIterator(object):
                 vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
                                np.cos(dec_rad)*np.sin(ra_rad),
                                np.sin(dec_rad)])
-                healpix_list = healpy.query_disc(8, vv, radius_rad,
+                healpix_list = healpy.query_disc(32, vv, radius_rad,
                                                  inclusive=True,
                                                  nest=False)
 
