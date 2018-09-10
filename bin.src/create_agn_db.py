@@ -153,7 +153,7 @@ if __name__ == "__main__":
                                                 (lambda x: x>0.0,
                                                  'blackHoleAccretionRate'),
                                                 (lambda x:
-                                                    np.log10()>args.mbh_cut,
+                                                    np.log10(x)>args.mbh_cut,
                                                     'blackHoleMass')])
 
         accretion_rate_full = cat_qties['blackHoleAccretionRate']
