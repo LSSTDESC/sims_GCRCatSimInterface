@@ -4,6 +4,7 @@ import sqlite3
 import numpy as np
 import os
 import gc
+import time
 
 import GCRCatalogs
 from desc.sims.GCRCatSimInterface import M_i_from_L_Mass
@@ -212,11 +213,16 @@ if __name__ == "__main__":
         chunk_size = 100000
         full_size = len(redshift_full)
         print('starting iteration')
+        t_start = time.time()
         for i_start in range(0, full_size, chunk_size):
             i_end = i_start + chunk_size
             if full_size-i_end<chunk_size:
                 i_end = full_size-1
-            print("    %d through %d" % (i_start,i_end))
+            duration = (time.time()-t_start)/3600.0
+            per = duration/(1+i_start)
+            predicted = full_size*per
+            print("    %d through %d -- took %.2e hrs; predict %.2e" %
+            (i_start,i_end,duration,predicted))
 
             galaxy_id = galaxy_id_full[i_start:i_end]
             redshift = redshift_full[i_start:i_end]
