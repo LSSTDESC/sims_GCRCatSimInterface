@@ -520,7 +520,7 @@ class SNeDBObject(CatalogDBObject):
                ('Tx0', 'x0_in'),
                ('Tx1', 'x1_in'),
                ('Tc', 'c_in'),
-               ('id', 'snid_in', str, 20),
+               ('id', 'snid_in', str, 100),
                ('Tredshift', 'z_in'),
                ('redshift', 'z_in'),
               ]
