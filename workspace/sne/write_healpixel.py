@@ -24,6 +24,8 @@ if __name__ == '__main__':
     
 
     parser = ArgumentParser()
+    parser.add_argument('--out_dir', help='directory to store cvs files in',
+                        default='./')
     parser.add_argument('--data_root', help='path to directory where the galaxy files are located, defaults="./"',
                         default='./')
     parser.add_argument('--file_root', help='file name of the galaxy hdf5 file without the healpixel, eg. "gals_{0}_ra_dec.hdf" to which this will default to',
@@ -123,4 +125,4 @@ if __name__ == '__main__':
         hostedSNParamsPos = sn.get_positions(hosted_sn_params, np.random.RandomState(3 + randomSeedOffset))
         hostedSNParamsPos.snid = list(survey + 
                                      '_{0}_{1}'.format(healpixelId, ind) for ind in hostedSNParamsPos.snid.values)
-        hostedSNParamsPos.to_csv('sn_{0}_{1}.csv'.format(healpixelId, survey))
+        hostedSNParamsPos.to_csv(os.path.join(args.out_dir, 'sn_{0}_{1}.csv'.format(healpixelId, survey)))
