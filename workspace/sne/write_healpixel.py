@@ -40,7 +40,7 @@ if __name__ == '__main__':
     print(snsims.__version__)
     print(args)
 
-
+    assert os.path.isdir(args.out_dir)
     NSIDE = 32
     zmax = args.zmax
 
