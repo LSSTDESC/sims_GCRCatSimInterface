@@ -38,7 +38,7 @@ if __name__ == '__main__':
     print(args)
 
 
-    NSIDE = 8
+    NSIDE = 32
     zmax = args.zmax
     healpixelId = args.healpixelId
     fname = os.path.join(args.data_root, args.file_root)
