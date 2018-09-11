@@ -60,17 +60,30 @@ if __name__ == "__main__":
             params_list = []
             for line in input_lines:
                 params = line.strip().split(',')
-                assert len(params) == 23
 
-                htmid = findHtmid(float(params[21]), float(params[22]),
-                                  max_level=htmid_level)
+                if len(params) == 23:
+                    htmid = findHtmid(float(params[21]), float(params[22]),
+                                      max_level=htmid_level)
 
-                pv = [htmid, int(params[0])]
-                pv += [float(pp) for pp in params[1:6]]
-                pv += [float(params[11])]
-                pv += [params[20]]
-                pv += [float(params[21]), float(params[22])]
-                assert len(pv) == 11
+                    pv = [htmid, int(params[0])]
+                    pv += [float(pp) for pp in params[1:6]]
+                    pv += [float(params[11])]
+                    pv += [params[20]]
+                    pv += [float(params[21]), float(params[22])]
+
+                elif len(params) == 10:
+                    htmid = findHtmid(float(params[8]), float(params[9]),
+                                      max_level=htmid_level)
+
+                    pv = [htmid, int(params[0])]
+                    pv += [float(params[1]), float(params[2])]
+                    pv += [params[3]]
+                    pv += [float(pp) for pp in params[4:]]
+                else:
+                    raise RuntimeError("could not parse line\n"
+                                       + line
+                                       +"\n")
+
                 params_list.append(tuple(pv))
             cursor.executemany('''INSERT INTO sne_params
                                VALUES(?,?,?,?,?,?,?,?,?,?,?)''', params_list)
