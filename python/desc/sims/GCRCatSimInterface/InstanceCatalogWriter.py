@@ -32,7 +32,7 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
     sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
     TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
-from . import DC2PhosimCatalogSN, SNFileDBObject
+from . import DC2PhosimCatalogSN, SNeDBObject
 from . import hostImage
 from .TwinklesClasses import twinkles_spec_map
 
@@ -51,8 +51,8 @@ SNDTYPESR1p1 = np.dtype([('snid_in', int),
                          ('snra_in', float),
                          ('sndec_in', float)])
 
-def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
-                idColKey='snid_in', delimiter=',', dtype=SNDTYPESR1p1):
+def snphosimcat(fname, obs_metadata, objectIDtype, sedRootDir,
+                idColKey='snid_in'):
     """convenience function for writing out phosim instance catalogs for
     different SN populations in DC2 Run 1.1 that have been serialized to
     csv files.
@@ -60,9 +60,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     Parameters:
     -----------
     fname : string
-        absolute path to csv file for SN population.
-    tableName : string
-        table name describing the population to be decided by user choice.
+        absolute path to the sqlite database containing supernova parameters
     obs_metadata: instance of `lsst.sims.utils.ObservationMetaData`
 	observation metadata describing the observation
     objectIDtype : int
@@ -71,11 +69,6 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     sedRootDir : string
         root directory for writing spectra corresponding to pointings. The spectra
         will be written to the directory `sedRootDir/Dynamic/`
-    idColKey : string, defaults to values for Run1.1
-        describes the input parameters to the database as interpreted from the
-        csv file.
-    delimiter : string, defaults to ','
-        delimiter used in the csv file
     dtype : instance of `numpy.dtype`
         tuples describing the variables and types in the csv files.
 
@@ -85,9 +78,7 @@ def snphosimcat(fname, tableName, obs_metadata, objectIDtype, sedRootDir,
     returns an instance of a Phosim Instance catalogs with appropriate
     parameters set for the objects in the file and the obs_metadata.
     """
-    dbobj = SNFileDBObject(fname, runtable=tableName,
-                           idColKey=idColKey, dtype=dtype,
-                           delimiter=delimiter)
+    dbobj = SNeDBObject(fname, table='sne_params', driver='sqlite')
     dbobj.raColName = 'snra_in'
     dbobj.decColName = 'sndec_in'
     dbobj.objectTypeId = objectIDtype
@@ -118,7 +109,8 @@ class InstanceCatalogWriter(object):
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
                  protoDC2_ra=0, protoDC2_dec=0,
-                 agn_db_name=None, sprinkler=False, host_image_dir=None,
+                 agn_db_name=None, sn_db_name=None,
+                 sprinkler=False, host_image_dir=None,
                  host_data_dir=None):
         """
         Parameters
@@ -141,6 +133,8 @@ class InstanceCatalogWriter(object):
             Desired Dec (J2000 degrees) of protoDC2 center.
         agn_db_name: str [None]
             Filename of the agn parameter sqlite db file.
+        sn_db_name: str [None]
+            Filename of the supernova parameter sqlite db file.
         sprinkler: bool [False]
             Flag to enable the Sprinkler.
 	host_image_dir: string
@@ -183,6 +177,13 @@ class InstanceCatalogWriter(object):
                 self.agn_db_name = agn_db_name
             else:
                 raise IOError("Path to Proto DC2 AGN database does not exist.")
+
+        self.sn_db_name = None
+        if sn_db_name is not None:
+            if os.path.isfile(sn_db_name):
+                self.sn_db_name = sn_db_name
+            else:
+                raise IOError("%s is not a file" % sn_db_name)
 
         if host_image_dir is None and self.sprinkler is not False:
             raise IOError("Need to specify the name of the host image directory.")
@@ -236,24 +237,6 @@ class InstanceCatalogWriter(object):
         # in the PhoSim catalog
         written_catalog_names = []
         sprinkled_host_name = 'spr_hosts_%d.txt' % obsHistID
-
-	# SN Data
-        snDataDir = os.path.join(getPackageDir('sims_GCRCatSimInterface'), 'data')
-        sncsv_hostless_uDDF = 'uDDF_hostlessSN_trimmed.csv'
-        sncsv_hostless_pDC2 = 'MainSurvey_hostlessSN_trimmed.csv'
-        sncsv_hostless_pDC2hz = 'MainSurvey_hostlessSN_highz_trimmed.csv'
-        sncsv_hosted_uDDF = 'uDDFHostedSNPositions_trimmed.csv'
-        sncsv_hosted_pDC2 = 'MainSurveyHostedSNPositions_trimmed.csv'
-
-        snpopcsvs = list(os.path.join(snDataDir, n) for n in
-                        [sncsv_hostless_uDDF,
-                         sncsv_hostless_pDC2,
-                         sncsv_hostless_pDC2hz,
-                         sncsv_hosted_uDDF,
-                         sncsv_hosted_pDC2])
-
-        sn_names = list(snpop.split('/')[-1].split('.')[0].strip('_trimmed')
-                        for snpop in snpopcsvs)
 
         star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
         star_cat.min_mag = self.min_mag
@@ -325,9 +308,6 @@ class InstanceCatalogWriter(object):
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
-
-            object_catalogs = written_catalog_names +\
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
         else:
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
@@ -394,14 +374,12 @@ class InstanceCatalogWriter(object):
             host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_disks'),
                                     os.path.join(self.host_data_dir, 'sne_host_disk.csv.gz'),
                                     os.path.join(out_dir, sprinkled_host_name), append=True)
-            object_catalogs = written_catalog_names + [sprinkled_host_name]+\
-                          ['{}_cat_{}.txt'.format(x, obsHistID) for x in sn_names]
 
         # SN instance catalogs
-        for i, snpop in enumerate(snpopcsvs):
-            phosimcatalog = snphosimcat(snpop, tableName=sn_names[i],
-                                        sedRootDir=out_dir, obs_metadata=obs_md,
-                                        objectIDtype=i+42)
+        if self.sn_db_name is not None:
+            phosimcatalog = snphosimcat(self.sn_db_name, obs_metadata=obs_md,
+                                        objectIDtype=42, sedRootDir=out_dir)
+
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
@@ -409,9 +387,11 @@ class InstanceCatalogWriter(object):
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
+            written_catalog_names.append(snOutFile)
+
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, phosim_cat_name),
-                            object_catalogs=object_catalogs)
+                            object_catalogs=written_catalog_names)
 
         if os.path.exists(os.path.join(out_dir, gal_name)):
             full_name = os.path.join(out_dir, gal_name)
@@ -423,7 +403,7 @@ class InstanceCatalogWriter(object):
             os.unlink(full_name)
 
         # gzip the object files.
-        for orig_name in object_catalogs:
+        for orig_name in written_catalog_names:
             full_name = os.path.join(out_dir, orig_name)
             if not os.path.exists(full_name):
                 continue
