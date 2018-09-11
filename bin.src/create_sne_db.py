@@ -83,8 +83,9 @@ if __name__ == "__main__":
 
                     pv = [htmid, int(params[0])]
                     pv += [float(params[1]), float(params[2])]
+                    pv += [float(pp) for pp in params[4:8]]
                     pv += [params[3]]
-                    pv += [float(pp) for pp in params[4:]]
+                    pv += [float(params[8]), float(params[9])]
                 else:
                     raise RuntimeError("could not parse line\n"
                                        + line
