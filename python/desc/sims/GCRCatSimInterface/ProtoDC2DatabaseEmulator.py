@@ -64,7 +64,6 @@ class FieldRotator(object):
         rot_dist = angularSeparation(ra0, dec0, ra1, dec1)
         if rot_dist<1.0/3600.0:
             self._needs_to_be_rotated = False
-            print('\n\nno need to do the rotation\n\n')
             return
 
         # find the rotation that carries the original field center
