@@ -1,21 +1,32 @@
 import sqlite3
 import os
 from lsst.sims.utils import findHtmid
-
+import argparse
 
 if __name__ == "__main__":
 
-    db_name = 'dc2_sne_params.db'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out_file', type=str, default=None,
+                        help='name of the file to write')
+    parser.add_argument('--in_dir', type=str, default=None,
+                        help="name of directory containing the csv files "
+                        "to be read into the database; all files ending in "
+                        "'.csv' will be read.")
 
-    data_dir = 'data'
-    data_dir_file_names = os.listdir(data_dir)
+    args = parser.parse_args()
+    if args.out_file is None:
+        raise RuntimeError("Must specify out_file")
+    if args.in_dir is None:
+        raise RuntimeError("Must specify in_dir")
 
-    if os.path.exists(db_name):
-        raise RuntimeError("%s already exists" % db_name)
+    data_dir_file_names = os.listdir(args.in_dir)
+
+    if os.path.exists(args.out_file):
+        raise RuntimeError("%s already exists" % args.out_file)
 
     htmid_level = 6
 
-    with sqlite3.connect(db_name) as conn:
+    with sqlite3.connect(args.out_file) as conn:
         cursor = conn.cursor()
         creation_cmd = """CREATE TABLE sne_params (
                           htmid_level_6 int,
@@ -48,7 +59,7 @@ if __name__ == "__main__":
         for file_name in data_dir_file_names:
             if not file_name.endswith('csv'):
                 continue
-            full_name = os.path.join(data_dir, file_name)
+            full_name = os.path.join(args.in_dir, file_name)
             print('reading %s' % file_name)
 
             with open(full_name, 'r') as input_file:
