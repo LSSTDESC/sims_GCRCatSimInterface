@@ -7,6 +7,7 @@ import os
 from desc.sims.GCRCatSimInterface import DESCQAObject
 from desc.sims.GCRCatSimInterface import deg2rad_double, arcsec2rad
 
+from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import DBObject
 
 __all__ = ["DESCQAObject_protoDC2",
@@ -56,6 +57,14 @@ class FieldRotator(object):
         due north of the field center at the new location.  Finally,
         points are transformed back into the original x,y,z bases.
         """
+
+        # do we actually need to do the rotation, or is the simulation
+        # already in the right spot?
+        self._needs_to_be_rotated = True
+        rot_dist = angularSeparation(ra0, dec0, ra1, dec1)
+        if rot_dist<1.0/3600.0:
+            self._needs_to_be_rotated = False
+            return
 
         # find the rotation that carries the original field center
         # to the new field center
@@ -173,6 +182,8 @@ class DESCQAObject_protoDC2(DESCQAObject):
         if not hasattr(self, '_field_rotator'):
             self._field_rotator = FieldRotator(0.0, 0.0, self.field_ra, self.field_dec)
 
+        if not self._field_rotator._needs_to_be_rotated:
+            return ra_rad, dec_rad
 
         if self._rotate_ra_in_cache is None or \
            not np.array_equal(ra_rad, self._rotate_ra_in_cache) or \

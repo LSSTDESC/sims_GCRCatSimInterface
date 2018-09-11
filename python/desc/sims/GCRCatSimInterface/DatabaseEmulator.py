@@ -2,11 +2,13 @@
 This script will define classes that enable CatSim to interface with GCR
 """
 __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject",
-           "deg2rad_double", "arcsec2rad", "SNFileDBObject"]
+           "deg2rad_double", "arcsec2rad", "SNeDBObject"]
 
 import numpy as np
 import healpy
-from lsst.sims.catalogs.db import fileDBObject
+from sqlalchemy import text
+from lsst.sims.catalogs.db import CatalogDBObject, ChunkIterator
+from lsst.sims.utils import htmModule as htm
 from .SedFitter import disk_re
 
 _GCR_IS_AVAILABLE = True
@@ -186,7 +188,7 @@ class DESCQAChunkIterator(object):
                 vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
                                np.cos(dec_rad)*np.sin(ra_rad),
                                np.sin(dec_rad)])
-                healpix_list = healpy.query_disc(8, vv, radius_rad,
+                healpix_list = healpy.query_disc(32, vv, radius_rad,
                                                  inclusive=True,
                                                  nest=False)
 
@@ -301,8 +303,8 @@ class DESCQAObject(object):
 
         gc is a GCR catalog instance
         """
-        gc.add_derived_quantity('raJ2000', deg2rad_double, 'ra_true')
-        gc.add_derived_quantity('decJ2000', deg2rad_double, 'dec_true')
+        gc.add_derived_quantity('raJ2000', deg2rad_double, 'ra')
+        gc.add_derived_quantity('decJ2000', deg2rad_double, 'dec')
 
     def _transform_catalog(self, gc):
         """
@@ -496,11 +498,12 @@ class knotsDESCQAObject(DESCQAObject):
     _postfix = '::knots'
 
 
-class SNFileDBObject(fileDBObject):
-    """
-    Use FileDBObject to provide CatalogDBObject functionality for SN
-    with host galaxies from protoDC2 output to csv files before
-    """
+class SNeDBObject(CatalogDBObject):
+    raColName = 'snra_in'
+    decColName = 'sndec_in'
+    objectTypeId = 22
+    idColKey = 'id'
+
     dbDefaultValues = {'varsimobjid':-1,
                        'runid':-1,
                        'ismultiple':-1,
@@ -517,7 +520,73 @@ class SNFileDBObject(fileDBObject):
                ('Tx0', 'x0_in'),
                ('Tx1', 'x1_in'),
                ('Tc', 'c_in'),
-               ('id', 'snid_in'),
+               ('id', 'snid_in', str, 100),
                ('Tredshift', 'z_in'),
                ('redshift', 'z_in'),
               ]
+
+    def query_columns(self, colnames=None, chunk_size=None,
+                      obs_metadata=None, constraint=None, limit=None):
+        """Execute a query
+
+        We are reimplementing this method so that we can make use of
+        lsst.sims.utils.htmModule to exploit the HTMID index in the
+        supernova parameter database when doing the search.
+
+        **Parameters**
+
+            * colnames : list or None
+              a list of valid column names, corresponding to entries in the
+              `columns` class attribute.  If not specified, all columns are
+              queried.
+            * chunk_size : int (optional)
+              if specified, then return an iterator object to query the database,
+              each time returning the next `chunk_size` elements.  If not
+              specified, all matching results will be returned.
+            * obs_metadata : object (optional)
+              an observation metadata object which has a "filter" method, which
+              will add a filter string to the query.
+            * constraint : str (optional)
+              a string which is interpreted as SQL and used as a predicate on the query
+            * limit : int (optional)
+              limits the number of rows returned by the query
+
+        **Returns**
+
+            * result : list or iterator
+              If chunk_size is not specified, then result is a list of all
+              items which match the specified query.  If chunk_size is specified,
+              then result is an iterator over lists of the given size.
+
+        """
+        query = self._get_column_query(colnames)
+
+        if obs_metadata is not None:
+
+            if obs_metadata.boundType == 'circle':
+                half_space = htm.halfSpaceFromRaDec(obs_metadata.pointingRA,
+                                                    obs_metadata.pointingDec,
+                                                    obs_metadata.boundLength)
+
+                trixel_bounds = half_space.findAllTrixels(6)
+                trixel_query = '('
+                for bound in trixel_bounds:
+                    if trixel_query != '(':
+                        trixel_query += ' or '
+                    if bound[0] == bound[1]:
+                        trixel_query += '(htmid_level_6 == %d)' % bound[0]
+                    else:
+                        trixel_query += '(htmid_level_6 >= %d and htmid_level_6 <= %d)' % (bound[0], bound[1])
+
+                trixel_query+=')'
+                query = query.filter(text(trixel_query))
+
+            query = self.filter(query, obs_metadata.bounds)
+
+        if constraint is not None:
+            query = query.filter(text(constraint))
+
+        if limit is not None:
+            query = query.limit(limit)
+
+        return ChunkIterator(self, query, chunk_size)
