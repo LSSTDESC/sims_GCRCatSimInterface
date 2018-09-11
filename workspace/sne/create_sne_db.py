@@ -1,3 +1,8 @@
+"""
+This script will a directory containing csv files with the SNe parameters
+for DC2 and load those parameters into a sqlite file that can be queried
+by the InstanceCatalog generation code.
+"""
 import sqlite3
 import os
 from lsst.sims.utils import findHtmid
