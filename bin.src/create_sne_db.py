@@ -6,6 +6,7 @@ by the InstanceCatalog generation code.
 import sqlite3
 import os
 from lsst.sims.utils import findHtmid
+import time
 import argparse
 
 if __name__ == "__main__":
@@ -48,11 +49,16 @@ if __name__ == "__main__":
 
         cursor.execute(creation_cmd)
         conn.commit()
-        for file_name in data_dir_file_names:
+        t_start = time.time()
+        for i_file, file_name in enumerate(data_dir_file_names):
             if not file_name.endswith('csv'):
                 continue
+            duration = (time.time()-t_start)/3600.0
+            per = duration/(i_file+1)
+            predict = per*len(data_dir_file_names)
             full_name = os.path.join(args.in_dir, file_name)
-            print('reading %s' % file_name)
+            print('reading %s; elapsed %.2e; predict %.2e' %
+            (file_name, duration, predict))
 
             with open(full_name, 'r') as input_file:
                 input_lines = input_file.readlines()[1:]
