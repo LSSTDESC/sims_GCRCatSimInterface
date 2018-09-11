@@ -25,8 +25,8 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--data_root', help='path to directory where the galaxy files are located, defaults="./"',
                         default='./')
-    parser.add_argument('--file_root', help='file name of the galaxy hdf5 file without the healpixel, eg. "gals_{0}_ra_dec" to which this will default to',
-                        default='gals_{0}_ra_dec')
+    parser.add_argument('--file_root', help='file name of the galaxy hdf5 file without the healpixel, eg. "gals_{0}_ra_dec.hdf" to which this will default to',
+                        default='gals_{0}_ra_dec.hdf')
     parser.add_argument('--healpixelId', type=int, help='healpixel ID used', default=564)
     parser.add_argument('--randomSeedOffset', type=int, help='integer to offset random seeds by, None offsets by healpixelID', default=None)
     parser.add_argument('--survey', type=str, help='main survey or DDF, MS|mDDF', default='MS')
