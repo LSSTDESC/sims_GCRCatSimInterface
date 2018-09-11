@@ -44,7 +44,7 @@ if __name__ == '__main__':
     NSIDE = 32
     zmax = args.zmax
 
-    if args.heaplixelId is not None:
+    if args.healpixelId is not None:
         healpix_list = [args.healpixelId]
     else:
         cf = GCRCatalogs.get_catalog_config('cosmoDC2_v1.0_image')
