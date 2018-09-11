@@ -125,6 +125,9 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
     by leaving out the parts of the directory name. Also fix name changes from
     gamma to shear.
     """
+    def get_uniqueId(self):
+        return self.column_by_name(self.refIdCol)
+
     def get_sedFilepath(self):
         return self.column_by_name('TsedFilepath')
 
