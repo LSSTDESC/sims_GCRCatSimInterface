@@ -1,7 +1,4 @@
 import sys
-# sys.path.insert(0, "/global/homes/k/kovacs/gcr-catalogs_cosmoDC2_v1.0/")
-sys.path.insert(0, "/global/homes/r/rbiswas/src/DC2/gcr-catalogs")
-
 import GCRCatalogs
 import os
 
