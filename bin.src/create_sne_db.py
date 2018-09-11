@@ -41,20 +41,7 @@ if __name__ == "__main__":
                           t0_in real,
                           x0_in real,
                           x1_in real,
-                          rand_host real,
-                          zbin int,
-                          decJ2000_gal real,
-                          'morphology/positionAngle' real,
-                          raJ2000_gal real,
                           z_in real,
-                          'morphology/spheroidHalfLightRadiusArcsec' real,
-                          'morphology/diskHalfLightRadiusArcsec' real,
-                          'morphology/spheroidMinorAxisArcsec' real,
-                          'morphology/diskMinorAxisArcsec' real,
-                          totalMassStellar real,
-                          stellar_mass_bulge real,
-                          diskMassStellar real,
-                          zbin_gals int,
                           snid_in text,
                           snra_in real,
                           sndec_in real)"""
@@ -79,16 +66,14 @@ if __name__ == "__main__":
                                   max_level=htmid_level)
 
                 pv = [htmid, int(params[0])]
-                pv += [float(pp) for pp in params[1:7]]
-                pv += [int(params[7])]
-                pv += [float(pp) for pp in params[8:19]]
-                pv += [int(params[19])]
+                pv += [float(pp) for pp in params[1:6]]
+                pv += [float(params[11])]
                 pv += [params[20]]
                 pv += [float(params[21]), float(params[22])]
+                assert len(pv) == 11
                 params_list.append(tuple(pv))
             cursor.executemany('''INSERT INTO sne_params
-                               VALUES(?,?,?,?,?,?,?,?,?,?,?,
-                               ?,?,?,?,?,?,?,?,?,?,?,?,?)''', params_list)
+                               VALUES(?,?,?,?,?,?,?,?,?,?,?)''', params_list)
 
             conn.commit()
 
