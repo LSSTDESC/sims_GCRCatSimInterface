@@ -383,7 +383,7 @@ class InstanceCatalogWriter(object):
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = sn_names[i] +'_cat_{}.txt'.format(obsHistID)
+            snOutFile = 'sne_cat_{}.txt'.format(obsHistID)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
