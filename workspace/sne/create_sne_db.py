@@ -39,7 +39,7 @@ if __name__ == "__main__":
                           stellar_mass_bulge real,
                           diskMassStellar real,
                           zbin_gals int,
-                          snid text,
+                          snid_in text,
                           snra_in real,
                           sndec_in real)"""
 
