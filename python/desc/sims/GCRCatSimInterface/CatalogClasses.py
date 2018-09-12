@@ -340,7 +340,18 @@ class TruthPhoSimDESCQA(SprinklerTruthCatMixin, PhoSimDESCQA):
 
 class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
-    cannot_be_null = ['sedFilepath', 'magNorm']
+    column_outputs = ['prefix', 'uniqueId', 'raPhoSim', 'decPhoSim', 'magNormFiltered', 'sedFilepath',
+                      'redshift', 'gamma1', 'gamma2', 'kappa', 'raOffset', 'decOffset',
+                      'spatialmodel', 'internalExtinctionModel',
+                      'galacticExtinctionModel', 'galacticAv', 'galacticRv']
+
+
+    cannot_be_null = ['sedFilepath', 'magNormFiltered']
+
+    @cached
+    def get_magNormFiltered(self):
+        mm = self.column_by_name('phoSimMagNorm')
+        return np.where(mm>10.0, mm, 10.0)
 
     @cached
     def get_prefix(self):
