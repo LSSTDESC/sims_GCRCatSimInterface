@@ -351,7 +351,7 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
     @cached
     def get_magNormFiltered(self):
         mm = self.column_by_name('phoSimMagNorm')
-        return np.where(mm>10.0, mm, 10.0)
+        return np.where(np.logical_or(np.logical_not(np.isfinite(mm)), mm>10.0), mm, 10.0)
 
     @cached
     def get_prefix(self):
