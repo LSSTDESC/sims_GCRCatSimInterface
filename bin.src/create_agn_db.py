@@ -214,10 +214,9 @@ if __name__ == "__main__":
         full_size = len(redshift_full)
         print('starting iteration')
         t_start = time.time()
+        ct_simulated = 0
         for i_start in range(0, full_size, chunk_size):
             i_end = i_start + chunk_size
-            if full_size-i_end<chunk_size:
-                i_end = full_size
             duration = (time.time()-t_start)/3600.0
             per = duration/(1+i_start)
             predicted = full_size*per
@@ -225,6 +224,7 @@ if __name__ == "__main__":
             (i_start,i_end,duration,predicted))
 
             galaxy_id = galaxy_id_full[i_start:i_end]
+            ct_simulated += len(galaxy_id)
             redshift = redshift_full[i_start:i_end]
             log_edd_ratio = log_edd_ratio_full[i_start:i_end]
             bhm = bhm_full[i_start:i_end]
@@ -283,6 +283,8 @@ if __name__ == "__main__":
 
             cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?)', vals)
             connection.commit()
+
+        assert ct_simulated == full_size
 
         print('creating index')
         cursor.execute('CREATE INDEX gal_id ON agn_params (galaxy_id)')
