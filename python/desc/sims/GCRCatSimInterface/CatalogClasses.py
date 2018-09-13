@@ -197,7 +197,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
-        output = np.where(self.column_by_name('stellar_mass_disk')>0.0, 1.0, None)
+        output = np.where(self.column_by_name('stellar_mass_disk')>0.0, 1.0, np.NaN)
         return output
 
     @cached
@@ -206,7 +206,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_hasBulge(self):
-        output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, None)
+        output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, np.NaN)
         return output
 
     @compound('internalAv_fitted', 'internalRv_fitted')
