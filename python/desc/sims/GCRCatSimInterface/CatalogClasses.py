@@ -2,7 +2,6 @@ import os
 import re
 import numpy as np
 import copy
-import gzip
 from .SedFitter import sed_from_galacticus_mags
 from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
@@ -91,14 +90,7 @@ class SubCatalogMixin(object):
                                        + "which was already created")
             else:
                 write_mode = 'a'
-
-            open_fn = open
-            actual_write_mode = write_mode
-            if subcat_name.endswith('gz'):
-                open_fn = gzip.open
-                actual_write_mode = write_mode+'t'
-
-            self._subcat_file_handle = open_fn(subcat_name, actual_write_mode)
+            self._subcat_file_handle = open(subcat_name, write_mode)
             self._subcat_cat_written = True
             self._list_of_opened_subcats.add(subcat_name)
 
