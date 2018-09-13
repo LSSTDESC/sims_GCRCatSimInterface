@@ -34,6 +34,8 @@ def deg2rad_double(x):
 def arcsec2rad(x):
     return np.deg2rad(x/3600.0)
 
+# The depth below which to ignore the knots
+KNOTS_IMAG_CUT = 27
 
 # a cache to store loaded catalogs to prevent them
 # from being loaded more than once, eating up
@@ -385,8 +387,8 @@ class DESCQAObject(object):
                 # The epsilon value is to keep the disk component, so that
                 # the random sequence in extinction parameters is preserved
                 eps = np.finfo(np.float32).eps
-                gc.add_derived_quantity(name+'::disk', lambda x,y: x*np.clip(1-y, eps, None), name, 'knots_flux_ratio')
-                gc.add_derived_quantity(name+'::knots', lambda x,y: x*np.clip(y, eps,None), name, 'knots_flux_ratio')
+                gc.add_derived_quantity(name+'::disk', lambda x,y,imag:  (imag <= KNOTS_IMAG_CUT) * x*np.clip(1-y, eps, None) + (imag > KNOTS_IMAG_CUT)*x, name, 'knots_flux_ratio', 'mag_i_lsst')
+                gc.add_derived_quantity(name+'::knots', lambda x,y,imag: (imag <= KNOTS_IMAG_CUT) * x*np.clip(y, eps,None)  , name, 'knots_flux_ratio', 'mag_i_lsst')
                 add_postfix.append(name)
 
         # Returning these columns so that they can be registered for postfix filtering

@@ -197,7 +197,9 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
-        output = np.where(self.column_by_name('stellar_mass_disk')>0.0, 1.0, None)
+        output = np.where(np.logical_and(self.column_by_name('stellar_mass_disk')>0.0,
+                                         np.isfinite(self.column_by_name('A_v_disk').astype(float))),
+                          1.0, None)
         return output
 
     @cached
