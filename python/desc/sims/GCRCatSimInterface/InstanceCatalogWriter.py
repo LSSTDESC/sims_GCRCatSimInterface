@@ -9,6 +9,7 @@ import subprocess
 from collections import namedtuple
 import numpy as np
 import h5py
+import gzip
 
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import PhotometricParameters
@@ -227,11 +228,11 @@ class InstanceCatalogWriter(object):
         # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
 
-        phosim_cat_name = 'phosim_cat_%d.txt' % obsHistID
-        star_name = 'star_cat_%d.txt' % obsHistID
-        bright_star_name = 'bright_stars_%d.txt' % obsHistID
-        gal_name = 'gal_cat_%d.txt' % obsHistID
-        knots_name = 'knots_cat_%d.txt' % obsHistID
+        phosim_cat_name = 'phosim_cat_%d.txt.gz' % obsHistID
+        star_name = 'star_cat_%d.txt.gz' % obsHistID
+        bright_star_name = 'bright_stars_%d.txt.gz' % obsHistID
+        gal_name = 'gal_cat_%d.txt.gz' % obsHistID
+        knots_name = 'knots_cat_%d.txt.gz' % obsHistID
         # keep track of all of the non-supernova InstanceCatalogs that
         # have been written so that we can remember to includeobj them
         # in the PhoSim catalog
@@ -383,7 +384,7 @@ class InstanceCatalogWriter(object):
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
-            snOutFile = 'sne_cat_{}.txt'.format(obsHistID)
+            snOutFile = 'sne_cat_{}.txt.gz'.format(obsHistID)
             phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
                                         chunk_size=10000, write_header=False)
 
@@ -401,13 +402,6 @@ class InstanceCatalogWriter(object):
                     raise RuntimeError("%d lines in\n%s\nThat file should be empty" %
                                        (len(gal_lines), full_name))
             os.unlink(full_name)
-
-        # gzip the object files.
-        for orig_name in written_catalog_names:
-            full_name = os.path.join(out_dir, orig_name)
-            if not os.path.exists(full_name):
-                continue
-            subprocess.call(['gzip', full_name])
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
@@ -441,7 +435,13 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     cat.phoSimHeaderMap['vistime'] = vistime
     cat.phoSimHeaderMap['camconfig'] = 1
 
-    with open(outfile, 'w') as output:
+    write_mode = 'w'
+    open_fn = open
+    if outfile.endswith('gz'):
+        write_mode = 'wt'
+        open_fn = gzip.open
+
+    with open_fn(outfile, write_mode) as output:
         cat.write_header(output)
         output.write('minsource %i\n' % minsource)
         for cat_name in object_catalogs:
