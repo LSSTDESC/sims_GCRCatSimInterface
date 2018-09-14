@@ -50,6 +50,7 @@ def generate_instance_catalog(args, lock=None):
             generate_instance_catalog.instcat_writer = instcat_writer
 
 
+        print("localling writing %s" % str(args.ids))
         for obsHistID in args.ids:
             if args.job_log is not None:
                 if lock is not None:
