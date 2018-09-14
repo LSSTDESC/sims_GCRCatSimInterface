@@ -281,10 +281,10 @@ class InstanceCatalogWriter(object):
             cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasBulge', 'magNorm'])
             cat_name = 'bulge_'+gal_name
+            cat.lsstBandpassDict = self.bp_dict
+            cat.photParams = self.phot_params
             cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
-            cat.photParams = self.phot_params
-            cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
@@ -293,10 +293,10 @@ class InstanceCatalogWriter(object):
             cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasDisk', 'magNorm'])
             cat_name = 'disk_'+gal_name
+            cat.lsstBandpassDict = self.bp_dict
+            cat.photParams = self.phot_params
             cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
-            cat.photParams = self.phot_params
-            cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
@@ -304,11 +304,11 @@ class InstanceCatalogWriter(object):
             agn_db.field_dec = self.protoDC2_dec
             agn_db.agn_params_db = self.agn_db_name
             cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
+            cat.lsstBandpassDict = self.bp_dict
+            cat.photParams = self.phot_params
             cat_name = 'agn_'+gal_name
             cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
-            cat.photParams = self.phot_params
-            cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
         else:
 
