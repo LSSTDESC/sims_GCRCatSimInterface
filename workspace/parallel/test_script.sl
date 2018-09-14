@@ -1,6 +1,6 @@
 #!/bin/bash -l
 #SBATCH -N 2 
-#SBATCH -t 00:20:00
+#SBATCH -t 00:25:00
 #SBATCH -A m1727
 #SBATCH -q debug
 #SBATCH --ntasks-per-node=1
