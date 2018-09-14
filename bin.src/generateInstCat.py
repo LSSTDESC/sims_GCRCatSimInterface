@@ -56,7 +56,7 @@ def generate_instance_catalog(args=None, lock=None):
                 if lock is not None:
                     lock.acquire()
                 with open(args.job_log, 'a') as out_file:
-                    out_file.write('starting %d at time %.0f' % (obsHistID, time.time()))
+                    out_file.write('starting %d at time %.0f\n' % (obsHistID, time.time()))
                 if lock is not None:
                     lock.release()
 
@@ -68,7 +68,7 @@ def generate_instance_catalog(args=None, lock=None):
                 if lock is not None:
                     lock.acquire()
                 with open(args.job_log, 'a') as out_file:
-                    out_file.write('starting %d at time %.0f' % (obsHistID, time.time()))
+                    out_file.write('ending %d at time %.0f\n' % (obsHistID, time.time()))
                 if lock is not None:
                     lock.release()
 
@@ -139,6 +139,6 @@ if __name__ == "__main__":
             p.join()
 
     with open(args.job_log, 'a') as out_file:
-        out_file.write('%s should be completed' % str(args.ids))
+        out_file.write('%s should be completed\n' % str(args.ids))
 
     print('wrote log to %s' % args.job_log)
