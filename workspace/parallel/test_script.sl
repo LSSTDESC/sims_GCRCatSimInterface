@@ -4,7 +4,7 @@
 #SBATCH -A m1727
 #SBATCH -q debug
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=12
+#SBATCH --cpus-per-task=2
 #SBATCH -C haswell
 
 source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
