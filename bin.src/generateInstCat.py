@@ -20,7 +20,7 @@ with warnings.catch_warnings():
     from desc.sims.GCRCatSimInterface import InstanceCatalogWriter
 
 
-def generate_instance_catalog(args, lock=None):
+def generate_instance_catalog(args=None, lock=None):
     print('in generate_instance_catalog ',args.ids)
     with warnings.catch_warnings():
         if args.suppress_warnings:
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.n_jobs==1 or isinstance(args.ids, numbers.Number) or len(args.ids)==1:
-        generate_instance_catalog(args)
+        generate_instance_catalog(args=args)
     else:
         lock = multiprocessing.Lock()
         job_list = []
@@ -131,8 +131,7 @@ if __name__ == "__main__":
             local_args = copy.deepcopy(args)
             local_args.ids = args.ids[i_start:i_start+n_id]
             p = multiprocessing.Process(target=generate_instance_catalog,
-                                        args=(local_args),
-                                        kwargs={'lock':lock})
+                                        kwargs={'args':local_args, 'lock':lock})
             p.start()
             job_list.append(p)
 
