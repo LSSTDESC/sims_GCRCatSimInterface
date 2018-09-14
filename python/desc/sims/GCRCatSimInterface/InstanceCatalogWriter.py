@@ -218,7 +218,7 @@ class InstanceCatalogWriter(object):
             the LSST focal plane.
         """
         if not os.path.exists(out_dir):
-            os.mkdir(out_dir)
+            os.makedirs(out_dir)
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory for writing the GLSN spectra to
