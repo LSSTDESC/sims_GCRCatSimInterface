@@ -127,7 +127,7 @@ if __name__ == "__main__":
         lock = multiprocessing.Lock()
         job_list = []
         n_id = len(args.ids)//args.n_jobs  # number of ids per job
-        for i_start in range(len(args.ids), n_id):
+        for i_start in range(0, len(args.ids), n_id):
             local_args = copy.deepcopy(args)
             local_args.ids = args.ids[i_start:i_start+n_id]
             p = multiprocessing.Process(target=generate_instance_catalog,
