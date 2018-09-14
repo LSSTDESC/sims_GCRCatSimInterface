@@ -229,8 +229,6 @@ class InstanceCatalogWriter(object):
                 os.unlink(status_file)
             has_status_file = True
 
-        print('writing %d to %s' % (obsHistID,out_dir))
-
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory for writing the GLSN spectra to
         glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))

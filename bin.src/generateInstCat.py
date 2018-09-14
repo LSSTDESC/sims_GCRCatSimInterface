@@ -21,7 +21,7 @@ with warnings.catch_warnings():
 
 
 def generate_instance_catalog(args=None, lock=None):
-    print('in generate_instance_catalog ',args.ids)
+
     with warnings.catch_warnings():
         if args.suppress_warnings:
             warnings.filterwarnings('ignore', '\nThis call', UserWarning)
@@ -33,7 +33,6 @@ def generate_instance_catalog(args=None, lock=None):
             warnings.filterwarnings('ignore', 'invalid value', RuntimeWarning)
 
         if not hasattr(generate_instance_catalog, 'instcat_writer'):
-            print('creating writer for ',args.ids)
             instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
                                                    dither=not args.disable_dithering,
                                                    min_mag=args.min_mag,
@@ -50,7 +49,6 @@ def generate_instance_catalog(args=None, lock=None):
             generate_instance_catalog.instcat_writer = instcat_writer
 
 
-        print("locally writing %s" % str(args.ids))
         for obsHistID in args.ids:
             if args.job_log is not None:
                 if lock is not None:
@@ -143,5 +141,3 @@ if __name__ == "__main__":
 
     with open(args.job_log, 'a') as out_file:
         out_file.write('%s should be completed\n' % str(args.ids))
-
-    print('wrote log to %s' % args.job_log)
