@@ -125,8 +125,8 @@ if __name__ == "__main__":
     else:
         lock = multiprocessing.Lock()
         job_list = []
-        n_id = len(args.id)//args.n_jobs  # number of ids per job
-        for i_start in range(len(args.id), n_id):
+        n_id = len(args.ids)//args.n_jobs  # number of ids per job
+        for i_start in range(len(args.ids), n_id):
             local_args = copy.deepcopy(args)
             local_args.ids = args.ids[i_start:i_start+n_id]
             p = multiprocessing.Process(target=generate_instance_catalog,
@@ -139,4 +139,4 @@ if __name__ == "__main__":
             p.join()
 
         with open(job_log, 'a'):
-            print('%s should be completed' % str(args.id))
+            print('%s should be completed' % str(args.ids))
