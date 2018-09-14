@@ -3,7 +3,7 @@
 #SBATCH -t 00:7:00
 #SBATCH -A m1727
 #SBATCH -q debug
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH -C haswell
 
 source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
@@ -13,8 +13,8 @@ setup -j -r $HOME/sims_catUtils
 
 export PYTHONPATH=$HOME/gcr-catalogs-desc/:$PYTHONPATH
 
-export OMP_NUM_THREADS=6
-export NUMEXPR_NUM_THREADS=6
+export OMP_NUM_THREADS=3
+export NUMEXPR_NUM_THREADS=3
 export MKL_NUM_THREADS=1
 
 out_dir=$SCRATCH/parallel_instcat_2
