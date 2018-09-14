@@ -130,7 +130,8 @@ if __name__ == "__main__":
             local_args = copy.deepcopy(args)
             local_args.ids = args.ids[i_start:i_start+n_id]
             p = multiprocessing.Process(target=generate_instance_catalog,
-                                        args=(local_args, lock=lock))
+                                        args=(local_args),
+                                        kwargs={'lock':lock})
             p.start()
             job_list.append(p)
 
