@@ -2,6 +2,10 @@
 import argparse
 import warnings
 import os
+import copy
+import time
+import multiprocessing
+import numbers
 from astropy._erfa import ErfaWarning
 
 with warnings.catch_warnings():
@@ -14,6 +18,59 @@ with warnings.catch_warnings():
     warnings.filterwarnings('ignore', 'invalid value', RuntimeWarning)
 
     from desc.sims.GCRCatSimInterface import InstanceCatalogWriter
+
+
+def generate_instance_catalog(args, lock=None):
+
+    with warnings.catch_warnings():
+        if args.suppress_warnings:
+            warnings.filterwarnings('ignore', '\nThis call', UserWarning)
+            warnings.filterwarnings('ignore', 'Duplicate object type', UserWarning)
+            warnings.filterwarnings('ignore', 'No md5 sum', UserWarning)
+            warnings.filterwarnings('ignore', 'ERFA function', ErfaWarning)
+            warnings.filterwarnings('ignore', 'Numpy has detected', FutureWarning)
+            warnings.filterwarnings('ignore', 'divide by zero', RuntimeWarning)
+            warnings.filterwarnings('ignore', 'invalid value', RuntimeWarning)
+
+        if not hasattr(generate_instance_catalog, 'instcat_writer'):
+
+            instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
+                                                   dither=not args.disable_dithering,
+                                                   min_mag=args.min_mag,
+                                                   minsource=args.minsource,
+                                                   proper_motion=args.enable_proper_motion,
+                                                   protoDC2_ra=args.protoDC2_ra,
+                                                   protoDC2_dec=args.protoDC2_dec,
+                                                   agn_db_name=args.agn_db_name,
+                                                   sn_db_name=args.sn_db_name,
+					           host_image_dir=args.host_image_dir,
+                                                   host_data_dir=args.host_data_dir,
+                                                   sprinkler=args.enable_sprinkler)
+
+            generate_instance_catalog.instcat_writer = instcat_writer
+
+
+        for obsHistID in args.ids:
+            if args.job_log is not None:
+                if lock is not None:
+                    lock.acquire()
+                with open(args.job_log, 'a') as out_file:
+                    out_file.write('starting %d at time %.0f' % (obsHistID, time.time()))
+                if lock is not None:
+                    lock.release()
+
+            generate_instance_catalog.instcat_writer.write_catalog(obsHistID,
+                                                                   out_dir=args.out_dir,
+                                                                   fov=args.fov)
+
+            if args.job_log is not None:
+                if lock is not None:
+                    lock.acquire()
+                with open(args.job_log, 'a') as out_file:
+                    out_file.write('starting %d at time %.0f' % (obsHistID, time.time()))
+                if lock is not None:
+                    lock.release()
+
 
 if __name__ == "__main__":
 
@@ -57,30 +114,28 @@ if __name__ == "__main__":
                         help='flag to enable the sprinkler')
     parser.add_argument('--suppress_warnings', default=False, action='store_true',
                         help='flag to suppress warnings')
+    parser.add_argument('--n_jobs', type=int, default=1,
+                        help='Number of jobs to run in parallel with multiprocessing')
+    parser.add_argument('--job_log', type=str, default=None,
+                        help="file where we will write 'job started/completed' messages")
     args = parser.parse_args()
 
-    with warnings.catch_warnings():
-        if args.suppress_warnings:
-            warnings.filterwarnings('ignore', '\nThis call', UserWarning)
-            warnings.filterwarnings('ignore', 'Duplicate object type', UserWarning)
-            warnings.filterwarnings('ignore', 'No md5 sum', UserWarning)
-            warnings.filterwarnings('ignore', 'ERFA function', ErfaWarning)
-            warnings.filterwarnings('ignore', 'Numpy has detected', FutureWarning)
-            warnings.filterwarnings('ignore', 'divide by zero', RuntimeWarning)
-            warnings.filterwarnings('ignore', 'invalid value', RuntimeWarning)
+    if args.n_jobs==1 or isinstance(args.ids, numbers.Number) or len(args.ids)==1:
+        generate_instance_catalog(args)
+    else:
+        lock = multiprocessing.Lock()
+        job_list = []
+        n_id = len(args.id)//args.n_jobs  # number of ids per job
+        for i_start in range(len(args.id), n_id):
+            local_args = copy.deepcopy(args)
+            local_args.ids = args.ids[i_start:i_start+n_id]
+            p = multiprocessing.Process(target=generate_instance_catalog,
+                                        args=(local_args, lock=lock))
+            p.start()
+            job_list.append(p)
 
-        instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
-                                               dither=not args.disable_dithering,
-                                               min_mag=args.min_mag,
-                                               minsource=args.minsource,
-                                               proper_motion=args.enable_proper_motion,
-                                               protoDC2_ra=args.protoDC2_ra,
-                                               protoDC2_dec=args.protoDC2_dec,
-                                               agn_db_name=args.agn_db_name,
-                                               sn_db_name=args.sn_db_name,
-					       host_image_dir=args.host_image_dir,
-                                               host_data_dir=args.host_data_dir,
-                                               sprinkler=args.enable_sprinkler)
+        for p in job_list:
+            p.join()
 
-        for obsHistID in args.ids:
-            instcat_writer.write_catalog(obsHistID, out_dir=args.out_dir, fov=args.fov)
+        with open(job_log, 'a'):
+            print('%s should be completed' % str(args.id))
