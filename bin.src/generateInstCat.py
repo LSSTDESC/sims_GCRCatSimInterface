@@ -122,15 +122,20 @@ if __name__ == "__main__":
                         help="file where we will write 'job started/completed' messages")
     args = parser.parse_args()
 
+    print('args ',args.n_jobs,args.ids)
+
     if args.n_jobs==1 or isinstance(args.ids, numbers.Number) or len(args.ids)==1:
         generate_instance_catalog(args=args)
     else:
+        print('trying multi processing')
         lock = multiprocessing.Lock()
         job_list = []
         n_id = len(args.ids)//args.n_jobs  # number of ids per job
+        print('n_id is %d' % n_id)
         for i_start in range(0, len(args.ids), n_id):
             local_args = copy.deepcopy(args)
             local_args.ids = args.ids[i_start:i_start+n_id]
+            print('local_ids ',local_args.ids)
             p = multiprocessing.Process(target=generate_instance_catalog,
                                         kwargs={'args':local_args, 'lock':lock})
             p.start()
