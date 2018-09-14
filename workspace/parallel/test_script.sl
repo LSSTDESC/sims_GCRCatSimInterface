@@ -34,7 +34,7 @@ fi
 # This scriptjust asks for one tasks with two nodes and farms the work out among
 # those two nodes.
 
-srun -N 2 -n 1 --exclusive --mem-per-cpu 20000 \
+srun -N 2 -n 2 --exclusive --mem-per-cpu 20000 \
 python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
 --db ${project_dir}minion_1016_desc_dithered_v4.db \
 --agn_db_name ${project_dir}agn_db_mbh_7.0_m_i_30.0_cosmodc2_180912.db \
