@@ -138,5 +138,5 @@ if __name__ == "__main__":
         for p in job_list:
             p.join()
 
-        with open(job_log, 'a'):
-            print('%s should be completed' % str(args.ids))
+    with open(args.job_log, 'a'):
+        print('%s should be completed' % str(args.ids))
