@@ -228,6 +228,8 @@ class InstanceCatalogWriter(object):
             if os.path.exists(status_file):
                 os.unlink(status_file)
             has_status_file = True
+            with open(status_file, 'a') as out_file:
+                out_file.write('writing %d on node %s\n' % (obsHistID, os.environ['SLURM_NODEID']))
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory for writing the GLSN spectra to
