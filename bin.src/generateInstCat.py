@@ -60,9 +60,12 @@ def generate_instance_catalog(args=None, lock=None):
                 if lock is not None:
                     lock.release()
 
+            full_out_dir = os.path.join(args.out_dir, '%.8d' % obsHistID)
+
             generate_instance_catalog.instcat_writer.write_catalog(obsHistID,
-                                                                   out_dir=args.out_dir,
-                                                                   fov=args.fov)
+                                                                   out_dir=full_out_dir,
+                                                                   fov=args.fov,
+                                                                   status_dir=args.out_dir)
 
             if args.job_log is not None:
                 if lock is not None:
