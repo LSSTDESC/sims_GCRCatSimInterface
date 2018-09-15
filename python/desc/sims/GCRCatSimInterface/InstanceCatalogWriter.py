@@ -271,7 +271,7 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                out_file.write('wrote star catalog\n')
+                out_file.write('%d wrote star catalog\n' % obsHistID)
 
         if 'knots' in self.descqa_catalog:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
@@ -290,7 +290,7 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                out_file.write('wrote knots catalog\n')
+                out_file.write('%d wrote knots catalog\n' % obsHistID)
 
         if self.sprinkler is False:
 
@@ -308,7 +308,7 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('wrote bulge catalog\n')
+                    out_file.write('%d wrote bulge catalog\n' % obsHistID)
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
             disk_db.field_ra = self.protoDC2_ra
@@ -324,7 +324,7 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('wrote disk catalog\n')
+                    out_file.write('%d wrote disk catalog\n' % obsHistID)
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
             agn_db.field_ra = self.protoDC2_ra
@@ -340,7 +340,7 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('wrote agn catalog\n')
+                    out_file.write('%d wrote agn catalog\n' % obsHistID)
         else:
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
@@ -396,7 +396,7 @@ class InstanceCatalogWriter(object):
                                   write_header=False)
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('wrote galaxy catalogs with sprinkling\n')
+                    out_file.write('%d wrote galaxy catalogs with sprinkling\n' % obsHistID)
 
 
             host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
@@ -415,7 +415,7 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('wrote lensing host catalog\n')
+                    out_file.write('%d wrote lensing host catalog\n' % obsHistID)
 
         # SN instance catalogs
         if self.sn_db_name is not None:
@@ -433,7 +433,7 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('wrote SNe catalog\n')
+                    out_file.write('%d wrote SNe catalog\n' % obsHistID)
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, phosim_cat_name),
@@ -457,7 +457,7 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                out_file.write('all done\n')
+                out_file.write('%d all done\n' % obsHistID)
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
