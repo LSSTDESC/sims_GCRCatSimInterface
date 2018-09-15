@@ -4,16 +4,19 @@ import numpy as np
 def write_script(script_name, obshistid_list):
     n_obs = len(obshistid_list)
     with open(script_name, 'w') as out_file:
+        out_file.write("#!/bin/bash -l\n")
         out_file.write("#SBATCH -N %d\n" % (n_obs//2))
         out_file.write("#SBATCH -t 7:00:00\n")
         out_file.write("#SBATCH -q premium\n")
         out_file.write("#SBATCH -A m1727\n")
         out_file.write("#SBATCH --tasks-per-node=1\n")
         out_file.write("#SBATCH --cpus-per-task=2\n")
+        out_file.write("#SBATCH -o %s_output.txt\n" % script_name)
+        out_file.write("#SBATCH -e %s_err.txt\n" % script_name)
 
         out_file.write("\n\n\n")
 
-        out_file.write("project_scratch=/global/cscratch1/sd/desc/DC2/Run2.0i/\n")
+        out_file.write("project_scratch=/global/cscratch1/sd/desc/DC2/Run2.0i/instCat\n")
 
         out_file.write("\n\n")
 
@@ -27,7 +30,7 @@ def write_script(script_name, obshistid_list):
         out_file.write("export NUMEXPR_NUM_THREADS=6\n")
         out_file.write("export MKL_NUM_THREADS=1\n")
         out_file.write("\n\n")
-        out_file.write("out_dir=${project_scratch}instanceCatalogs/\n")
+        out_file.write("out_dir=${project_scratch}180914/\n")
         out_file.write("job_file=${out_dir}%s_job_log.txt\n" % script_name)
         out_file.write("\n\n")
 
