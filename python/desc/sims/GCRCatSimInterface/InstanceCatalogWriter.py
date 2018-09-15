@@ -395,7 +395,7 @@ class InstanceCatalogWriter(object):
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
-                        duration = (time.time()-t_strat)/3600.0
+                        duration = (time.time()-t_start)/3600.0
                         out_file.write('%d wrote agn catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
         else:
