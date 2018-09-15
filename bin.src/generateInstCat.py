@@ -75,6 +75,7 @@ def generate_instance_catalog(args=None, lock=None):
                 if lock is not None:
                     lock.release()
 
+            pickup_file = None
             if args.pickup_dir is not None:
                 pickup_file = os.path.join(args.pickup_dir, 'job_log_%.8d.txt' % obsHistID)
                 config_dict['pickup_file'] = pickup_file
