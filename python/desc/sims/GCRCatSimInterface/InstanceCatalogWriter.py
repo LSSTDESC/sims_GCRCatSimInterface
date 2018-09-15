@@ -241,13 +241,13 @@ class InstanceCatalogWriter(object):
         if pickup_file is not None and os.path.isfile(pickup_file):
             with open(pickup_file, 'r') as in_file:
                 for line in in_file:
-                    if 'wrote stars' in line:
+                    if 'wrote star' in line:
                         do_stars = False
-                    if 'wrote knots' in line:
+                    if 'wrote knot' in line:
                         do_knots = False
-                    if 'wrote_bulge' in line:
+                    if 'wrote bulge' in line:
                         do_bulges = False
-                    if 'wrote_disk' in line:
+                    if 'wrote disk' in line:
                         do_disks = False
                     if 'wrote agn' in line:
                         do_agn = False
