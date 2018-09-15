@@ -33,7 +33,7 @@ def write_script(script_name, obshistid_list):
         out_file.write("export MKL_NUM_THREADS=1\n")
         out_file.write("\n\n")
         out_file.write("out_dir=${project_scratch}180914/\n")
-        out_file.write("job_file=${out_dir}%s_job_log.txt\n" % script_name)
+        out_file.write("job_file=%s_job_log.txt\n" % script_name)
         out_file.write("\n\n")
 
         out_file.write("if [ ! -d ${out_dir} ]; then\n")
@@ -47,15 +47,15 @@ def write_script(script_name, obshistid_list):
         out_file.write("\ndate\n")
 
         for ii in range(0,len(obshistid_list),2):
-            out_file.write("\nsrun -N 1 -n 1 --exclusive --mem-per-cpu 20000 \ \n")
-            out_file.write("python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \ \n")
-            out_file.write("--config_file config_file_edison.json \ \n")
-            out_file.write("--out_dir ${out_dir} \ \n")
+            out_file.write("\nsrun -N 1 -n 1 --exclusive --mem-per-cpu 20000 \\\n")
+            out_file.write("python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \\\n")
+            out_file.write("--config_file config_file_edison.json \\\n")
+            out_file.write("--out_dir ${out_dir} \\\n")
             out_file.write("--ids ")
             for obs in obshistid_list[ii:ii+2]:
                 out_file.write("%d " % obs)
-            out_file.write(" \ \n")
-            out_file.write("--suppress_warnings --job_log ${job_file} & \n")
+            out_file.write(" \\\n")
+            out_file.write("--suppress_warnings --job_log ${job_file} &\n")
 
         out_file.write("wait\n")
 
