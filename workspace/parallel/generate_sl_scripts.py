@@ -16,6 +16,8 @@ def write_script(script_name, obshistid_list):
 
         out_file.write("\n\n\n")
 
+        out_file.write("date\n\n")
+
         out_file.write("project_scratch=/global/cscratch1/sd/desc/DC2/Run2.0i/instCat/\n")
 
         out_file.write("\n\n")
@@ -41,6 +43,8 @@ def write_script(script_name, obshistid_list):
         out_file.write("if [ -e ${job_file} ]; then\n")
         out_file.write("    rm ${job_file}\n")
         out_file.write("fi\n")
+
+        out_file.write("\ndate\n")
 
         for ii in range(0,len(obshistid_list),2):
             out_file.write("\nsrun -N 1 -n 1 --exclusive --mem-per-cpu 20000 \ \n")
