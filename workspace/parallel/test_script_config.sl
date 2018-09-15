@@ -18,7 +18,7 @@ export OMP_NUM_THREADS=6
 export NUMEXPR_NUM_THREADS=6
 export MKL_NUM_THREADS=1
 
-out_dir=$SCRATCH/parallel_instcat_5
+out_dir=$SCRATCH/parallel_instcat_config
 job_file=${out_dir}job_log.txt
 
 if [ ! -d ${out_dir} ]; then
