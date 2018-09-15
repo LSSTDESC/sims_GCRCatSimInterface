@@ -42,7 +42,7 @@ def generate_instance_catalog(args=None, lock=None):
                                                    protoDC2_dec=args.protoDC2_dec,
                                                    agn_db_name=args.agn_db_name,
                                                    sn_db_name=args.sn_db_name,
-					           host_image_dir=args.host_image_dir,
+                                                   host_image_dir=args.host_image_dir,
                                                    host_data_dir=args.host_data_dir,
                                                    sprinkler=args.enable_sprinkler)
 
