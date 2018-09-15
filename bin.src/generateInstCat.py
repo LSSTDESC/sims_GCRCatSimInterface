@@ -6,6 +6,7 @@ import copy
 import time
 import multiprocessing
 import numbers
+import json
 from astropy._erfa import ErfaWarning
 
 with warnings.catch_warnings():
@@ -77,6 +78,9 @@ def generate_instance_catalog(args=None, lock=None):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Instance catalog generator')
+    parser.add_argument('--config_file', type=str, default=None,
+                        help='config file containing all of the arguments for this method. '
+                        'Arguments are in a json-ized dict')
     parser.add_argument('--db', type=str,
                         help='path to the OpSim database to query')
     parser.add_argument('--agn_db_name', type=str,
@@ -121,6 +125,19 @@ if __name__ == "__main__":
     parser.add_argument('--job_log', type=str, default=None,
                         help="file where we will write 'job started/completed' messages")
     args = parser.parse_args()
+
+    if args.config_file is not None:
+        with open(args.config_file, 'r') as in_file:
+            config_dict = json.load(in_file)
+        for kk in config_dict:
+            args.__dict__[kk] = config_dict[kk]
+
+    if args.job_log is not None:
+        with open(args.job_log, 'w') as out_file:
+            out_file.write('args\n')
+            for kk in args.__dict__:
+                out_file.write('%s: %s\n' % (kk, args.kk))
+            out_file.write('\n')
 
     print('args ',args.n_jobs,args.ids)
 
