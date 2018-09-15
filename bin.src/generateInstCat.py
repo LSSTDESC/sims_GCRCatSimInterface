@@ -177,5 +177,6 @@ if __name__ == "__main__":
         for p in job_list:
             p.join()
 
-    with open(args.job_log, 'a') as out_file:
-        out_file.write('%s should be completed\n' % str(args.ids))
+    if args.job_log is not None:
+        with open(args.job_log, 'a') as out_file:
+            out_file.write('%s should be completed\n' % str(args.ids))
