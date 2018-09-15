@@ -130,7 +130,7 @@ if __name__ == "__main__":
         with open(args.config_file, 'r') as in_file:
             config_dict = json.load(in_file)
         for kk in config_dict:
-            args.___dict__[kk] = config_dict[kk]
+            args.__dict__[kk] = config_dict[kk]
 
     if args.job_log is not None:
         with open(args.job_log, 'w') as out_file:
