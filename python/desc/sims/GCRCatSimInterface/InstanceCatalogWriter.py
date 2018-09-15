@@ -203,7 +203,7 @@ class InstanceCatalogWriter(object):
 
         self.instcats = get_instance_catalogs()
 
-    def write_catalog(self, obsHistID, out_dir='.', fov=2):
+    def write_catalog(self, obsHistID, out_dir='.', fov=2, status_dir=None):
         """
         Write the instance catalog for the specified obsHistID.
 
@@ -218,7 +218,20 @@ class InstanceCatalogWriter(object):
             the LSST focal plane.
         """
         if not os.path.exists(out_dir):
-            os.mkdir(out_dir)
+            os.makedirs(out_dir)
+
+        has_status_file = False
+        if status_dir is not None:
+            if not os.path.exists(status_dir):
+                os.makedirs(status_dir)
+            status_file = os.path.join(status_dir, 'job_log_%.8d.txt' % obsHistID)
+            if os.path.exists(status_file):
+                os.unlink(status_file)
+            has_status_file = True
+            with open('/etc/hostname', 'r') as host_name_file:
+                host_name = host_name_file.readlines()[0]
+            with open(status_file, 'a') as out_file:
+                out_file.write('writing %d on node %s\n' % (obsHistID, host_name))
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory for writing the GLSN spectra to
@@ -256,6 +269,10 @@ class InstanceCatalogWriter(object):
         parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
         written_catalog_names.append(star_name)
 
+        if has_status_file:
+            with open(status_file, 'a') as out_file:
+                out_file.write('%d wrote star catalog\n' % obsHistID)
+
         if 'knots' in self.descqa_catalog:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
             knots_db.field_ra = self.protoDC2_ra
@@ -271,6 +288,10 @@ class InstanceCatalogWriter(object):
             # Creating empty knots component
             subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
+        if has_status_file:
+            with open(status_file, 'a') as out_file:
+                out_file.write('%d wrote knots catalog\n' % obsHistID)
+
         if self.sprinkler is False:
 
             bulge_db = bulgeDESCQAObject(self.descqa_catalog)
@@ -279,11 +300,15 @@ class InstanceCatalogWriter(object):
             cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasBulge', 'magNorm'])
             cat_name = 'bulge_'+gal_name
+            cat.lsstBandpassDict = self.bp_dict
+            cat.photParams = self.phot_params
             cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
-            cat.photParams = self.phot_params
-            cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
+
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write('%d wrote bulge catalog\n' % obsHistID)
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
             disk_db.field_ra = self.protoDC2_ra
@@ -291,23 +316,31 @@ class InstanceCatalogWriter(object):
             cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasDisk', 'magNorm'])
             cat_name = 'disk_'+gal_name
+            cat.lsstBandpassDict = self.bp_dict
+            cat.photParams = self.phot_params
             cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
-            cat.photParams = self.phot_params
-            cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
+
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write('%d wrote disk catalog\n' % obsHistID)
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
             agn_db.field_ra = self.protoDC2_ra
             agn_db.field_dec = self.protoDC2_dec
             agn_db.agn_params_db = self.agn_db_name
             cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
+            cat.lsstBandpassDict = self.bp_dict
+            cat.photParams = self.phot_params
             cat_name = 'agn_'+gal_name
             cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                               write_header=False)
-            cat.photParams = self.phot_params
-            cat.lsstBandpassDict = self.bp_dict
             written_catalog_names.append(cat_name)
+
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write('%d wrote agn catalog\n' % obsHistID)
         else:
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
@@ -361,6 +394,11 @@ class InstanceCatalogWriter(object):
             written_catalog_names.append('agn_'+gal_name)
             gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
                                   write_header=False)
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write('%d wrote galaxy catalogs with sprinkling\n' % obsHistID)
+
+
             host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
             host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
                                     os.path.join(self.host_data_dir, 'agn_host_bulge.csv.gz'),
@@ -375,6 +413,10 @@ class InstanceCatalogWriter(object):
                                     os.path.join(self.host_data_dir, 'sne_host_disk.csv.gz'),
                                     os.path.join(out_dir, sprinkled_host_name), append=True)
 
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write('%d wrote lensing host catalog\n' % obsHistID)
+
         # SN instance catalogs
         if self.sn_db_name is not None:
             phosimcatalog = snphosimcat(self.sn_db_name, obs_metadata=obs_md,
@@ -388,6 +430,10 @@ class InstanceCatalogWriter(object):
                                         chunk_size=10000, write_header=False)
 
             written_catalog_names.append(snOutFile)
+
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write('%d wrote SNe catalog\n' % obsHistID)
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, phosim_cat_name),
@@ -408,6 +454,10 @@ class InstanceCatalogWriter(object):
             if not os.path.exists(full_name):
                 continue
             subprocess.call(['gzip', full_name])
+
+        if has_status_file:
+            with open(status_file, 'a') as out_file:
+                out_file.write('%d all done\n' % obsHistID)
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
