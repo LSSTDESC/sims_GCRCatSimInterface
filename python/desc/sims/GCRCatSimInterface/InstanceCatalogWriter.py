@@ -219,6 +219,9 @@ class InstanceCatalogWriter(object):
         fov: float [2.]
             Field-of-view angular radius in degrees.  2 degrees will cover
             the LSST focal plane.
+        status_dir: str
+            The directory in which to write the log file recording this job's
+            progress.
         """
         t_start = time.time()
 
