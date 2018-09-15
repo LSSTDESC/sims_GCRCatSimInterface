@@ -16,7 +16,7 @@ def write_script(script_name, obshistid_list):
 
         out_file.write("\n\n\n")
 
-        out_file.write("project_scratch=/global/cscratch1/sd/desc/DC2/Run2.0i/instCat\n")
+        out_file.write("project_scratch=/global/cscratch1/sd/desc/DC2/Run2.0i/instCat/\n")
 
         out_file.write("\n\n")
 
