@@ -132,13 +132,6 @@ if __name__ == "__main__":
         for kk in config_dict:
             args.__dict__[kk] = config_dict[kk]
 
-    if args.job_log is not None:
-        with open(args.job_log, 'w') as out_file:
-            out_file.write('args\n')
-            for kk in args.__dict__:
-                out_file.write('%s: %s\n' % (kk, args__dict__[kk]))
-            out_file.write('\n')
-
     print('args ',args.n_jobs,args.ids)
 
     if args.n_jobs==1 or isinstance(args.ids, numbers.Number) or len(args.ids)==1:
