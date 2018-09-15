@@ -18,7 +18,7 @@ export OMP_NUM_THREADS=6
 export NUMEXPR_NUM_THREADS=6
 export MKL_NUM_THREADS=1
 
-out_dir=$SCRATCH/parallel_instcat_3
+out_dir=$SCRATCH/parallel_instcat_4
 job_file=${out_dir}job_log.txt
 project_dir=/global/projecta/projectdirs/lsst/groups/SSim/DC2/
 
@@ -30,7 +30,7 @@ if [ -e ${job_file} ]; then
     rm ${job_file}
 fi
 
-srun -N 1 -n 1 --exclusive --mem-per-cpu 20000 \
+srun -N 1 -n 2 --exclusive --mem-per-cpu 20000 \
 python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
 --db ${project_dir}minion_1016_desc_dithered_v4.db \
 --agn_db_name ${project_dir}agn_db_mbh_7.0_m_i_30.0_cosmodc2_180912.db \
@@ -40,7 +40,7 @@ python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
 --ids 1472 1474 --fov 0.02 --suppress_warnings \
 --n_jobs 2 --job_log ${job_file} &
 
-srun -N 1 -n 1 --exclusive --mem-per-cpu 20000 \
+srun -N 1 -n 2 --exclusive --mem-per-cpu 20000 \
 python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
 --db ${project_dir}minion_1016_desc_dithered_v4.db \
 --agn_db_name ${project_dir}agn_db_mbh_7.0_m_i_30.0_cosmodc2_180912.db \
@@ -48,6 +48,6 @@ python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
 --descqa_catalog cosmoDC2_v1.0_image_addon_knots \
 --out_dir ${out_dir} \
 --ids 6826 6830 --fov 0.02 --suppress_warnings \
---n_jobs 2 --job_log ${job_file}
+--n_jobs 2 --job_log ${job_file} &
 
 wait
