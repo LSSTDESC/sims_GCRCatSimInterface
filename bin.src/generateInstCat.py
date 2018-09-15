@@ -136,7 +136,7 @@ if __name__ == "__main__":
         with open(args.job_log, 'w') as out_file:
             out_file.write('args\n')
             for kk in args.__dict__:
-                out_file.write('%s: %s\n' % (kk, args.kk))
+                out_file.write('%s: %s\n' % (kk, args__dict__[kk]))
             out_file.write('\n')
 
     print('args ',args.n_jobs,args.ids)
