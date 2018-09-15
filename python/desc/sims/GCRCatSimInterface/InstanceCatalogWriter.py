@@ -206,7 +206,8 @@ class InstanceCatalogWriter(object):
 
         self.instcats = get_instance_catalogs()
 
-    def write_catalog(self, obsHistID, out_dir='.', fov=2, status_dir=None):
+    def write_catalog(self, obsHistID, out_dir='.', fov=2, status_dir=None,
+                      pickup_file=None):
         """
         Write the instance catalog for the specified obsHistID.
 
@@ -222,8 +223,40 @@ class InstanceCatalogWriter(object):
         status_dir: str
             The directory in which to write the log file recording this job's
             progress.
+        pickup_file: str
+            The path to an aborted log file (the file written to status_dir).
+            This job will resume where that one left off, only simulating
+            sub-catalogs that did not complete.
         """
         t_start = time.time()
+
+        do_stars = True
+        do_knots = True
+        do_bulges = True
+        do_disks = True
+        do_agn = True
+        do_sprinkled = True
+        do_hosts = True
+        do_sne = True
+        if pickup_file is not None and os.path.isfile(pickup_file):
+            with open(pickup_file, 'r') as in_file:
+                for line in in_file:
+                    if 'wrote star' in line:
+                        do_stars = False
+                    if 'wrote knot' in line:
+                        do_knots = False
+                    if 'wrote bulge' in line:
+                        do_bulges = False
+                    if 'wrote disk' in line:
+                        do_disks = False
+                    if 'wrote agn' in line:
+                        do_agn = False
+                    if 'wrote galaxy catalogs with sprinkling' in line:
+                        do_sprinkled = False
+                    if 'wrote lensing host' in line:
+                        do_hosts = False
+                    if 'wrote SNe' in line:
+                        do_sne = False
 
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
@@ -261,31 +294,32 @@ class InstanceCatalogWriter(object):
         written_catalog_names = []
         sprinkled_host_name = 'spr_hosts_%d.txt' % obsHistID
 
-        star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
-        star_cat.min_mag = self.min_mag
-        star_cat.photParams = self.phot_params
-        star_cat.lsstBandpassDict = self.bp_dict
-        star_cat.disable_proper_motion = not self.proper_motion
+        if do_stars:
+            star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
+            star_cat.min_mag = self.min_mag
+            star_cat.photParams = self.phot_params
+            star_cat.lsstBandpassDict = self.bp_dict
+            star_cat.disable_proper_motion = not self.proper_motion
 
-        bright_cat \
-            = self.instcats.BrightStarInstCat(self.star_db, obs_metadata=obs_md,
-                                              cannot_be_null=['isBright'])
-        bright_cat.min_mag = self.min_mag
-        bright_cat.photParams = self.phot_params
-        bright_cat.lsstBandpassDict = self.bp_dict
+            bright_cat \
+                = self.instcats.BrightStarInstCat(self.star_db, obs_metadata=obs_md,
+                                                  cannot_be_null=['isBright'])
+            bright_cat.min_mag = self.min_mag
+            bright_cat.photParams = self.phot_params
+            bright_cat.lsstBandpassDict = self.bp_dict
 
-        cat_dict = {os.path.join(out_dir, star_name): star_cat,
-                    os.path.join(out_dir, bright_star_name): bright_cat}
-        parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
-        written_catalog_names.append(star_name)
+            cat_dict = {os.path.join(out_dir, star_name): star_cat,
+                        os.path.join(out_dir, bright_star_name): bright_cat}
+            parallelCatalogWriter(cat_dict, chunk_size=100000, write_header=False)
+            written_catalog_names.append(star_name)
 
-        if has_status_file:
-            with open(status_file, 'a') as out_file:
-                duration = (time.time()-t_start)/3600.0
-                out_file.write('%d wrote star catalog after %.3e hrs\n' %
-                               (obsHistID, duration))
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    duration = (time.time()-t_start)/3600.0
+                    out_file.write('%d wrote star catalog after %.3e hrs\n' %
+                                   (obsHistID, duration))
 
-        if 'knots' in self.descqa_catalog:
+        if 'knots' in self.descqa_catalog and do_knots:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
             knots_db.field_ra = self.protoDC2_ra
             knots_db.field_dec = self.protoDC2_dec
@@ -296,71 +330,74 @@ class InstanceCatalogWriter(object):
             cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
                               write_header=False)
             written_catalog_names.append(knots_name)
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    duration = (time.time()-t_start)/3600.0
+                    out_file.write('%d wrote knots catalog after %.3e hrs\n' %
+                                   (obsHistID, duration))
         else:
             # Creating empty knots component
             subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
-        if has_status_file:
-            with open(status_file, 'a') as out_file:
-                duration = (time.time()-t_start)/3600.0
-                out_file.write('%d wrote knots catalog after %.3e hrs\n' %
-                               (obsHistID, duration))
 
         if self.sprinkler is False:
 
-            bulge_db = bulgeDESCQAObject(self.descqa_catalog)
-            bulge_db.field_ra = self.protoDC2_ra
-            bulge_db.field_dec = self.protoDC2_dec
-            cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
-                                          cannot_be_null=['hasBulge', 'magNorm'])
-            cat_name = 'bulge_'+gal_name
-            cat.lsstBandpassDict = self.bp_dict
-            cat.photParams = self.phot_params
-            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
-                              write_header=False)
-            written_catalog_names.append(cat_name)
+            if do_bulges:
+                bulge_db = bulgeDESCQAObject(self.descqa_catalog)
+                bulge_db.field_ra = self.protoDC2_ra
+                bulge_db.field_dec = self.protoDC2_dec
+                cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
+                                              cannot_be_null=['hasBulge', 'magNorm'])
+                cat_name = 'bulge_'+gal_name
+                cat.lsstBandpassDict = self.bp_dict
+                cat.photParams = self.phot_params
+                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
+                                  write_header=False)
+                written_catalog_names.append(cat_name)
 
-            if has_status_file:
-                with open(status_file, 'a') as out_file:
-                    duration = (time.time()-t_start)/3600.0
-                    out_file.write('%d wrote bulge catalog after %.3e hrs\n' %
-                                   (obsHistID, duration))
+                if has_status_file:
+                    with open(status_file, 'a') as out_file:
+                        duration = (time.time()-t_start)/3600.0
+                        out_file.write('%d wrote bulge catalog after %.3e hrs\n' %
+                                       (obsHistID, duration))
 
-            disk_db = diskDESCQAObject(self.descqa_catalog)
-            disk_db.field_ra = self.protoDC2_ra
-            disk_db.field_dec = self.protoDC2_dec
-            cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
-                                          cannot_be_null=['hasDisk', 'magNorm'])
-            cat_name = 'disk_'+gal_name
-            cat.lsstBandpassDict = self.bp_dict
-            cat.photParams = self.phot_params
-            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
-                              write_header=False)
-            written_catalog_names.append(cat_name)
+            if do_disks:
+                disk_db = diskDESCQAObject(self.descqa_catalog)
+                disk_db.field_ra = self.protoDC2_ra
+                disk_db.field_dec = self.protoDC2_dec
+                cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
+                                              cannot_be_null=['hasDisk', 'magNorm'])
+                cat_name = 'disk_'+gal_name
+                cat.lsstBandpassDict = self.bp_dict
+                cat.photParams = self.phot_params
+                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
+                                  write_header=False)
+                written_catalog_names.append(cat_name)
 
-            if has_status_file:
-                with open(status_file, 'a') as out_file:
-                    duration = (time.time()-t_start)/3600.0
-                    out_file.write('%d wrote disk catalog after %.3e hrs\n' %
-                                   (obsHistID, duration))
+                if has_status_file:
+                    with open(status_file, 'a') as out_file:
+                        duration = (time.time()-t_start)/3600.0
+                        out_file.write('%d wrote disk catalog after %.3e hrs\n' %
+                                       (obsHistID, duration))
 
-            agn_db = agnDESCQAObject(self.descqa_catalog)
-            agn_db.field_ra = self.protoDC2_ra
-            agn_db.field_dec = self.protoDC2_dec
-            agn_db.agn_params_db = self.agn_db_name
-            cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
-            cat.lsstBandpassDict = self.bp_dict
-            cat.photParams = self.phot_params
-            cat_name = 'agn_'+gal_name
-            cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
-                              write_header=False)
-            written_catalog_names.append(cat_name)
+            if do_agn:
+                agn_db = agnDESCQAObject(self.descqa_catalog)
+                agn_db.field_ra = self.protoDC2_ra
+                agn_db.field_dec = self.protoDC2_dec
+                agn_db.agn_params_db = self.agn_db_name
+                cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
+                cat.lsstBandpassDict = self.bp_dict
+                cat.photParams = self.phot_params
+                cat_name = 'agn_'+gal_name
+                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
+                                  write_header=False)
+                written_catalog_names.append(cat_name)
 
-            if has_status_file:
-                with open(status_file, 'a') as out_file:
-                    duration = (time.time()-t_strat)/3600.0
-                    out_file.write('%d wrote agn catalog after %.3e hrs\n' %
-                                   (obsHistID, duration))
+                if has_status_file:
+                    with open(status_file, 'a') as out_file:
+                        duration = (time.time()-t_strat)/3600.0
+                        out_file.write('%d wrote agn catalog after %.3e hrs\n' %
+                                       (obsHistID, duration))
         else:
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
@@ -380,67 +417,69 @@ class InstanceCatalogWriter(object):
                 subcat_prefix = 'agn_'
                 catalog_type = 'sprinkled_agn_%d' % obs_md.OpsimMetaData['obsHistID']
 
-            self.compoundGalICList = [SprinkledBulgeCat,
-                                      SprinkledDiskCat,
-                                      SprinkledAgnCat,
-                                      SprinklerTruthBulgeCat,
-                                      SprinklerTruthDiskCat,
-                                      SprinklerTruthAgnCat]
-            self.compoundGalDBList = [bulgeDESCQAObject,
-                                      diskDESCQAObject,
-                                      agnDESCQAObject,
-                                      bulgeDESCQAObject,
-                                      diskDESCQAObject,
-                                      agnDESCQAObject]
+            if do_sprinkled:
 
-            for db_class in self.compoundGalDBList:
-                db_class.yaml_file_name = self.descqa_catalog
+                self.compoundGalICList = [SprinkledBulgeCat,
+                                          SprinkledDiskCat,
+                                          SprinkledAgnCat,
+                                          SprinklerTruthBulgeCat,
+                                          SprinklerTruthDiskCat,
+                                          SprinklerTruthAgnCat]
+                self.compoundGalDBList = [bulgeDESCQAObject,
+                                          diskDESCQAObject,
+                                          agnDESCQAObject,
+                                          bulgeDESCQAObject,
+                                          diskDESCQAObject,
+                                          agnDESCQAObject]
 
-            gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
-                                                   self.compoundGalDBList,
-                                                   obs_metadata=obs_md,
-                                                   compoundDBclass=sprinklerDESCQACompoundObject,
-                                                   field_ra=self.protoDC2_ra,
-                                                   field_dec=self.protoDC2_dec,
-                                                   agn_params_db=self.agn_db_name)
+                for db_class in self.compoundGalDBList:
+                    db_class.yaml_file_name = self.descqa_catalog
 
-            gal_cat.use_spec_map = twinkles_spec_map
-            gal_cat.sed_dir = glsn_spectra_dir
-            gal_cat.photParams = self.phot_params
-            gal_cat.lsstBandpassDict = self.bp_dict
+                gal_cat = twinklesDESCQACompoundObject(self.compoundGalICList,
+                                                       self.compoundGalDBList,
+                                                       obs_metadata=obs_md,
+                                                       compoundDBclass=sprinklerDESCQACompoundObject,
+                                                       field_ra=self.protoDC2_ra,
+                                                       field_dec=self.protoDC2_dec,
+                                                       agn_params_db=self.agn_db_name)
 
-            written_catalog_names.append('bulge_'+gal_name)
-            written_catalog_names.append('disk_'+gal_name)
-            written_catalog_names.append('agn_'+gal_name)
-            gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
-                                  write_header=False)
-            if has_status_file:
-                with open(status_file, 'a') as out_file:
-                    duration = (time.time()-t_start)/3600.0
-                    out_file.write('%d wrote galaxy catalogs with sprinkling after %.3e hrs\n' % (obsHistID, duration))
+                gal_cat.use_spec_map = twinkles_spec_map
+                gal_cat.sed_dir = glsn_spectra_dir
+                gal_cat.photParams = self.phot_params
+                gal_cat.lsstBandpassDict = self.bp_dict
 
+                written_catalog_names.append('bulge_'+gal_name)
+                written_catalog_names.append('disk_'+gal_name)
+                written_catalog_names.append('agn_'+gal_name)
+                gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=100000,
+                                      write_header=False)
+                if has_status_file:
+                    with open(status_file, 'a') as out_file:
+                        duration = (time.time()-t_start)/3600.0
+                        out_file.write('%d wrote galaxy catalogs with sprinkling after %.3e hrs\n' % (obsHistID, duration))
 
-            host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
-            host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
-                                    os.path.join(self.host_data_dir, 'agn_host_bulge.csv.gz'),
-                                    os.path.join(out_dir, sprinkled_host_name))
-            host_cat.write_host_cat(os.path.join(self.host_image_dir,'agn_lensed_disks'),
-                                    os.path.join(self.host_data_dir, 'agn_host_disk.csv.gz'),
-                                    os.path.join(out_dir, sprinkled_host_name), append=True)
-            host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_bulges'),
-                                    os.path.join(self.host_data_dir, 'sne_host_bulge.csv.gz'),
-                                    os.path.join(out_dir, sprinkled_host_name), append=True)
-            host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_disks'),
-                                    os.path.join(self.host_data_dir, 'sne_host_disk.csv.gz'),
-                                    os.path.join(out_dir, sprinkled_host_name), append=True)
+            if do_hosts:
+                host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
+                host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
+                                        os.path.join(self.host_data_dir, 'agn_host_bulge.csv.gz'),
+                                        os.path.join(out_dir, sprinkled_host_name))
+                host_cat.write_host_cat(os.path.join(self.host_image_dir,'agn_lensed_disks'),
+                                        os.path.join(self.host_data_dir, 'agn_host_disk.csv.gz'),
+                                        os.path.join(out_dir, sprinkled_host_name), append=True)
+                host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_bulges'),
+                                        os.path.join(self.host_data_dir, 'sne_host_bulge.csv.gz'),
+                                        os.path.join(out_dir, sprinkled_host_name), append=True)
+                host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_disks'),
+                                        os.path.join(self.host_data_dir, 'sne_host_disk.csv.gz'),
+                                        os.path.join(out_dir, sprinkled_host_name), append=True)
 
-            if has_status_file:
-                with open(status_file, 'a') as out_file:
-                    duration = (time.time()-t_start)/3600.0
-                    out_file.write('%d wrote lensing host catalog after %.3e hrs\n' % (obsHistID, duration))
+                if has_status_file:
+                    with open(status_file, 'a') as out_file:
+                        duration = (time.time()-t_start)/3600.0
+                        out_file.write('%d wrote lensing host catalog after %.3e hrs\n' % (obsHistID, duration))
 
         # SN instance catalogs
-        if self.sn_db_name is not None:
+        if self.sn_db_name is not None and do_sne:
             phosimcatalog = snphosimcat(self.sn_db_name, obs_metadata=obs_md,
                                         objectIDtype=42, sedRootDir=out_dir)
 
