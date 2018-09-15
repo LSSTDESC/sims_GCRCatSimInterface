@@ -9,6 +9,7 @@ import subprocess
 from collections import namedtuple
 import numpy as np
 import h5py
+import time
 
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import PhotometricParameters
@@ -219,6 +220,8 @@ class InstanceCatalogWriter(object):
             Field-of-view angular radius in degrees.  2 degrees will cover
             the LSST focal plane.
         """
+        t_start = time.time()
+
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
 
@@ -275,7 +278,9 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                out_file.write('%d wrote star catalog\n' % obsHistID)
+                duration = (time.time()-t_start)/3600.0
+                out_file.write('%d wrote star catalog after %.3e hrs\n' %
+                               (obsHistID, duration))
 
         if 'knots' in self.descqa_catalog:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
@@ -294,7 +299,9 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                out_file.write('%d wrote knots catalog\n' % obsHistID)
+                duration = (time.time()-t_start)/3600.0
+                out_file.write('%d wrote knots catalog after %.3e hrs\n' %
+                               (obsHistID, duration))
 
         if self.sprinkler is False:
 
@@ -312,7 +319,9 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('%d wrote bulge catalog\n' % obsHistID)
+                    duration = (time.time()-t_start)/3600.0
+                    out_file.write('%d wrote bulge catalog after %.3e hrs\n' %
+                                   (obsHistID, duration))
 
             disk_db = diskDESCQAObject(self.descqa_catalog)
             disk_db.field_ra = self.protoDC2_ra
@@ -328,7 +337,9 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('%d wrote disk catalog\n' % obsHistID)
+                    duration = (time.time()-t_start)/3600.0
+                    out_file.write('%d wrote disk catalog after %.3e hrs\n' %
+                                   (obsHistID, duration))
 
             agn_db = agnDESCQAObject(self.descqa_catalog)
             agn_db.field_ra = self.protoDC2_ra
@@ -344,7 +355,9 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('%d wrote agn catalog\n' % obsHistID)
+                    duration = (time.time()-t_strat)/3600.0
+                    out_file.write('%d wrote agn catalog after %.3e hrs\n' %
+                                   (obsHistID, duration))
         else:
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
@@ -400,7 +413,8 @@ class InstanceCatalogWriter(object):
                                   write_header=False)
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('%d wrote galaxy catalogs with sprinkling\n' % obsHistID)
+                    duration = (time.time()-t_start)/3600.0
+                    out_file.write('%d wrote galaxy catalogs with sprinkling after %.3e hrs\n' % (obsHistID, duration))
 
 
             host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
@@ -419,7 +433,8 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('%d wrote lensing host catalog\n' % obsHistID)
+                    duration = (time.time()-t_start)/3600.0
+                    out_file.write('%d wrote lensing host catalog after %.3e hrs\n' % (obsHistID, duration))
 
         # SN instance catalogs
         if self.sn_db_name is not None:
@@ -437,7 +452,9 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    out_file.write('%d wrote SNe catalog\n' % obsHistID)
+                    duration =(time.time()-t_start)/3600.0
+                    out_file.write('%d wrote SNe catalog after %.3e hrs\n' %
+                                   (obsHistID, duration))
 
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(out_dir, phosim_cat_name),
@@ -461,7 +478,9 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                out_file.write('%d all done\n' % obsHistID)
+                duration = (time.time()-t_start)/3600.0
+                out_file.write('%d all done -- took %.3e hrs\n' %
+                               (obsHistID, duration))
 
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
