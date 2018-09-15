@@ -228,8 +228,10 @@ class InstanceCatalogWriter(object):
             if os.path.exists(status_file):
                 os.unlink(status_file)
             has_status_file = True
+            with open('/etc/hostname', 'r') as host_name_file:
+                host_name = host_name_file.readlines()[0]
             with open(status_file, 'a') as out_file:
-                out_file.write('writing %d on node %s\n' % (obsHistID, os.environ['SLURM_NODEID']))
+                out_file.write('writing %d on node %s\n' % (obsHistID, host_name))
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory for writing the GLSN spectra to
