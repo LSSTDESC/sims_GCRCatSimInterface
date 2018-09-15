@@ -34,6 +34,21 @@ def generate_instance_catalog(args=None, lock=None):
             warnings.filterwarnings('ignore', 'invalid value', RuntimeWarning)
 
         if not hasattr(generate_instance_catalog, 'instcat_writer'):
+            config_dict = {}
+            config_dict['db'] = args.db
+            config_dict['descqa_catalog'] = args.descqa_catalog
+            config_dict['min_mag'] = args.min_mag
+            config_dict['minsource'] = args.minsource
+            config_dict['dither'] = not args.disable_dithering
+            config_dict['proper_motion'] = args.enable_proper_motion
+            config_dict['protoDC2_ra'] = args.protoDC2_ra
+            config_dict['protoDC2_dec'] = args.protoDC2_dec
+            config_dict['agn_db_name'] = args.agn_db_name
+            config_dict['sn_db_name'] = args.sn_db_name
+            config_dict['host_image_dir'] = args.host_image_dir
+            config_dict['host_data_dir'] = args.host_data_dir
+            config_dict['sprinkler'] = args.enable_sprinkler
+
             instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
                                                    dither=not args.disable_dithering,
                                                    min_mag=args.min_mag,
@@ -45,7 +60,8 @@ def generate_instance_catalog(args=None, lock=None):
                                                    sn_db_name=args.sn_db_name,
                                                    host_image_dir=args.host_image_dir,
                                                    host_data_dir=args.host_data_dir,
-                                                   sprinkler=args.enable_sprinkler)
+                                                   sprinkler=args.enable_sprinkler,
+                                                   config_dict=config_dict)
 
             generate_instance_catalog.instcat_writer = instcat_writer
 

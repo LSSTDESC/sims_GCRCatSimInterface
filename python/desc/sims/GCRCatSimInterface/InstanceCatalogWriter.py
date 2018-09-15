@@ -111,7 +111,7 @@ class InstanceCatalogWriter(object):
                  protoDC2_ra=0, protoDC2_dec=0,
                  agn_db_name=None, sn_db_name=None,
                  sprinkler=False, host_image_dir=None,
-                 host_data_dir=None):
+                 host_data_dir=None, config_dict=None):
         """
         Parameters
         ----------
@@ -150,6 +150,8 @@ class InstanceCatalogWriter(object):
         # global cache
         plc = ParametrizedLightCurveMixin()
         plc.load_parametrized_light_curves()
+
+        self.config_dict = config_dict
 
         self.descqa_catalog = descqa_catalog
         self.dither = dither
@@ -232,6 +234,8 @@ class InstanceCatalogWriter(object):
                 host_name = host_name_file.readlines()[0]
             with open(status_file, 'a') as out_file:
                 out_file.write('writing %d on node %s\n' % (obsHistID, host_name))
+                for kk in self.config_dict:
+                    out_file.write('%s: %s\n' % (kk, self.config_dict[kk]))
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
         # Add directory for writing the GLSN spectra to
