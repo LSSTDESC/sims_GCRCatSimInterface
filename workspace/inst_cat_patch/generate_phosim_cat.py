@@ -72,7 +72,12 @@ def patch_dir(dir_name, opsim_db):
         object_catalogs = []
         for sub_name in completed_catalogs:
             file_name ='%s_cat_%d.txt' % (sub_name, obshistid)
-            assert os.path.isfile(os.path.join(out_dir, file_name))
+
+            if not (os.path.isfile(os.path.join(out_dir, file_name)) or
+            os.path.isfile(os.path.join(out_dir, file_name+'.gz'))):
+                raise RuntimeError("%s doesn't exist" %
+                                   os.path.join(out_dir, file_name))
+
             object_catalogs.append(file_name)
 
         assert len(object_catalogs) > 0
