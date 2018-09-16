@@ -83,7 +83,8 @@ def main(in_instcat_disk, in_instcat_bulge, in_instcat_knots,
 
                 # Checking that both components are for the same object
                 if id_disk != id_bulge:
-                    print("ERROR: Mismatch between disk and bulge catalogs")
+                    print("ERROR: Mismatch between disk and bulge catalogs", id_disk, id_bulge)
+                    exit(-1)
 
                 # Extracting the extinction parameters:
                 if tokens_disk[17].lower() != 'none':
