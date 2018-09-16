@@ -4,6 +4,8 @@ from lsst.sims.catUtils.baseCatalogModels import StarObj
 from desc.sims.GCRCatSimInterface import get_obs_md
 from desc.sims.GCRCatSimInterface import make_instcat_header
 
+import time
+
 def patch_dir(dir_name, opsim_db):
 
     if not hasattr(patch_dir, 'star_db'):
@@ -15,6 +17,8 @@ def patch_dir(dir_name, opsim_db):
 
         obs_gen = ObservationMetaDataGenerator(opsim_db)
         patch_dir.obs_gen = obs_gen
+
+    t_start = time.time()
 
     n_complete = 0
     list_of_files = os.listdir(dir_name)
@@ -56,7 +60,7 @@ def patch_dir(dir_name, opsim_db):
 
         obshistid = int(params[2])
 
-        out_name = os.path.join(out_dir,'patched_phosim_cat_%d.txt' % obshistid)
+        out_name = os.path.join(out_dir,'phosim_cat_%d.txt' % obshistid)
         if os.path.exists(out_name):
             raise RuntimeError("%s already exists" % out_name)
 
@@ -77,6 +81,7 @@ def patch_dir(dir_name, opsim_db):
                             object_catalogs=object_catalogs)
 
     print('n_complete %d' % n_complete)
+    print('took %e hours' % ((time.time()-t_start)/3600.0))
 
 if __name__ == "__main__":
 
