@@ -84,7 +84,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
 
                 # If the galaxy is offensive, clip the av and rv values
                 if disk_internal_av < 0 or disk_internal_rv > 1:
-                    print('Fixing offensive disk %d with av/rv extinction: %f/%f'%(id_disk,disk_internal_av, disk_internal_rv))
+                    #print('Fixing offensive disk %d with av/rv extinction: %f/%f'%(id_disk,disk_internal_av, disk_internal_rv))
                     disk_internal_av = np.clip(disk_internal_av,0.0,None)
                     disk_internal_rv = np.clip(disk_internal_rv,None,1.0)
                     tokens_disk[18] = ("%.7f"%disk_internal_av).rstrip('0')
@@ -113,7 +113,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             if size > 1.:
                 knots_flux_ratio = np.clip(knots_flux_ratio, 0, 0.5)
                 count_knots+=1
-                print("Capping knots flux for object %d, with magnorm: %f and size %f"%(id_knots,magnorm_disk,size))
+                #print("Capping knots flux for object %d, with magnorm: %f and size %f"%(id_knots,magnorm_disk,size))
 
             magnorm_disk = -2.5*np.log10((1-knots_flux_ratio)*total_flux)
             magnorm_knots = -2.5*np.log10(knots_flux_ratio*total_flux)
@@ -155,7 +155,7 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
 
             # If the galaxy is offensive, clip the av and rv values
             if internal_av < 0 or internal_rv > 1:
-                print('Fixing offensive bulge %d with av/rv extinction: %f/%f'%(id_bulge,internal_av, internal_rv))
+                #print('Fixing offensive bulge %d with av/rv extinction: %f/%f'%(id_bulge,internal_av, internal_rv))
                 internal_av = np.clip(internal_av,0.0,None)
                 internal_rv = np.clip(internal_rv,None,1.0)
                 tokens_bulge[18] = ("%.7f"%internal_av).rstrip('0')
