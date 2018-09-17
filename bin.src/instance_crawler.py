@@ -243,18 +243,18 @@ def process_instance_catalog(args):
             print('Gzipping '+ name)
             os.system("gzip -f %s " % name)
 
-    # Processes catalogs
-    input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
-    input_bulge=output_path+'/bulge_gal_cat_%d.txt.gz'%visitID
-    input_knots=output_path+'/knots_cat_%d.txt.gz'%visitID
+    # Processes catalogs, prefer the ungzipped version if it exists
+    input_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
+    input_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
+    input_knots=output_path+'/knots_cat_%d.txt'%visitID
 
     # Checking that the gz files exist, otherwise remove the gz extension
     if not os.path.exists(input_disk):
-        input_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
+        input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
     if not os.path.exists(input_bulge):
-        input_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
+        input_bulge=output_path+'/bulge_gal_cat_%d.txt.gz'%visitID
     if not os.path.exists(input_knots):
-        input_knots=output_path+'/knots_cat_%d.txt'%visitID
+        input_knots=output_path+'/knots_cat_%d.txt.gz'%visitID
 
     output_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
     output_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
