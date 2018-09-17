@@ -29,7 +29,10 @@ def do_fitting(cat, component, healpix):
 
     healpix_query = GCRQuery('healpix_pixel==%d' % healpix)
 
-    qties = cat.get_quantities(list(filter_names) + ['redshift_true', 'galaxy_id'],
+    qties = cat.get_quantities(list(filter_names) +
+                              ['redshift_true', 'galaxy_id',
+                               'A_v_%s' % component,
+                               'R_v_%s' % component],
                                native_filters=[healpix_query])
 
     mag_array = np.array([-2.5*np.log10(qties[ff]) for ff in filter_names])
@@ -40,7 +43,7 @@ def do_fitting(cat, component, healpix):
                                            H0, Om0,
                                            wav_min, wav_width)
 
-    return qties['galaxy_id'], sed_names, mag_norms
+    return qties, sed_names, mag_norms
 
 if __name__ == "__main__":
 
@@ -49,25 +52,31 @@ if __name__ == "__main__":
     args = parser.parse_args()
     assert args.healpix is not None
 
-    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image_addon_knots')
+    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
-    gid, disk_sed, disk_mag = do_fitting(cat, 'disk', args.healpix)
+    qties, disk_sed, disk_mag = do_fitting(cat, 'disk', args.healpix)
 
     out_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache')
     disk_file = h5py.File(os.path.join(out_dir, 'disk_%d.h5' % args.healpix), 'w')
-    disk_file.create_dataset('galaxy_id', data=gid)
+    disk_file.create_dataset('galaxy_id', data=qties['galaxy_id'])
+    disk_file.create_dataset('redshift', data=qties['redshift_true'])
+    disk_file.create_dataset('A_v', data=qties['A_v_disk'])
+    disk_file.create_dataset('R_v', data=qties['R_v_disk'])
     disk_file.create_dataset('sed_name',
              data=np.array([dd.encode('utf-8') for dd in disk_sed]))
     disk_file.create_dataset('mag_norm', data=disk_mag)
     disk_file.close()
 
-    del gid
+    del qties
     del disk_sed
     del disk_mag
 
-    gid, bulge_sed, bulge_mag = do_fitting(cat, 'bulge', args.healpix)
+    qties, bulge_sed, bulge_mag = do_fitting(cat, 'bulge', args.healpix)
     bulge_file = h5py.File(os.path.join(out_dir, 'bulge_%d.h5' % args.healpix), 'w')
-    bulge_file.create_dataset('galaxy_id', data=gid)
+    bulge_file.create_dataset('galaxy_id', data=qties['galaxy_id'])
+    bulge_file.create_dataset('redshift', data=qties['redshift_true'])
+    bulge_file.create_dataset('A_v', data=qties['A_v_bulge'])
+    bulge_file.create_dataset('R_v', data=qties['R_v_bulge'])
     bulge_file.create_dataset('sed_name',
               data=np.array([bb.encode('utf-8') for bb in bulge_sed]))
     bulge_file.create_dataset('mag_norm', data=bulge_mag)
