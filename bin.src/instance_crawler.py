@@ -23,32 +23,15 @@ def fopen(filename, **kwds):
     generator: file descriptor-like generator object that can be iterated
         over to return the lines in a file.
     """
-    abspath = os.path.split(os.path.abspath(filename))[0]
     try:
         if filename.endswith('.gz'):
             fd = gzip.open(filename, **kwds)
         else:
             fd = open(filename, **kwds)
-        yield fopen_generator(fd, abspath, **kwds)
+        for line in fd:
+            yield line
     finally:
         fd.close()
-
-def fopen_generator(fd, abspath, **kwds):
-    """
-    Return a generator for the provided file descriptor that knows how
-    to recursively read in instance catalogs specified by the
-    includeobj directive.
-    """
-    with fd as input_:
-        for line in input_:
-            if not line.startswith('includeobj'):
-                yield line
-            else:
-                filename = os.path.join(abspath, line.strip().split()[-1])
-                with fopen(filename, **kwds) as my_input:
-                    for line in my_input:
-                        yield line
-
 
 def metadata_from_file(file_name):
     """
@@ -57,6 +40,7 @@ def metadata_from_file(file_name):
     Simpler version than the ImSim code
     """
     input_params = {}
+    catalog_files = []
     with fopen(file_name, mode='rt') as in_file:
         for line in in_file:
             if line[0] == '#':
@@ -64,19 +48,20 @@ def metadata_from_file(file_name):
 
             params = line.strip().split()
 
-            if params[0] == 'object':
-                break
+            if params[0] == 'includeobj':
+                catalog_files.append(params[1])
+                continue
 
             float_val = float(params[1])
             int_val = int(float_val)
-            if np.abs(float_val-int_val)>1.0e-10:
+            if np.abs(float_val-int_val) > 1.0e-10:
                 val = float_val
             else:
                 val = int_val
             input_params[params[0]] = val
 
     commands = dict(((key, value) for key, value in input_params.items()))
-    return commands
+    return commands, catalog_files
 
 
 def apply_extinction_correction(tokens):
@@ -120,7 +105,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
     # Use .fopen to read in the command and object lines from the
     # instance catalog.
     count_extinction = 0
-    count_line =0
+    count_line = 0
     with fopen(in_instcat_disk, mode='rt') as input_disk,   \
          fopen(in_instcat_knots, mode='rt') as input_knots, \
          open(out_instcat_disk, 'w') as output_disk, \
@@ -213,19 +198,29 @@ def process_instance_catalog(args):
     """
     input_cat, output_path = args
     # Find the visit id
-    metadata = metadata_from_file(input_cat)
+    metadata, catalog_files = metadata_from_file(input_cat)
     visitID = metadata['obshistid']
     input_path = input_cat.split('/')[:-1]
     input_path = '/'.join(input_path)
     print('Copying catalog from %s'%input_path)
 
     # Create output directory
-    output_path= os.path.join(output_path,'{0:08d}'.format(int(visitID)))
+    output_path = os.path.join(output_path,'{0:08d}'.format(int(visitID)))
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
     # Copy over the content of the instance catalog
     os.system("cp -ar %s/* %s"%(input_path, output_path))
+
+    # Checking that all the files are gzipped
+    for f in catalog_files:
+        basename = f.split('.gz')[0]
+        # Skipping these files as we will gzip them at the end anyway
+        if 'disk' in basename or 'bulge' in basename or 'disk' in basename:
+            continue
+        if os.path.exists(output_path+basename):
+            print('Gzipping '+ (output_path+basename))
+            os.system("gzip -f %s " % (output_path+basename))
 
     # Processes catalogs
     input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
@@ -261,7 +256,7 @@ if __name__ == '__main__':
     filenames = []
     with open(args.input_cats, 'r') as f:
         for line in f:
-            if len(line.strip()) >0:
+            if len(line.strip()) > 0:
                 filenames.append(line.strip())
 
     p = Pool(24)
