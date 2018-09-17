@@ -113,10 +113,16 @@ if __name__ == "__main__":
     project_scratch = '/global/cscratch1/sd/desc/DC2/Run2.0i/instCat/'
     assert os.path.isdir(project_scratch)
 
-    subdir_list = ['180914',
-                   'edison_packed_submit_idx400_size200',
-                   'edison_packed_submit_idx600_size200']
-                   #'edison_packed_submit_idx800_size200']
+    #subdir_list = ['180914',
+    #               'edison_packed_submit_idx400_size200',
+    #               'edison_packed_submit_idx600_size200']
+    #               #'edison_packed_submit_idx800_size200']
+
+    subdir_list = ['edison_packed_submit_idx1200_size300',
+                   'edison_packed_submit_idx1500_size300',
+                   'edison_packed_submit_idx3300_size300',
+                   'edison_packed_submit_idx3600_size300',
+                   'edison_packed_submit_idx3900_size300']
 
     dir_list = []
     for subdir in subdir_list:
