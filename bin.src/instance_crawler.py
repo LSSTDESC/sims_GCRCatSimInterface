@@ -214,8 +214,19 @@ if __name__ == '__main__':
         os.makedirs(output_path)
 
     # Copy over the content of the instance catalog
-    print("cp -arv %s/* %s"%(input_path, output_path))
-    #
-    # args = parser.parse_args()
-    # fix_disk_knots(args.input_disk, args.input_knots, args.output_disk, args.output_knots)
-    # fix_bulge(args.input_bulge, args.output_bulge)
+    os.system("cp -arv %s/* %s"%(input_path, output_path))
+
+    # Processes catalogs
+    input_disk=output_path+'/disk_gal_cat_%s.txt.gz'%visitID
+    input_bulge=output_path+'/bulge_gal_cat_%s.txt.gz'%visitID
+    input_knots=output_path+'/knots_cat_%s.txt.gz'%visitID
+
+    output_disk=output_path+'/disk_gal_cat_%s.txt'%visitID
+    output_bulge=output_path+'/bulge_gal_cat_%s.txt'%visitID
+    output_knots=output_path+'/knots_cat_%s.txt'%visitID
+
+    fix_disk_knots(input_disk, input_knots, output_disk, output_knots)
+    fix_bulge(input_bulge, output_bulge)
+    print('Gzipping....')
+    os.system("gzip -f %s %s %s"%(output_disk,output_bulge,output_knots))
+    print('Done.')
