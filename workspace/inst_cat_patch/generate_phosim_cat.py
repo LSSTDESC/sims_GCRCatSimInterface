@@ -104,8 +104,7 @@ if __name__ == "__main__":
     subdir_list = ['180914',
                    'edison_packed_submit_idx400_size200',
                    'edison_packed_submit_idx600_size200',
-                   'edison_packed_submit_idx800_size200',
-                   'cori_haswell_submit_idx2200_size200']
+                   'edison_packed_submit_idx800_size200']
 
     dir_list = []
     for subdir in subdir_list:
