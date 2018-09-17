@@ -265,12 +265,12 @@ def process_instance_catalog(args):
     tmp_knots=output_path+'/tmp_knots_cat_%d.txt'%visitID
 
     print('Processing disks and knots for %d'%visitID)
-    fix_disk_knots(input_disk, input_knots, output_disk, output_knots)
+    fix_disk_knots(input_disk, input_knots, tmp_disk, tmp_knots)
     os.system("mv %s %s"%(tmp_disk, output_disk))
     os.system("mv %s %s"%(tmp_knots, output_knots))
 
     print('Processing bulges')
-    fix_bulge(input_bulge, output_bulge)
+    fix_bulge(input_bulge, tmp_bulge)
     os.system("mv %s %s"%(tmp_bulge, output_bulge))
     print('Gzipping....')
     os.system("gzip -f %s %s %s" % (output_disk, output_bulge, output_knots))
