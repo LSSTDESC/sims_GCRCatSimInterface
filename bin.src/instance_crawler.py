@@ -25,10 +25,10 @@ def fopen(filename, **kwds):
     """
     abspath = os.path.split(os.path.abspath(filename))[0]
     try:
-        if filename.endswith('.gz'):
-            fd = gzip.open(filename, **kwds)
+        if filename.endswith('.gz') and os.path.exists(filename):
+                fd = gzip.open(filename, **kwds)
         else:
-            fd = open(filename, **kwds)
+            fd = open(filename.split('.gz')[0], **kwds)
         yield fopen_generator(fd, abspath, **kwds)
     finally:
         fd.close()
@@ -44,13 +44,10 @@ def fopen_generator(fd, abspath, **kwds):
             if not line.startswith('includeobj'):
                 yield line
             else:
-                try:
-                    filename = os.path.join(abspath, line.strip().split()[-1])
-                    with fopen(filename, **kwds) as my_input:
-                        for line in my_input:
-                            yield line
-                except FileNotFoundError:
-                    print("Missing file:" % filename)
+                filename = os.path.join(abspath, line.strip().split()[-1])
+                with fopen(filename, **kwds) as my_input:
+                    for line in my_input:
+                        yield line
 
 def metadata_from_file(file_name):
     """
@@ -66,6 +63,9 @@ def metadata_from_file(file_name):
                 continue
 
             params = line.strip().split()
+
+            if params[0] == 'object':
+                break
 
             if params[0] == 'includeobj':
                 catalog_files.append(params[1])
@@ -134,6 +134,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
         # compared to the full bulge/disk catalog (faint knots have already been
         # removed at the instance catalog creation level)
         for line_knots in input_knots:
+
             # Extract the galaxy ID for that knots component
             tokens_knots = line_knots.strip().split()
             id_knots = int(tokens_knots[1]) >> 10
@@ -242,18 +243,18 @@ def process_instance_catalog(args):
             print('Gzipping '+ name)
             os.system("gzip -f %s " % name)
 
-    # Processes catalogs
-    input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
-    input_bulge=output_path+'/bulge_gal_cat_%d.txt.gz'%visitID
-    input_knots=output_path+'/knots_cat_%d.txt.gz'%visitID
+    # Processes catalogs, prefer the ungzipped version if it exists
+    input_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
+    input_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
+    input_knots=output_path+'/knots_cat_%d.txt'%visitID
 
     # Checking that the gz files exist, otherwise remove the gz extension
     if not os.path.exists(input_disk):
-        input_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
+        input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
     if not os.path.exists(input_bulge):
-        input_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
+        input_bulge=output_path+'/bulge_gal_cat_%d.txt.gz'%visitID
     if not os.path.exists(input_knots):
-        input_knots=output_path+'/knots_cat_%d.txt'%visitID
+        input_knots=output_path+'/knots_cat_%d.txt.gz'%visitID
 
     output_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
     output_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
