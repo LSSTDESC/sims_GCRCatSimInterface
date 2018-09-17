@@ -23,15 +23,25 @@ def fopen(filename, **kwds):
     generator: file descriptor-like generator object that can be iterated
         over to return the lines in a file.
     """
+    abspath = os.path.split(os.path.abspath(filename))[0]
     try:
         if filename.endswith('.gz'):
             fd = gzip.open(filename, **kwds)
         else:
             fd = open(filename, **kwds)
-        for line in fd:
-            yield line
+        yield fopen_generator(fd, abspath, **kwds)
     finally:
         fd.close()
+
+def fopen_generator(fd, abspath, **kwds):
+    """
+    Return a generator for the provided file descriptor that knows how
+    to recursively read in instance catalogs specified by the
+    includeobj directive.
+    """
+    with fd as input_:
+        for line in input_:
+            yield line
 
 def metadata_from_file(file_name):
     """
