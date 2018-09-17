@@ -262,4 +262,4 @@ if __name__ == '__main__':
             filenames.append(line)
 
     p = Pool(24)
-    p.map(filenames)
+    p.map(lambda f: process_instance_catalog(f, args.output_path), filenames)
