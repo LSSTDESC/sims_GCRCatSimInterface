@@ -206,10 +206,10 @@ if __name__ == '__main__':
     visitID = metadata['obshistid']
     input_path = args.input_cat.split('/')[:-1]
     input_path = '/'.join(input_path)
-    print('Copying catalog from '%input_path)
+    print('Copying catalog from %s'%input_path)
 
     # Create output directory
-    output_path= os.path.join(args.output_path,'{0:08d}'%int(visitID))
+    output_path= os.path.join(args.output_path,'{0:08d}'.format(int(visitID)))
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
