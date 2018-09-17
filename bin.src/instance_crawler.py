@@ -146,8 +146,8 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             magnorm_knots = -2.5*np.log10(knots_flux_ratio*total_flux)
 
             # Update the entry
-            tokens_disk[4] = ("%.7f"%magnorm_disk).rstrip('0')
-            tokens_knots[4] = ("%.7f"%magnorm_knots).rstrip('0')
+            tokens_disk[4] = ("%.9f"%magnorm_disk).rstrip('0')
+            tokens_knots[4] = ("%.9f"%magnorm_knots).rstrip('0')
             # Making sure that the extinction paramters remain the same between disk and knots
             tokens_knots[18] = tokens_disk[18]
             tokens_knots[19] = tokens_disk[19]
@@ -184,8 +184,8 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
                 #print('Fixing offensive bulge %d with av/rv extinction: %f/%f'%(id_bulge,internal_av, internal_rv))
                 internal_av = np.clip(internal_av,0.0,None)
                 internal_rv = np.clip(internal_rv,1.0,None)
-                tokens_bulge[18] = ("%.7f"%internal_av).rstrip('0')
-                tokens_bulge[19] = ("%.7f"%internal_rv).rstrip('0')
+                tokens_bulge[18] = ("%.9f"%internal_av).rstrip('0')
+                tokens_bulge[19] = ("%.9f"%internal_rv).rstrip('0')
                 count_extinction += 1
 
             line_bulge = ' '.join(tokens_bulge)
