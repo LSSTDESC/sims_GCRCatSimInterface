@@ -95,32 +95,34 @@ def apply_extinction_correction(tokens):
     corrected = False
     if internal_rv < 0.1:
         internal_rv = 0.1
-        internal_av = np.clip(internal_av,0.0,1.0)
+        internal_av = np.clip(internal_av, 0.0, 1.0)
         corrected = True
-    elif internal_rv <1:
-        internal_av = np.clip(internal_av,0.0,1.0)
-        corrected = True
+    elif internal_rv < 1:
+        if internal_av > 1:
+            corrected = True
+        internal_av = np.clip(internal_av, 0.0, 1.0)
     elif internal_av < 0:
+        # I'm not counting the lower cut on Av, almost without effect for bulges
+        # and likely to be minimal for disks
         internal_av = 0
-        corrected = True
 
     # update tokens
     if corrected:
-        tokens[18] = ("%.9f"%internal_av).rstrip('0')
-        tokens[19] = ("%.9f"%internal_rv).rstrip('0')
+        tokens[18] = ("%.9f" % internal_av).rstrip('0')
+        tokens[19] = ("%.9f" % internal_rv).rstrip('0')
 
     return corrected, tokens
 
 
 def fix_disk_knots(in_instcat_disk, in_instcat_knots,
-         out_instcat_disk, out_instcat_knots):
+                   out_instcat_disk, out_instcat_knots):
 
     # Use .fopen to read in the command and object lines from the
     # instance catalog.
     count_extinction = 0
     count_line =0
     with fopen(in_instcat_disk, mode='rt') as input_disk,   \
-         fopen(in_instcat_knots, mode='rt') as input_knots,  \
+         fopen(in_instcat_knots, mode='rt') as input_knots, \
          open(out_instcat_disk, 'w') as output_disk, \
          open(out_instcat_knots, 'w') as output_knots:
 
@@ -170,8 +172,8 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             magnorm_knots = -2.5*np.log10(knots_flux_ratio*total_flux)
 
             # Update the entry
-            tokens_disk[4] = ("%.9f"%magnorm_disk).rstrip('0')
-            tokens_knots[4] = ("%.9f"%magnorm_knots).rstrip('0')
+            tokens_disk[4] = ("%.9f" % magnorm_disk).rstrip('0')
+            tokens_knots[4] = ("%.9f" % magnorm_knots).rstrip('0')
             # Making sure that the extinction paramters remain the same between disk and knots
             tokens_knots[18] = tokens_disk[18]
             tokens_knots[19] = tokens_disk[19]
@@ -247,7 +249,7 @@ def process_instance_catalog(args):
     print('Processing bulges')
     fix_bulge(input_bulge, output_bulge)
     print('Gzipping....')
-    os.system("gzip -f %s %s %s"%(output_disk,output_bulge,output_knots))
+    os.system("gzip -f %s %s %s" % (output_disk, output_bulge, output_knots))
     print('Done.')
 
 if __name__ == '__main__':
