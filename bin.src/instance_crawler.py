@@ -217,13 +217,13 @@ if __name__ == '__main__':
     os.system("cp -arv %s/* %s"%(input_path, output_path))
 
     # Processes catalogs
-    input_disk=output_path+'/disk_gal_cat_%s.txt.gz'%visitID
-    input_bulge=output_path+'/bulge_gal_cat_%s.txt.gz'%visitID
-    input_knots=output_path+'/knots_cat_%s.txt.gz'%visitID
+    input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
+    input_bulge=output_path+'/bulge_gal_cat_%d.txt.gz'%visitID
+    input_knots=output_path+'/knots_cat_%d.txt.gz'%visitID
 
-    output_disk=output_path+'/disk_gal_cat_%s.txt'%visitID
-    output_bulge=output_path+'/bulge_gal_cat_%s.txt'%visitID
-    output_knots=output_path+'/knots_cat_%s.txt'%visitID
+    output_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
+    output_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
+    output_knots=output_path+'/knots_cat_%d.txt'%visitID
 
     fix_disk_knots(input_disk, input_knots, output_disk, output_knots)
     fix_bulge(input_bulge, output_bulge)
