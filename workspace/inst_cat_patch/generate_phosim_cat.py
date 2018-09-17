@@ -4,6 +4,8 @@ from lsst.sims.catUtils.baseCatalogModels import StarObj
 from desc.sims.GCRCatSimInterface import get_obs_md
 from desc.sims.GCRCatSimInterface import make_instcat_header
 
+import multiprocessing
+
 import time
 
 def patch_dir(dir_name, opsim_db):
@@ -96,6 +98,29 @@ if __name__ == "__main__":
 
     assert os.path.isfile(opsim_db)
 
-    dir_name = '/global/cscratch1/sd/desc/DC2/Run2.0i/instCat/edison_packed_submit_idx200_size200'
+    project_scratch = '/global/cscratch1/sd/desc/DC2/Run2.0i/instCat/'
+    assert os.path.isdir(project_scratch)
 
-    patch_dir(dir_name, opsim_db)
+    subdir_list = ['180914',
+                   'edison_packed_submit_idx400_size200',
+                   'edison_packed_submit_idx600_size200',
+                   'edison_packed_submit_idx800_size200',
+                   'cori_haswell_submit_idx2200_size200']
+
+    dir_list = []
+    for subdir in subdir_list:
+        full_dir = os.path.join(project_scratch, subdir_list)
+        if not os.path.isdir(full_dir):
+            raise RuntimeError("%s is not a dir" % full_dir)
+            dir_list.append(full_dir)
+
+    #patch_dir(dir_name, opsim_db)
+    j_list = []
+    for subdir in subdir_list:
+        p = multiprocessing.Process(target=patch_dir,
+                                    args=(dir_name, opsim_db))
+        p.Start()
+        j_list.append(p)
+
+    for p in j_list:
+        p.join()
