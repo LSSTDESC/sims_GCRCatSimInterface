@@ -226,11 +226,12 @@ def process_instance_catalog(args):
     for f in catalog_files:
         basename = f.split('.gz')[0]
         # Skipping these files as we will gzip them at the end anyway
-        if 'disk' in basename or 'bulge' in basename or 'disk' in basename:
+        if 'disk' in basename or 'bulge' in basename or 'knots' in basename:
             continue
-        if os.path.exists(output_path+basename):
-            print('Gzipping '+ (output_path+basename))
-            os.system("gzip -f %s " % (output_path+basename))
+        name = os.path.join(output_path,basename)
+        if os.path.exists(name):
+            print('Gzipping '+ name)
+            os.system("gzip -f %s " % name)
 
     # Processes catalogs
     input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
