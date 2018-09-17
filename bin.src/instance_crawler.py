@@ -25,10 +25,10 @@ def fopen(filename, **kwds):
     """
     abspath = os.path.split(os.path.abspath(filename))[0]
     try:
-        if filename.endswith('.gz'):
-            fd = gzip.open(filename, **kwds)
+        if filename.endswith('.gz') and os.path.exists(filename):
+                fd = gzip.open(filename, **kwds)
         else:
-            fd = open(filename, **kwds)
+            fd = open(filename.split('.gz')[0], **kwds)
         yield fopen_generator(fd, abspath, **kwds)
     finally:
         fd.close()
@@ -44,13 +44,10 @@ def fopen_generator(fd, abspath, **kwds):
             if not line.startswith('includeobj'):
                 yield line
             else:
-                try:
-                    filename = os.path.join(abspath, line.strip().split()[-1])
-                    with fopen(filename, **kwds) as my_input:
-                        for line in my_input:
-                            yield line
-                except:
-                    print("Missing file:" % filename)
+                filename = os.path.join(abspath, line.strip().split()[-1])
+                with fopen(filename, **kwds) as my_input:
+                    for line in my_input:
+                        yield line
 
 def metadata_from_file(file_name):
     """
@@ -66,7 +63,10 @@ def metadata_from_file(file_name):
                 continue
 
             params = line.strip().split()
-
+ 
+            if params[0] == 'object':
+                break
+ 
             if params[0] == 'includeobj':
                 catalog_files.append(params[1])
                 continue
@@ -134,6 +134,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
         # compared to the full bulge/disk catalog (faint knots have already been
         # removed at the instance catalog creation level)
         for line_knots in input_knots:
+
             # Extract the galaxy ID for that knots component
             tokens_knots = line_knots.strip().split()
             id_knots = int(tokens_knots[1]) >> 10
