@@ -48,6 +48,37 @@ def fopen_generator(fd, abspath, **kwds):
                     for line in my_input:
                         yield line
 
+
+def metadata_from_file(file_name):
+    """
+    Read in the InstanceCatalog specified by file_name.
+    Return a dict of the header values from that InstanceCatalog.
+    Simpler version than the ImSim code
+    """
+    input_params = {}
+    with fopen(file_name, mode='rt') as in_file:
+        for line in in_file:
+            if line[0] == '#':
+                continue
+
+            params = line.strip().split()
+
+            if params[0] == 'object':
+                break
+
+            float_val = float(params[1])
+            int_val = int(float_val)
+            if np.abs(float_val-int_val)>1.0e-10:
+                val = float_val
+            else:
+                val = int_val
+            input_params[params[0]] = val
+
+    commands = dict(((key, value) for key, value in input_params.items()))
+    return commands
+
+
+
 def fix_disk_knots(in_instcat_disk, in_instcat_knots,
          out_instcat_disk, out_instcat_knots):
 
@@ -165,13 +196,26 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Knots cancelling script')
-    parser.add_argument('input_disk', type=str)
-    parser.add_argument('input_bulge', type=str)
-    parser.add_argument('input_knots', type=str)
-    parser.add_argument('output_disk', type=str)
-    parser.add_argument('output_bulge', type=str)
-    parser.add_argument('output_knots', type=str)
+    parser = argparse.ArgumentParser(description='Instance catalog crawler applying corrections in post-processing')
+    parser.add_argument('input_cat', type=str,'Phosim instance catalog to process')
+    parser.add_argument('output_path', type=str, 'Directory in which to store the corrected catalog')
     args = parser.parse_args()
-    fix_disk_knots(args.input_disk, args.input_knots, args.output_disk, args.output_knots)
-    fix_bulge(args.input_bulge, args.output_bulge)
+
+    # Find the visit id
+    metadata = metadata_from_file(args.input_cat)
+    visitID = metadata['obshistid']
+    input_path = args.input_cat.split('/')[:-1]
+    input_path = '/'.join(input_path)
+    print('Copying catalog from '%input_path)
+
+    # Create output directory
+    output_path= os.path.join(args.output_path,'{0:08d}'%int(visitID))
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    # Copy over the content of the instance catalog
+    print("cp -arv %s/* %s"%(input_path, output_path))
+    # 
+    # args = parser.parse_args()
+    # fix_disk_knots(args.input_disk, args.input_knots, args.output_disk, args.output_knots)
+    # fix_bulge(args.input_bulge, args.output_bulge)
