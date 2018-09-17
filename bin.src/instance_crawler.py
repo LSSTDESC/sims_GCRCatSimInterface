@@ -258,8 +258,8 @@ if __name__ == '__main__':
     filenames = []
     with open(args.input_cats, 'r') as f:
         for line in f:
-            if len(line) >0
-            filenames.append(line)
+            if len(line) >0:
+                filenames.append(line)
 
     p = Pool(24)
-    p.map(lambda f: process_instance_catalog(f, args.output_path), filenames)
+    p.map(process_instance_catalog, [(f,args.output_path) for f in filenames] )
