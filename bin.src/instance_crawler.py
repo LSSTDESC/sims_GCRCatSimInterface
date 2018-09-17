@@ -197,8 +197,8 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Instance catalog crawler applying corrections in post-processing')
-    parser.add_argument('input_cat', type=str,description='Phosim instance catalog to process')
-    parser.add_argument('output_path', type=str, description='Directory in which to store the corrected catalog')
+    parser.add_argument('input_cat', type=str,help='Phosim instance catalog to process')
+    parser.add_argument('output_path', type=str, help='Directory in which to store the corrected catalog')
     args = parser.parse_args()
 
     # Find the visit id
