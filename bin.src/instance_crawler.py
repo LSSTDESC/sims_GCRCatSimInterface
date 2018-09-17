@@ -49,7 +49,7 @@ def fopen_generator(fd, abspath, **kwds):
                     with fopen(filename, **kwds) as my_input:
                         for line in my_input:
                             yield line
-                except:
+                except FileNotFoundError:
                     print("Missing file:" % filename)
 
 def metadata_from_file(file_name):
@@ -259,12 +259,21 @@ def process_instance_catalog(args):
     output_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
     output_knots=output_path+'/knots_cat_%d.txt'%visitID
 
+    tmp_disk=output_path+'/tmp_disk_gal_cat_%d.txt'%visitID
+    tmp_bulge=output_path+'/tmp_bulge_gal_cat_%d.txt'%visitID
+    tmp_knots=output_path+'/tmp_knots_cat_%d.txt'%visitID
+
     print('Processing disks and knots for %d'%visitID)
     fix_disk_knots(input_disk, input_knots, output_disk, output_knots)
+    os.system("mv %s %s"%(tmp_disk, output_disk))
+    os.system("mv %s %s"%(tmp_knots, output_knots))
+
     print('Processing bulges')
     fix_bulge(input_bulge, output_bulge)
+    os.system("mv %s %s"%(tmp_bulge, output_bulge))
     print('Gzipping....')
     os.system("gzip -f %s %s %s" % (output_disk, output_bulge, output_knots))
+
     print('Done.')
 
 if __name__ == '__main__':
