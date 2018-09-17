@@ -10,6 +10,8 @@ class DummyCat(PhoSimDESCQA):
     column_outputs = ['galaxy_id', 'healpixel',
                       'sedFilename_fitted', 'magNorm_fitted']
 
+    cannot_be_null = None
+
     @cached
     def get_healpixel(self):
         rr = self.column_by_name('ra')
