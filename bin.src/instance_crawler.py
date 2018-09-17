@@ -41,7 +41,16 @@ def fopen_generator(fd, abspath, **kwds):
     """
     with fd as input_:
         for line in input_:
-            yield line
+            if not line.startswith('includeobj'):
+                yield line
+            else:
+                try:
+                    filename = os.path.join(abspath, line.strip().split()[-1])
+                    with fopen(filename, **kwds) as my_input:
+                        for line in my_input:
+                            yield line
+                except:
+                    print("Missing file:" % filename)
 
 def metadata_from_file(file_name):
     """
