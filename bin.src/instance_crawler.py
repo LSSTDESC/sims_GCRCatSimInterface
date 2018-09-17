@@ -78,6 +78,35 @@ def metadata_from_file(file_name):
     return commands
 
 
+def apply_extinction_correction(tokens):
+    """
+    This function updates the extinction in the provided entry
+    """
+    # Extracting the extinction parameters:
+    if tokens_disk[17].lower() != 'none':
+        internal_av = float(tokens[18])
+        internal_rv = float(tokens[19])
+    else:
+        internal_av = 0
+        internal_rv = 0
+
+    # Proposed staged cut
+    corrected = False
+    if internal_rv < 0.1:
+        internal_rv = 0.1
+        internal_av = np.clip(internal_av,None,1.0)
+        corrected = True
+    elif internal_rv <1:
+        internal_av = np.clip(internal_av,None,1.0)
+        corrected = True
+
+    # update tokens
+    if corrected:
+        tokens[18] = ("%.9f"%internal_av).rstrip('0')
+        tokens[19] = ("%.9f"%internal_rv).rstrip('0')
+
+    return corrected, tokens
+
 
 def fix_disk_knots(in_instcat_disk, in_instcat_knots,
          out_instcat_disk, out_instcat_knots):
@@ -85,6 +114,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
     # Use .fopen to read in the command and object lines from the
     # instance catalog.
     count_extinction = 0
+    count_line =0
     with fopen(in_instcat_disk, mode='rt') as input_disk,   \
          fopen(in_instcat_knots, mode='rt') as input_knots,  \
          open(out_instcat_disk, 'w') as output_disk, \
@@ -104,23 +134,13 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
                 tokens_disk = line_disk.strip().split()
                 id_disk = int(tokens_disk[1]) >> 10
 
-                # Extracting the extinction parameters:
-                if tokens_disk[17].lower() != 'none':
-                    disk_internal_av = float(tokens_disk[18])
-                    disk_internal_rv = float(tokens_disk[19])
-                else:
-                    disk_internal_av = 0
-                    disk_internal_rv = 0
-
                 # If the galaxy is offensive, clip the av and rv values
-                if disk_internal_av < 0 or disk_internal_rv < 1:
-                    #print('Fixing offensive disk %d with av/rv extinction: %f/%f'%(id_disk,disk_internal_av, disk_internal_rv))
-                    disk_internal_av = np.clip(disk_internal_av,0.0,None)
-                    disk_internal_rv = np.clip(disk_internal_rv,1.0,None)
-                    tokens_disk[18] = ("%.7f"%disk_internal_av).rstrip('0')
-                    tokens_disk[19] = ("%.7f"%disk_internal_rv).rstrip('0')
+                corrected, tokens_disk = apply_extinction_correction(tokens_disk)
+                # If the galaxy is offensive, clip the av and rv values
+                if corrected:
                     count_extinction += 1
 
+                count_line +=1
                 if id_disk == id_knots:
                     found=True
                     break
@@ -158,11 +178,12 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             output_disk.write(line_disk.strip()+'\n')
             output_knots.write(line_knots.strip()+'\n')
 
-    print("Fixed extinction for %d disks"%count_extinction)
+    print("Fixed extinction for %d disks bulge out of %d"%count_extinction, count_line)
 
 
 def fix_bulge(in_instcat_bulge, out_instcat_bulge):
     count_extinction = 0
+    count_line =0
     with fopen(in_instcat_bulge, mode='rt') as input_bulge,  \
          open(out_instcat_bulge, 'w') as output_bulge:
 
@@ -171,26 +192,13 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
             tokens_bulge = line_bulge.strip().split()
             id_bulge = int(tokens_bulge[1]) >> 10
 
-            # Extracting the extinction parameters:
-            if tokens_bulge[17].lower() != 'none':
-                internal_av = float(tokens_bulge[18])
-                internal_rv = float(tokens_bulge[19])
-            else:
-                internal_av = 0
-                internal_rv = 0
-
-            # If the galaxy is offensive, clip the av and rv values
-            if internal_av < 0 or internal_rv < 1:
-                #print('Fixing offensive bulge %d with av/rv extinction: %f/%f'%(id_bulge,internal_av, internal_rv))
-                internal_av = np.clip(internal_av,0.0,None)
-                internal_rv = np.clip(internal_rv,1.0,None)
-                tokens_bulge[18] = ("%.9f"%internal_av).rstrip('0')
-                tokens_bulge[19] = ("%.9f"%internal_rv).rstrip('0')
+            corrected, tokens_bulge = apply_extinction_correction(tokens_bulge)
+            if corrected:
                 count_extinction += 1
-
+            count_line +=1
             line_bulge = ' '.join(tokens_bulge)
             output_bulge.write(line_bulge.strip()+'\n')
-    print("Fixed extinction for %d bulge"%count_extinction)
+    print("Fixed extinction for %d bulge out of %d"%count_extinction, count_line)
 
 if __name__ == '__main__':
 
