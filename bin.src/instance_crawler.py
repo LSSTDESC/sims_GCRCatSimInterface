@@ -205,10 +205,11 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
     print("Fixed extinction for %d bulge out of %d"%(count_extinction, count_line))
 
 
-def process_instance_catalog(input_cat, output_path):
+def process_instance_catalog(args):
     """
     Function that processes a single instance catalog
     """
+    input_cat, output_path = args
     # Find the visit id
     metadata = metadata_from_file(input_cat)
     visitID = metadata['obshistid']
