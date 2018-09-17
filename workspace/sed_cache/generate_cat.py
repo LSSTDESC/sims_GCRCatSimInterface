@@ -40,7 +40,7 @@ print('\n')
 
 obs.boundLength = 0.2
 
-x_cat = 'cosmoDC2_v1.0_image_addon_knots'
+x_cat = 'cosmoDC2_v1.0_image'
 
 diskDB = diskDESCQAObject(x_cat)
 diskCat = DummyCat(diskDB, obs_metadata=obs, cannot_be_null=['hasDisk'])
