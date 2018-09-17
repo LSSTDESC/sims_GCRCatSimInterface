@@ -94,10 +94,13 @@ def apply_extinction_correction(tokens):
     corrected = False
     if internal_rv < 0.1:
         internal_rv = 0.1
-        internal_av = np.clip(internal_av,None,1.0)
+        internal_av = np.clip(internal_av,0.0,1.0)
         corrected = True
     elif internal_rv <1:
-        internal_av = np.clip(internal_av,None,1.0)
+        internal_av = np.clip(internal_av,0.0,1.0)
+        corrected = True
+    elif internal_av < 0:
+        internal_av = 0
         corrected = True
 
     # update tokens
@@ -178,7 +181,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             output_disk.write(line_disk.strip()+'\n')
             output_knots.write(line_knots.strip()+'\n')
 
-    print("Fixed extinction for %d disks bulge out of %d"%count_extinction, count_line)
+    print("Fixed extinction for %d disks bulge out of %d"%(count_extinction, count_line))
 
 
 def fix_bulge(in_instcat_bulge, out_instcat_bulge):
@@ -198,7 +201,7 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
             count_line +=1
             line_bulge = ' '.join(tokens_bulge)
             output_bulge.write(line_bulge.strip()+'\n')
-    print("Fixed extinction for %d bulge out of %d"%count_extinction, count_line)
+    print("Fixed extinction for %d bulge out of %d"%(count_extinction, count_line))
 
 if __name__ == '__main__':
 
