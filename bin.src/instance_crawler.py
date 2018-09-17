@@ -41,13 +41,7 @@ def fopen_generator(fd, abspath, **kwds):
     """
     with fd as input_:
         for line in input_:
-            if not line.startswith('includeobj'):
-                yield line
-            else:
-                filename = os.path.join(abspath, line.strip().split()[-1])
-                with fopen(filename, **kwds) as my_input:
-                    for line in my_input:
-                        yield line
+            yield line
 
 def metadata_from_file(file_name):
     """
@@ -63,9 +57,6 @@ def metadata_from_file(file_name):
                 continue
 
             params = line.strip().split()
-
-            if params[0] == 'object':
-                break
 
             if params[0] == 'includeobj':
                 catalog_files.append(params[1])
