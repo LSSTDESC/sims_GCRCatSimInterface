@@ -29,14 +29,14 @@ def do_fitting(cat, component, healpix):
 
     healpix_query = GCRQuery('healpix_pixel==%d' % healpix)
 
-    qties = cat.get_quantities(list(filter_names) + ['redshift', 'galaxy_id'],
+    qties = cat.get_quantities(list(filter_names) + ['redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
     mag_array = np.array([-2.5*np.log10(qties[ff]) for ff in filter_names])
 
     (sed_names,
      mag_norms) = sed_from_galacticus_mags(mag_array,
-                                           qties['redshift'],
+                                           qties['redshift_true'],
                                            H0, Om0,
                                            wav_min, wav_width)
 
