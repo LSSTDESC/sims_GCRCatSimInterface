@@ -197,8 +197,8 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Instance catalog crawler applying corrections in post-processing')
-    parser.add_argument('input_cat', type=str,'Phosim instance catalog to process')
-    parser.add_argument('output_path', type=str, 'Directory in which to store the corrected catalog')
+    parser.add_argument('input_cat', type=str,description='Phosim instance catalog to process')
+    parser.add_argument('output_path', type=str, description='Directory in which to store the corrected catalog')
     args = parser.parse_args()
 
     # Find the visit id
@@ -215,7 +215,7 @@ if __name__ == '__main__':
 
     # Copy over the content of the instance catalog
     print("cp -arv %s/* %s"%(input_path, output_path))
-    # 
+    #
     # args = parser.parse_args()
     # fix_disk_knots(args.input_disk, args.input_knots, args.output_disk, args.output_knots)
     # fix_bulge(args.input_bulge, args.output_bulge)
