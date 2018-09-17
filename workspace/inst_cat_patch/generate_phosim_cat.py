@@ -8,7 +8,9 @@ import multiprocessing
 
 import time
 
-def patch_dir(dir_name, opsim_db):
+def patch_dir(dir_name=None, opsim_db=None):
+
+    print('running on %s' % dir_name)
 
     if not hasattr(patch_dir, 'star_db'):
         star_db = StarObj(database='LSSTCATSIM',
@@ -24,7 +26,16 @@ def patch_dir(dir_name, opsim_db):
 
     n_complete = 0
     list_of_files = os.listdir(dir_name)
-    for file_name in list_of_files:
+    n_files = len(list_of_files)
+    print('%d in %s' % (n_files, dir_name))
+    for i_file, file_name in enumerate(list_of_files):
+
+        duration = (time.time()-t_start)
+        predicted = n_files*duration/(i_file+1)
+        if i_file>0 and i_file%20==0:
+            print('ran %d of %d in %s; pred %e' %
+            (i_file, n_files,dir_name,predicted))
+
         if file_name == 'job_log.txt':
             continue
         if not file_name.startswith('job_log'):
@@ -111,15 +122,18 @@ if __name__ == "__main__":
         full_dir = os.path.join(project_scratch, subdir)
         if not os.path.isdir(full_dir):
             raise RuntimeError("%s is not a dir" % full_dir)
-            dir_list.append(full_dir)
+        dir_list.append(full_dir)
 
     #patch_dir(dir_name, opsim_db)
     j_list = []
-    for subdir in subdir_list:
+    for dir_name in dir_list:
         p = multiprocessing.Process(target=patch_dir,
-                                    args=(dir_name, opsim_db))
-        p.Start()
+                                    kwargs={'dir_name':dir_name,
+                                            'opsim_db':opsim_db})
+        p.start()
         j_list.append(p)
 
     for p in j_list:
         p.join()
+
+    print("all done")
