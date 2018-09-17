@@ -110,8 +110,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
 
             # Apply smooth flux ration scaling
             size = np.float(tokens_disk[13])
-            flux_ratio_cap = 0.5*(1 - np.tanh(0.5*np.log(size)))
-            knots_flux_ratio = np.clip(knots_flux_ratio, None, flux_ratio_cap)
+            knots_flux_ratio = knots_flux_ratio * 0.5*(1 - np.tanh(np.log(size/1.5)))
 
             magnorm_disk = -2.5*np.log10((1-knots_flux_ratio)*total_flux)
             magnorm_knots = -2.5*np.log10(knots_flux_ratio*total_flux)
