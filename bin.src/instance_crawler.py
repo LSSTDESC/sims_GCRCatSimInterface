@@ -4,6 +4,7 @@ import os
 import numpy as np
 import argparse
 import contextlib
+from multiprocessing import Pool
 import gzip
 
 @contextlib.contextmanager
@@ -203,15 +204,13 @@ def fix_bulge(in_instcat_bulge, out_instcat_bulge):
             output_bulge.write(line_bulge.strip()+'\n')
     print("Fixed extinction for %d bulge out of %d"%(count_extinction, count_line))
 
-if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Instance catalog crawler applying corrections in post-processing')
-    parser.add_argument('input_cat', type=str,help='Phosim instance catalog to process')
-    parser.add_argument('output_path', type=str, help='Directory in which to store the corrected catalog')
-    args = parser.parse_args()
-
+def process_instance_catalog(input_cat, output_path):
+    """
+    Function that processes a single instance catalog
+    """
     # Find the visit id
-    metadata = metadata_from_file(args.input_cat)
+    metadata = metadata_from_file(input_cat)
     visitID = metadata['obshistid']
     input_path = args.input_cat.split('/')[:-1]
     input_path = '/'.join(input_path)
@@ -223,21 +222,44 @@ if __name__ == '__main__':
         os.makedirs(output_path)
 
     # Copy over the content of the instance catalog
-    os.system("cp -arv %s/* %s"%(input_path, output_path))
+    os.system("cp -ar %s/* %s"%(input_path, output_path))
 
     # Processes catalogs
     input_disk=output_path+'/disk_gal_cat_%d.txt.gz'%visitID
     input_bulge=output_path+'/bulge_gal_cat_%d.txt.gz'%visitID
     input_knots=output_path+'/knots_cat_%d.txt.gz'%visitID
 
+    # Checking that the gz files exist, otherwise remove the gz extension
+    if not os.path.exists(input_disk):
+        input_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
+    if not os.path.exists(input_bulge):
+        input_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
+    if not os.path.exists(input_knots):
+        input_knots=output_path+'/knots_cat_%d.txt'%visitID
+
     output_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
     output_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
     output_knots=output_path+'/knots_cat_%d.txt'%visitID
 
-    print('Processing disks and knots')
+    print('Processing disks and knots for %d'%visitID)
     fix_disk_knots(input_disk, input_knots, output_disk, output_knots)
     print('Processing bulges')
     fix_bulge(input_bulge, output_bulge)
     print('Gzipping....')
     os.system("gzip -f %s %s %s"%(output_disk,output_bulge,output_knots))
     print('Done.')
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Instance catalog crawler applying corrections in post-processing')
+    parser.add_argument('input_cats', type=str,help='List of instance catalogs')
+    parser.add_argument('output_path', type=str, help='Directory in which to store the corrected catalog')
+    args = parser.parse_args()
+
+    filenames = []
+    with open(args.input_cats, 'r') as f:
+        for line in f:
+            if len(line) >0
+            filenames.append(line)
+
+    p = Pool(24)
+    p.map(filenames)
