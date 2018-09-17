@@ -83,7 +83,7 @@ def apply_extinction_correction(tokens):
     This function updates the extinction in the provided entry
     """
     # Extracting the extinction parameters:
-    if tokens_disk[17].lower() != 'none':
+    if tokens[17].lower() != 'none':
         internal_av = float(tokens[18])
         internal_rv = float(tokens[19])
     else:
