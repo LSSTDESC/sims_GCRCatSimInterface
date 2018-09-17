@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
     dir_list = []
     for subdir in subdir_list:
-        full_dir = os.path.join(project_scratch, subdir_list)
+        full_dir = os.path.join(project_scratch, subdir)
         if not os.path.isdir(full_dir):
             raise RuntimeError("%s is not a dir" % full_dir)
             dir_list.append(full_dir)
