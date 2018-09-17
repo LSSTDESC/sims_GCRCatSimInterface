@@ -108,14 +108,10 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             total_flux = 10.**(-magnorm_disk/2.5) + 10.**(-magnorm_knots/2.5)
             knots_flux_ratio = 10.**(-magnorm_knots/2.5) / total_flux
 
-            # Apply flux cap for large galaxies
+            # Apply smooth flux ration scaling
             size = np.float(tokens_disk[13])
-            if size > 1.:
-                knots_flux_ratio = 0.5*(1 - np.tanh(0.5*np.log(size)))
-
-                 np.clip(knots_flux_ratio, 0, 0.5)
-                count_knots+=1
-                #print("Capping knots flux for object %d, with magnorm: %f and size %f"%(id_knots,magnorm_disk,size))
+            flux_ratio_cap = 0.5*(1 - np.tanh(0.5*np.log(size)))
+            knots_flux_ratio = np.clip(knots_flux_ratio, None, flux_ratio_cap)
 
             magnorm_disk = -2.5*np.log10((1-knots_flux_ratio)*total_flux)
             magnorm_knots = -2.5*np.log10(knots_flux_ratio*total_flux)
