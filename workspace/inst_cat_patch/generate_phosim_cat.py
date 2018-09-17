@@ -75,7 +75,8 @@ def patch_dir(dir_name=None, opsim_db=None):
 
         out_name = os.path.join(out_dir,'phosim_cat_%d.txt' % obshistid)
         if os.path.exists(out_name):
-            raise RuntimeError("%s already exists" % out_name)
+            print("%s already exists" % out_name)
+            continue
 
         obs_md = get_obs_md(patch_dir.obs_gen,
                             obshistid, fov=2.1,
@@ -114,8 +115,8 @@ if __name__ == "__main__":
 
     subdir_list = ['180914',
                    'edison_packed_submit_idx400_size200',
-                   'edison_packed_submit_idx600_size200',
-                   'edison_packed_submit_idx800_size200']
+                   'edison_packed_submit_idx600_size200']
+                   #'edison_packed_submit_idx800_size200']
 
     dir_list = []
     for subdir in subdir_list:
