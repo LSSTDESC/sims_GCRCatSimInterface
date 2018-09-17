@@ -84,7 +84,6 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
 
     # Use .fopen to read in the command and object lines from the
     # instance catalog.
-    count_knots = 0
     count_extinction = 0
     with fopen(in_instcat_disk, mode='rt') as input_disk,   \
          fopen(in_instcat_knots, mode='rt') as input_knots,  \
@@ -159,7 +158,6 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             output_disk.write(line_disk.strip()+'\n')
             output_knots.write(line_knots.strip()+'\n')
 
-    print("Corrected %d knots"%count_knots)
     print("Fixed extinction for %d disks"%count_extinction)
 
 
@@ -225,7 +223,9 @@ if __name__ == '__main__':
     output_bulge=output_path+'/bulge_gal_cat_%d.txt'%visitID
     output_knots=output_path+'/knots_cat_%d.txt'%visitID
 
+    print('Processing disks and knots')
     fix_disk_knots(input_disk, input_knots, output_disk, output_knots)
+    print('Processing bulges')
     fix_bulge(input_bulge, output_bulge)
     print('Gzipping....')
     os.system("gzip -f %s %s %s"%(output_disk,output_bulge,output_knots))
