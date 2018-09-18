@@ -150,7 +150,6 @@ if __name__ == "__main__":
     for p in p_list:
         p.join()
 
-    exit()
 
     gid = bulge['galaxy_id'].value
     sed_name = bulge['sed_name'].value.astype(str)
@@ -159,12 +158,76 @@ if __name__ == "__main__":
     r_v = bulge['R_v'].value
     redshift = bulge['redshift'].value
 
-    (bulge_fluxes,
-     bulge_fluxes_fixed) = calc_fluxes(sed_name, mag_norm,
-                                       a_v, r_v, redshift)
+    bulge_dict = mgr.dict()
+
+    for i_start in range(0,n_max,d_gal):
+        p = multiprocessing.Process(target=calc_fluxes_parallel,
+                                    args=(gid[i_start:i_start+d_gal],
+                                          sed_name[i_start:i_start+d_gal],
+                                          mag_norm[i_start:i_start+d_gal],
+                                          a_v[i_start:i_start+d_gal],
+                                          r_v[i_start:i_start+d_gal],
+                                          redshift[i_start:i_start+d_gal],
+                                          bulge_dict, lock))
+        p.start()
+        p_list.append(p)
+
+    for p in p_list:
+        p.join()
 
     disk.close()
     bulge.close()
+
+    n_max = 0
+    for kk in disk_dict.keys():
+        if 'galaxy_id' in kk:
+            n_max += len(disk_dict[kk])
+
+    print('n_max %d' % n_max)
+
+    disk_gid = np.zeros(n_max, dtype=int)
+    disk_fluxes = np.zeros((n_max, 6), dtype=float)
+    disk_fluxes_fixed = np.zeros((n_max, 6), dtype=float)
+
+    i_start = 0
+    for ii in range(len(disk_dict)//3):
+        local_gid = disk_dict['galaxy_id_%d' % ii]
+        local_fluxes = disk_dict['fluxes_%d' % ii]
+        local_fluxes_fixed = disk_dict['fluxes_fixed_%d' % ii]
+
+        print('len %d' % len(local_gid))
+
+        disk_gid[i_start:i_start+len(local_gid)] = local_gid
+        disk_fluxes[i_start:i_start+len(local_gid)] = local_fluxes
+        disk_fluxes_fixed[i_start:i_start+len(local_gid)] = local_fluxes_fixed
+        i_start += len(local_gid)
+
+    bulge_gid = np.zeros(n_max, dtype=int)
+    bulge_fluxes = np.zeros((n_max,6), dtype=float)
+    bulge_fluxes_fixed = np.zeros((n_max,6), dtype=float)
+
+    i_start = 0
+    for ii in range(len(bulge_dict)//3):
+        local_gid = bulge_dict['galaxy_id_%d' % ii]
+        local_fluxes = bulge_dict['fluxes_%d' % ii]
+        local_fluxes_fixed = bulge_dict['fluxes_fixed_%d' % ii]
+
+        bulge_gid[i_start:i_start+len(local_gid)] = local_gid
+        bulge_fluxes[i_start:i_start+len(local_gid)] = local_fluxes
+        bulge_fluxes_fixed[i_start:i_start+len(local_gid)] = local_fluxes_fixed
+        i_start += len(local_gid)
+
+    sorted_dex = np.argsort(disk_gid)
+    disk_gid = disk_gid[sorted_dex]
+    disk_fluxes = disk_fluxes[sorted_dex]
+    disk_fluxes_fixed = disk_fluxes_fixed[sorted_dex]
+
+    sorted_dex = np.argsort(bulge_gid)
+    bulge_gid = bulge_gid[sorted_dex]
+    bulge_fluxes = bulge_fluxes[sorted_dex]
+    bulge_fluxes_fixed = bulge_fluxes_fixed[sorted_dex]
+
+    np.testing.assert_array_equal(disk_gid, bulge_gid)
 
     out_name = os.path.join(in_dir, 'fluxes_10451.h5')
     out_file = h5py.File(out_name, 'w')
@@ -175,6 +238,7 @@ if __name__ == "__main__":
     out_file.create_dataset('galaxy_id', data=disk_gid)
     out_file.close()
     exit()
+
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
     query = GCRQuery('healpix_pixel==10451')
 
