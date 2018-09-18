@@ -28,7 +28,7 @@ def calc_fluxes(sed_name_arr, mag_norm, a_v, r_v, redshift):
         if ii>0 and ii%1000 == 0:
             duration = (time.time()-t_start)/3600.0
             predicted = n_obj*duration/ii
-            print('%d in %.2e; pred %.2e' % (ii,duration,predicted))
+            print('%d of %d in %.2e; pred %.2e' % (ii,n_obj,duration,predicted))
 
         ss = Sed()
         sed_name = os.path.join(sed_dir, sed_name_arr[ii])
