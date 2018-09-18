@@ -132,7 +132,7 @@ if __name__ == "__main__":
     lock = multiprocessing.Lock()
     p_list = []
 
-    n_max = 125
+    n_max = len(gid)
     d_gal = n_max//60
 
     for i_start in range(0,n_max,d_gal):
@@ -178,13 +178,6 @@ if __name__ == "__main__":
     disk.close()
     bulge.close()
 
-    n_max = 0
-    for kk in disk_dict.keys():
-        if 'galaxy_id' in kk:
-            n_max += len(disk_dict[kk])
-
-    print('n_max %d' % n_max)
-
     disk_gid = np.zeros(n_max, dtype=int)
     disk_fluxes = np.zeros((n_max, 6), dtype=float)
     disk_fluxes_fixed = np.zeros((n_max, 6), dtype=float)
@@ -194,8 +187,6 @@ if __name__ == "__main__":
         local_gid = disk_dict['galaxy_id_%d' % ii]
         local_fluxes = disk_dict['fluxes_%d' % ii]
         local_fluxes_fixed = disk_dict['fluxes_fixed_%d' % ii]
-
-        print('len %d' % len(local_gid))
 
         disk_gid[i_start:i_start+len(local_gid)] = local_gid
         disk_fluxes[i_start:i_start+len(local_gid)] = local_fluxes
