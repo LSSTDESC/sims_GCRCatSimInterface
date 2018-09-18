@@ -147,6 +147,7 @@ if __name__ == "__main__":
         p.start()
         p_list.append(p)
 
+    n_proc = len(p_list)
     for p in p_list:
         p.join()
 
@@ -157,6 +158,8 @@ if __name__ == "__main__":
     a_v = bulge['A_v'].value
     r_v = bulge['R_v'].value
     redshift = bulge['redshift'].value
+
+    assert len(gid) == n_max
 
     bulge_dict = mgr.dict()
 
@@ -172,6 +175,7 @@ if __name__ == "__main__":
         p.start()
         p_list.append(p)
 
+    assert len(p_list) == n_proc
     for p in p_list:
         p.join()
 
