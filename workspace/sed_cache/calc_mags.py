@@ -2,6 +2,7 @@ import os
 import numpy as np
 import h5py
 import copy
+import multiprocessing
 import GCRCatalogs
 from GCR import GCRQuery
 from lsst.utils import getPackageDir
@@ -74,6 +75,24 @@ def calc_fluxes(sed_name_arr, mag_norm, a_v, r_v, redshift):
     return fluxes_as_is, fluxes_fixed
 
 
+def calc_fluxes_parallel(galaxy_id, sed_name, mag_norm,
+                         a_v, r_v, zz, out_dict, lock):
+    (fluxes,
+     fluxes_fixed) = calc_fluxes(sed_name, mag_norm, a_v, r_v, zz)
+
+    lock.acquire()
+    ii = 0
+    tag = '%d' % ii
+    while 'fluxes_%s' % tag in out_dict:
+        ii += 1
+        tag = '%d' % ii
+    lock.release()
+    out_dict['fluxes_%s' % tag] = fluxes
+    out_dict['fluxes_fixed_%s' % tag] = fluxes_fixed
+    out_dict['galaxy_id_%s' % tag] = galaxy_id
+
+
+
 if __name__ == "__main__":
 
     sed_dir = getPackageDir('sims_sed_library')
@@ -106,11 +125,34 @@ if __name__ == "__main__":
     a_v = disk['A_v'].value
     r_v = disk['R_v'].value
     redshift = disk['redshift'].value
+    gid = disk['galaxy_id'].value
 
-    (disk_fluxes,
-     disk_fluxes_fixed) = calc_fluxes(sed_name, mag_norm,
-                                      a_v, r_v, redshift)
+    mgr = multiprocessing.Manager()
+    disk_dict = mgr.dict()
+    lock = multiprocessing.Lock()
+    p_list = []
 
+    n_max = 125
+    d_gal = n_max//60
+
+    for i_start in range(0,n_max,d_gal):
+        p = multiprocessing.Process(target=calc_fluxes_parallel,
+                                    args=(gid[i_start:i_start+d_gal],
+                                          sed_name[i_start:i_start+d_gal],
+                                          mag_norm[i_start:i_start+d_gal],
+                                          a_v[i_start:i_start+d_gal],
+                                          r_v[i_start:i_start+d_gal],
+                                          redshift[i_start:i_start+d_gal],
+                                          disk_dict, lock))
+        p.start()
+        p_list.append(p)
+
+    for p in p_list:
+        p.join()
+
+    exit()
+
+    gid = bulge['galaxy_id'].value
     sed_name = bulge['sed_name'].value.astype(str)
     mag_norm = bulge['mag_norm'].value
     a_v = bulge['A_v'].value
