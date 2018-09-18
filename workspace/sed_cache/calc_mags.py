@@ -10,19 +10,17 @@ from lsst.sims.photUtils import BandpassDict, Sed
 from lsst.sims.photUtils import cache_LSST_seds
 import time
 
-def calc_fluxes(galaxies):
+def calc_fluxes(sed_name_arr, mag_norm, a_v, r_v, redshift):
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
     sed_dir = getPackageDir('sims_sed_library')
 
-    n_obj = len(galaxies['galaxy_id'].value)
+    n_obj = len(sed_name_arr)
 
     fluxes_as_is = np.zeros((n_obj,6), dtype=float)
     fluxes_fixed = np.zeros((n_obj,6), dtype=float)
 
     ccm_w = None
-
-    sed_name_arr = galaxies['sed_name'].value.astype(str)
 
     t_start = time.time()
     for ii in range(n_obj):
@@ -34,23 +32,23 @@ def calc_fluxes(galaxies):
         ss = Sed()
         sed_name = os.path.join(sed_dir, sed_name_arr[ii])
         ss.readSED_flambda(sed_name)
-        fnorm = getImsimFluxNorm(ss, galaxies['mag_norm'].value[ii])
+        fnorm = getImsimFluxNorm(ss, mag_norm[ii])
         ss.multiplyFluxNorm(fnorm)
         if ccm_w is None or not np.array_equal(ccm_w, ss.wavelen):
             ccm_w = np.copy(ss.wavelen)
             a_x, b_x = ss.setupCCMab()
 
         clean_sed = copy.deepcopy(ss)
-        ss.addCCMDust(a_x, b_x, A_v=galaxies['A_v'].value[ii],
-                      R_v=galaxies['R_v'].value[ii])
+        ss.addCCMDust(a_x, b_x, A_v=a_v[ii],
+                      R_v=r_v[ii])
 
-        ss.redshiftSED(galaxies['redshift'].value[ii], dimming=True)
+        ss.redshiftSED(redshift[ii], dimming=True)
         local_flux = bp_dict.fluxListForSed(ss)
         fluxes_as_is[ii] = local_flux
 
         changed_dust = False
-        new_rv = galaxies['R_v'].value[ii]
-        new_av = galaxies['A_v'].value[ii]
+        new_rv = r_v[ii]
+        new_av = a_v[ii]
         if new_rv<0.1:
             changed_dust = True
             new_rv = 0.1
@@ -67,7 +65,7 @@ def calc_fluxes(galaxies):
             fluxes_fixed[ii] = local_flux
         else:
             clean_sed.addCCMDust(a_x, b_x, A_v=new_av, R_v=new_rv)
-            clean_sed.redshiftSED(galaxies['redshift'].value[ii],
+            clean_sed.redshiftSED(redshift[ii],
                                   dimming=True)
 
             new_flux = bp_dict.fluxListForSed(clean_sed)
@@ -103,11 +101,25 @@ if __name__ == "__main__":
 
     np.testing.assert_array_equal(disk_gid, bulge_gid)
 
+    sed_name = disk['sed_name'].value.astype(str)
+    mag_norm = disk['mag_norm'].value
+    a_v = disk['A_v'].value
+    r_v = disk['R_v'].value
+    redshift = disk['redshift'].value
+
     (disk_fluxes,
-     disk_fluxes_fixed) = calc_fluxes(disk)
+     disk_fluxes_fixed) = calc_fluxes(sed_name, mag_norm,
+                                      a_v, r_v, redshift)
+
+    sed_name = bulge['sed_name'].value.astype(str)
+    mag_norm = bulge['mag_norm'].value
+    a_v = bulge['A_v'].value
+    r_v = bulge['R_v'].value
+    redshift = bulge['redshift'].value
 
     (bulge_fluxes,
-     bulge_fluxes_fixed) = calc_fluxes(bulge)
+     bulge_fluxes_fixed) = calc_fluxes(sed_name, mag_norm,
+                                       a_v, r_v, redshift)
 
     disk.close()
     bulge.close()
