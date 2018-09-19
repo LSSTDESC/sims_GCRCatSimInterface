@@ -73,15 +73,6 @@ def patch_dir(dir_name, opsim_db):
 
         obshistid = int(params[2])
 
-        out_name = os.path.join(out_dir,'phosim_cat_%d.txt' % obshistid)
-        if os.path.exists(out_name):
-            print("%s already exists" % out_name)
-            continue
-
-        obs_md = get_obs_md(patch_dir.obs_gen,
-                            obshistid, fov=2.1,
-                            dither=True)
-
         sub_catalogs = os.listdir(out_dir)
         object_catalogs = []
         for sub_name in completed_catalogs:
@@ -102,6 +93,15 @@ def patch_dir(dir_name, opsim_db):
             object_catalogs.append(file_name)
 
         assert len(object_catalogs) > 0
+
+        out_name = os.path.join(out_dir,'phosim_cat_%d.txt' % obshistid)
+        if os.path.exists(out_name):
+            print("%s already exists" % out_name)
+            continue
+
+        obs_md = get_obs_md(patch_dir.obs_gen,
+                            obshistid, fov=2.1,
+                            dither=True)
 
         make_instcat_header(star_db, obs_md, out_name,
                             object_catalogs=object_catalogs)
