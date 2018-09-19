@@ -3,8 +3,8 @@ import numpy as np
 import h5py
 import copy
 import multiprocessing
-import GCRCatalogs
-from GCR import GCRQuery
+#import GCRCatalogs
+#from GCR import GCRQuery
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import getImsimFluxNorm
 from lsst.sims.photUtils import BandpassDict, Sed
@@ -81,16 +81,16 @@ def calc_fluxes_parallel(galaxy_id, sed_name, mag_norm,
      fluxes_fixed) = calc_fluxes(sed_name, mag_norm, a_v, r_v, zz)
 
     lock.acquire()
+    print('finding tag')
     ii = 0
     tag = '%d' % ii
     while 'fluxes_%s' % tag in out_dict:
         ii += 1
         tag = '%d' % ii
-    lock.release()
     out_dict['fluxes_%s' % tag] = fluxes
     out_dict['fluxes_fixed_%s' % tag] = fluxes_fixed
     out_dict['galaxy_id_%s' % tag] = galaxy_id
-
+    lock.release()
 
 
 if __name__ == "__main__":
@@ -99,7 +99,8 @@ if __name__ == "__main__":
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
 
     in_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache')
-    assert os.path.isdir(in_dir)
+    if not os.path.isdir(in_dir):
+        raise RuntimeError("%s is not a dir" % in_dir)
 
     disk_name = os.path.join(in_dir,'disk_offenders_10451.h5')
     assert os.path.isfile(disk_name)
@@ -115,10 +116,10 @@ if __name__ == "__main__":
     assert len(disk['galaxy_id'].value) == len(bulge['galaxy_id'].value)
 
 
-    disk_gid = disk['galaxy_id'].value
-    bulge_gid = bulge['galaxy_id'].value
+    disk_gid_0 = disk['galaxy_id'].value
+    bulge_gid_0 = bulge['galaxy_id'].value
 
-    np.testing.assert_array_equal(disk_gid, bulge_gid)
+    np.testing.assert_array_equal(disk_gid_0, bulge_gid_0)
 
     sed_name = disk['sed_name'].value.astype(str)
     mag_norm = disk['mag_norm'].value
@@ -133,11 +134,11 @@ if __name__ == "__main__":
     p_list = []
 
     n_max = len(gid)
-    d_gal = n_max//60
+    d_gal = n_max//40
 
     for i_start in range(0,n_max,d_gal):
         p = multiprocessing.Process(target=calc_fluxes_parallel,
-                                    args=(gid[i_start:i_start+d_gal],
+                                    args=(np.copy(gid[i_start:i_start+d_gal]),
                                           sed_name[i_start:i_start+d_gal],
                                           mag_norm[i_start:i_start+d_gal],
                                           a_v[i_start:i_start+d_gal],
@@ -151,36 +152,6 @@ if __name__ == "__main__":
     for p in p_list:
         p.join()
 
-
-    gid = bulge['galaxy_id'].value
-    sed_name = bulge['sed_name'].value.astype(str)
-    mag_norm = bulge['mag_norm'].value
-    a_v = bulge['A_v'].value
-    r_v = bulge['R_v'].value
-    redshift = bulge['redshift'].value
-
-    assert len(gid) == n_max
-
-    bulge_dict = mgr.dict()
-
-    for i_start in range(0,n_max,d_gal):
-        p = multiprocessing.Process(target=calc_fluxes_parallel,
-                                    args=(gid[i_start:i_start+d_gal],
-                                          sed_name[i_start:i_start+d_gal],
-                                          mag_norm[i_start:i_start+d_gal],
-                                          a_v[i_start:i_start+d_gal],
-                                          r_v[i_start:i_start+d_gal],
-                                          redshift[i_start:i_start+d_gal],
-                                          bulge_dict, lock))
-        p.start()
-        p_list.append(p)
-
-    assert len(p_list) == n_proc
-    for p in p_list:
-        p.join()
-
-    disk.close()
-    bulge.close()
 
     disk_gid = np.zeros(n_max, dtype=int)
     disk_fluxes = np.zeros((n_max, 6), dtype=float)
@@ -197,6 +168,48 @@ if __name__ == "__main__":
         disk_fluxes_fixed[i_start:i_start+len(local_gid)] = local_fluxes_fixed
         i_start += len(local_gid)
 
+    sorted_dex = np.argsort(disk_gid)
+    disk_gid = disk_gid[sorted_dex]
+    disk_fluxes = disk_fluxes[sorted_dex]
+    disk_fluxes_fixed = disk_fluxes_fixed[sorted_dex]
+
+    print('len disk_gid %d' % len(disk_gid))
+    print('len unq %d' % len(np.unique(disk_gid)))
+
+    np.testing.assert_array_equal(disk_gid, np.sort(disk_gid_0))
+
+    gid = bulge['galaxy_id'].value
+    sed_name = bulge['sed_name'].value.astype(str)
+    mag_norm = bulge['mag_norm'].value
+    a_v = bulge['A_v'].value
+    r_v = bulge['R_v'].value
+    redshift = bulge['redshift'].value
+
+    assert len(gid) == n_max
+
+    bulge_dict = mgr.dict()
+
+    p_list = []
+
+    for i_start in range(0,n_max,d_gal):
+        p = multiprocessing.Process(target=calc_fluxes_parallel,
+                                    args=(np.copy(gid[i_start:i_start+d_gal]),
+                                          sed_name[i_start:i_start+d_gal],
+                                          mag_norm[i_start:i_start+d_gal],
+                                          a_v[i_start:i_start+d_gal],
+                                          r_v[i_start:i_start+d_gal],
+                                          redshift[i_start:i_start+d_gal],
+                                          bulge_dict, lock))
+        p.start()
+        p_list.append(p)
+
+    assert len(p_list) == n_proc
+    for p in p_list:
+        p.join()
+
+    disk.close()
+    bulge.close()
+
     bulge_gid = np.zeros(n_max, dtype=int)
     bulge_fluxes = np.zeros((n_max,6), dtype=float)
     bulge_fluxes_fixed = np.zeros((n_max,6), dtype=float)
@@ -212,16 +225,12 @@ if __name__ == "__main__":
         bulge_fluxes_fixed[i_start:i_start+len(local_gid)] = local_fluxes_fixed
         i_start += len(local_gid)
 
-    sorted_dex = np.argsort(disk_gid)
-    disk_gid = disk_gid[sorted_dex]
-    disk_fluxes = disk_fluxes[sorted_dex]
-    disk_fluxes_fixed = disk_fluxes_fixed[sorted_dex]
-
     sorted_dex = np.argsort(bulge_gid)
     bulge_gid = bulge_gid[sorted_dex]
     bulge_fluxes = bulge_fluxes[sorted_dex]
     bulge_fluxes_fixed = bulge_fluxes_fixed[sorted_dex]
 
+    np.testing.assert_array_equal(bulge_gid, np.sort(bulge_gid_0))
     np.testing.assert_array_equal(disk_gid, bulge_gid)
 
     out_name = os.path.join(in_dir, 'fluxes_10451.h5')
