@@ -8,7 +8,7 @@ import multiprocessing
 
 import time
 
-def patch_dir(dir_name=None, opsim_db=None):
+def patch_dir(dir_name, opsim_db):
 
     print('running on %s' % dir_name)
 
@@ -135,8 +135,7 @@ if __name__ == "__main__":
     j_list = []
     for dir_name in dir_list:
         p = multiprocessing.Process(target=patch_dir,
-                                    kwargs={'dir_name':dir_name,
-                                            'opsim_db':opsim_db})
+                                    args=(dir_name, opsim_db))
         p.start()
         j_list.append(p)
 
