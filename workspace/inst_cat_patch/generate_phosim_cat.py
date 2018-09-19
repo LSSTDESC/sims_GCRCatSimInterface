@@ -92,6 +92,13 @@ def patch_dir(dir_name, opsim_db):
                 raise RuntimeError("%s doesn't exist" %
                                    os.path.join(out_dir, file_name))
 
+            # remove stubs of gzip files in cases where batch job
+            # was interrupted in the middle of running gzip
+            if (os.path.isfile(os.path.join(out_dir, file_name)) and
+                os.path.isfile(os.path.join(out_dir, file_name+'.gz'))):
+
+                os.unlink(os.path.join(out_dir, file_name+'.gz'))
+
             object_catalogs.append(file_name)
 
         assert len(object_catalogs) > 0
