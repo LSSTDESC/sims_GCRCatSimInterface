@@ -70,7 +70,7 @@ def calc_fluxes(sed_name_arr, mag_norm, a_v, r_v, redshift):
                                   dimming=True)
 
             new_flux = bp_dict.fluxListForSed(clean_sed)
-            fluxes_fixed[ii] = local_flux
+            fluxes_fixed[ii] = new_flux
 
     return fluxes_as_is, fluxes_fixed
 
