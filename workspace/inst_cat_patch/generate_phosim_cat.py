@@ -30,11 +30,11 @@ def patch_dir(dir_name, opsim_db):
     print('%d in %s' % (n_files, dir_name))
     for i_file, file_name in enumerate(list_of_files):
 
-        duration = (time.time()-t_start)
-        predicted = n_files*duration/(i_file+1)
-        if i_file>0 and i_file%20==0:
-            print('ran %d of %d in %s; pred %e' %
-            (i_file, n_files,dir_name,predicted))
+        #duration = (time.time()-t_start)
+        #predicted = n_files*duration/(i_file+1)
+        #if i_file>0 and i_file%20==0:
+        #    print('ran %d of %d in %s; pred %e' %
+        #    (i_file, n_files,dir_name,predicted))
 
         if file_name == 'job_log.txt':
             continue

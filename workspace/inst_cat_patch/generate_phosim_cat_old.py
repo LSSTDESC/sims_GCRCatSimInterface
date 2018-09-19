@@ -1,4 +1,5 @@
 import os
+import time
 import multiprocessing
 from generate_phosim_cat import patch_dir
 
@@ -24,7 +25,8 @@ if __name__ == "__main__":
             dirs_to_patch.append(full_dir)
 
     p_list = []
-    for dir_name in dirs_to_patch:
+    t_start = time.time()
+    for i_dir, dir_name in enumerate(dirs_to_patch):
         p = multiprocessing.Process(target=patch_dir,
                                     args=(dir_name, opsim_db))
         p.start()
@@ -33,5 +35,9 @@ if __name__ == "__main__":
             for p in p_list:
                 p.join()
             p_list = []
+            duration = (time.time()-t_start)/3600.0
+            predicted = len(dirs_to_patch)*duration/i_dir
+            print('%d in %.2e; predict %.2e' % (i_dir, duration, predicted))
+
     for p in p_list:
         p.join()
