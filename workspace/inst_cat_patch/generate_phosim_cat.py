@@ -88,10 +88,6 @@ def _process_dir(dir_name, obs_gen, star_db):
 
         assert len(object_catalogs) == len(completed_catalogs)
 
-        if len(object_catalogs) == 0:
-            print('\n\n%s has no object_catalogs' % out_dir)
-            return
-
         out_name = os.path.join(out_dir,'phosim_cat_%d.txt' % obshistid)
         if os.path.exists(out_name):
             #print("%s already exists" % out_name)
