@@ -13,7 +13,7 @@ if __name__ == "__main__":
     assert os.path.isdir(project_scratch)
 
     parent_dir = os.path.join(project_scratch,
-                              'cori_haswell_submit_dix2200_size200')
+                              'cori_haswell_submit_idx2200_size200')
 
     dirs_to_patch = []
     for bp in 'ugrizy':
