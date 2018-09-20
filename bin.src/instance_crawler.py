@@ -232,7 +232,7 @@ def process_instance_catalog(args):
         name = os.path.join(output_path,basename)
         if os.path.exists(name):
             print('Gzipping '+ name)
-            os.system("gzip -f %s " % name)
+            os.system("gzip --fast -f %s " % name)
 
     # Processes catalogs, prefer the ungzipped version if it exists
     input_disk=output_path+'/disk_gal_cat_%d.txt'%visitID
@@ -264,7 +264,7 @@ def process_instance_catalog(args):
     fix_bulge(input_bulge, tmp_bulge)
     os.system("mv %s %s"%(tmp_bulge, output_bulge))
     print('Gzipping....')
-    os.system("gzip -f %s %s %s" % (output_disk, output_bulge, output_knots))
+    os.system("gzip --fast -f %s %s %s" % (output_disk, output_bulge, output_knots))
 
     print('Done.')
 
