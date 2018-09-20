@@ -124,9 +124,9 @@ def patch_dir(dir_name, opsim_db):
 
     if isinstance(dir_name, list) or isinstance(dir_name, np.ndarray):
         for dd in dir_name:
-            process_dir(dd, patch_dir.obs_gen, patch_dir.star_db)
+            _process_dir(dd, patch_dir.obs_gen, patch_dir.star_db)
     else:
-         process_dir(dir_name, patch_dir.obs_gen, patch_dir.star_db)
+         _process_dir(dir_name, patch_dir.obs_gen, patch_dir.star_db)
 
 
 if __name__ == "__main__":
