@@ -63,6 +63,10 @@ def patch_dir(dir_name, opsim_db):
             if 'wrote SNe' in line:
                 completed_catalogs.append('sne')
 
+        if len(completed_catalogs) == 0:
+            print('\n\nno catalogs for %s' % job_log)
+            return
+
         params = os.path.basename(job_log).strip().replace('.txt','').split('_')
         if len(params)<3:
             continue
@@ -92,7 +96,11 @@ def patch_dir(dir_name, opsim_db):
 
             object_catalogs.append(file_name)
 
-        assert len(object_catalogs) > 0
+        assert len(object_catalogs) == len(completed_catalogs)
+
+        if len(object_catalogs) == 0:
+            print('\n\n%s has no object_catalogs' % out_dir)
+            return
 
         out_name = os.path.join(out_dir,'phosim_cat_%d.txt' % obshistid)
         if os.path.exists(out_name):
