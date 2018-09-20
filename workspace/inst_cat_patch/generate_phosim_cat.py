@@ -124,6 +124,17 @@ def _process_dir(dir_name, obs_gen, star_db):
 
 
 def patch_dir(dir_name, opsim_db):
+    """
+    Parameters
+    ----------
+    dir_name -- the path to the parent_dir that this will walk through,
+    detecting job_log_NNNNN.txt files and fixing NNNNN/ directories of
+    InstanceCatalog data
+
+    opsim_db -- the path to the OpSim database we are using
+    (i.e. the minion_1016_....db file from the InstanceCatalog generation
+    command)
+    """
 
     print('running on %s' % dir_name)
 
