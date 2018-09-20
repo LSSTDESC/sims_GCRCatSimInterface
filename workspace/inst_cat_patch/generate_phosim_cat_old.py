@@ -26,9 +26,10 @@ if __name__ == "__main__":
 
     p_list = []
     t_start = time.time()
-    for i_dir, dir_name in enumerate(dirs_to_patch):
+    d_dir = len(dirs_to_patch)//23
+    for i_dir in range(0, len(dirs_to_patch), d_dir):
         p = multiprocessing.Process(target=patch_dir,
-                                    args=(dir_name, opsim_db))
+                                    args=(dirs_to_patch[i_dir:i_dir+d_dir], opsim_db))
         p.start()
         p_list.append(p)
         if len(p_list)>=24:
@@ -41,3 +42,5 @@ if __name__ == "__main__":
 
     for p in p_list:
         p.join()
+
+    print('all done')
