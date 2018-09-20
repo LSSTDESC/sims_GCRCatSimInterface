@@ -8,26 +8,16 @@ import multiprocessing
 
 import time
 
-def patch_dir(dir_name, opsim_db):
-
-    print('running on %s' % dir_name)
-
-    if not hasattr(patch_dir, 'star_db'):
-        star_db = StarObj(database='LSSTCATSIM',
-                          host='fatboy.phys.washington.edu',
-                          port=1433, driver='mssql+pymssql')
-
-        patch_dir.star_db = star_db
-
-        obs_gen = ObservationMetaDataGenerator(opsim_db)
-        patch_dir.obs_gen = obs_gen
+def _process_dir(dir_name, obs_gen, star_db):
 
     t_start = time.time()
 
     n_complete = 0
     list_of_files = os.listdir(dir_name)
     n_files = len(list_of_files)
-    print('%d in %s' % (n_files, dir_name))
+
+    #print('%d in %s' % (n_files, dir_name))
+
     for i_file, file_name in enumerate(list_of_files):
 
         #duration = (time.time()-t_start)
@@ -104,18 +94,40 @@ def patch_dir(dir_name, opsim_db):
 
         out_name = os.path.join(out_dir,'phosim_cat_%d.txt' % obshistid)
         if os.path.exists(out_name):
-            print("%s already exists" % out_name)
+            #print("%s already exists" % out_name)
             continue
 
-        obs_md = get_obs_md(patch_dir.obs_gen,
+        obs_md = get_obs_md(obs_gen,
                             obshistid, fov=2.1,
                             dither=True)
 
         make_instcat_header(star_db, obs_md, out_name,
                             object_catalogs=object_catalogs)
 
-    print('n_complete %d' % n_complete)
-    print('took %e hours' % ((time.time()-t_start)/3600.0))
+    #print('n_complete %d' % n_complete)
+    #print('took %e hours' % ((time.time()-t_start)/3600.0))
+
+
+def patch_dir(dir_name, opsim_db):
+
+    print('running on %s' % dir_name)
+
+    if not hasattr(patch_dir, 'star_db'):
+        star_db = StarObj(database='LSSTCATSIM',
+                          host='fatboy.phys.washington.edu',
+                          port=1433, driver='mssql+pymssql')
+
+        patch_dir.star_db = star_db
+
+        obs_gen = ObservationMetaDataGenerator(opsim_db)
+        patch_dir.obs_gen = obs_gen
+
+    if isinstance(dir_name, list) or isinstance(dir_name, np.ndarray):
+        for dd in dir_name:
+            process_dir(dd, patch_dir.obs_gen, patch_dir.star_db)
+    else:
+         process_dir(dir_name, patch_dir.obs_gen, patch_dir.star_db)
+
 
 if __name__ == "__main__":
 
