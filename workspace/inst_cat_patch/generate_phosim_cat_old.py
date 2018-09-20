@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     dirs_to_patch = []
     for bp in 'ugrizy':
-        bp_dir = os.path.join(parent_dir, '%s-WFD')
+        bp_dir = os.path.join(parent_dir, '%s-WFD' % bp)
         obs_list = os.listdir(bp_dir)
         for obs in obs_list:
             full_dir = os.path.join(bp_dir, obs, 'instCat')
