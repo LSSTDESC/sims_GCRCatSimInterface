@@ -20,6 +20,7 @@ def calc_fluxes(sed_name_arr, mag_norm, a_v, r_v, redshift):
 
     fluxes_as_is = np.zeros((n_obj,6), dtype=float)
     fluxes_fixed = np.zeros((n_obj,6), dtype=float)
+    fluxes_rest = np.zeros((n_obj,6), dtype=float)
 
     ccm_w = None
 
@@ -35,6 +36,7 @@ def calc_fluxes(sed_name_arr, mag_norm, a_v, r_v, redshift):
         ss.readSED_flambda(sed_name)
         fnorm = getImsimFluxNorm(ss, mag_norm[ii])
         ss.multiplyFluxNorm(fnorm)
+        fluxes_reset[ii] = bp_dict.fluxListForSed(ss)
         if ccm_w is None or not np.array_equal(ccm_w, ss.wavelen):
             ccm_w = np.copy(ss.wavelen)
             a_x, b_x = ss.setupCCMab()
@@ -72,7 +74,7 @@ def calc_fluxes(sed_name_arr, mag_norm, a_v, r_v, redshift):
             new_flux = bp_dict.fluxListForSed(clean_sed)
             fluxes_fixed[ii] = new_flux
 
-    return fluxes_as_is, fluxes_fixed
+    return fluxes_as_is, fluxes_fixed, fluxes_rest
 
 
 def calc_fluxes_parallel(disk, bulge, truth,
@@ -88,11 +90,12 @@ def calc_fluxes_parallel(disk, bulge, truth,
 
     with np.errstate(divide='ignore', invalid='ignore'):   
         (disk_fluxes,
-         disk_fluxes_fixed) = calc_fluxes(sed_name,
-                                          mag_norm,
-                                          av,
-                                          rv,
-                                          zz)
+         disk_fluxes_fixed,
+         disk_fluxes_rest) = calc_fluxes(sed_name,
+                                         mag_norm,
+                                         av,
+                                         rv,
+                                         zz)
 
     lock.acquire()
     sed_name = np.copy(bulge['sed_name'].value[dexes].astype(str))
@@ -104,16 +107,18 @@ def calc_fluxes_parallel(disk, bulge, truth,
 
     with np.errstate(divide='ignore', invalid='ignore'): 
         (bulge_fluxes,
-         bulge_fluxes_fixed) = calc_fluxes(sed_name,
-                                           mag_norm,
-                                           av,
-                                           rv,
-                                           zz)
+         bulge_fluxes_fixed,
+         bulge_fluxes_rest) = calc_fluxes(sed_name,
+                                          mag_norm,
+                                          av,
+                                          rv,
+                                          zz)
 
     dummy_sed = Sed()
     mags = dummy_sed.magFromFlux(disk_fluxes + bulge_fluxes)
     mags_fixed = dummy_sed.magFromFlux(disk_fluxes_fixed +
                                        bulge_fluxes_fixed)
+    mags_rest = dummy_sed.magFromFlux(disk_fluxes_rest+bulge_fluxes_rest)
 
     galaxy_id = disk['galaxy_id'].value[dexes]
  
@@ -126,6 +131,7 @@ def calc_fluxes_parallel(disk, bulge, truth,
         tag = '%d' % ii
     out_dict['mags_%s' % tag] = mags
     out_dict['mags_fixed_%s' % tag] = mags_fixed
+    out_dict['mags_rest_%s' % tag] = mags_rest
     out_dict['galaxy_id_%s' % tag] = galaxy_id
     lock.release()
 
@@ -167,7 +173,7 @@ if __name__ == "__main__":
     calc_fluxes_parallel(disk,bulge,truth,np.array([1,5,6]),d,lock)
 
     out_name = os.path.join(os.environ['SCRATCH'],
-                            'mags_by_mass.h5')
+                            'mags_by_mass_w_rest.h5')
 
     if os.path.exists(out_name):
         os.unlink(out_name)
@@ -213,6 +219,7 @@ if __name__ == "__main__":
         gid = np.zeros(len(dexes), dtype=int)
         mag = np.zeros((len(dexes), 6), dtype=float)
         mag_fixed = np.zeros((len(dexes),6), dtype=float)
+        mag_rest = np.zeros((len(dexes),6), dtype=float)
 
         i_start=0
         n_written = 0
@@ -222,10 +229,12 @@ if __name__ == "__main__":
                 l_gid = out_dict['galaxy_id_%d' % ii]
                 l_m = out_dict['mags_%d' % ii]
                 l_mf = out_dict['mags_fixed_%d' % ii]
+                l_mr = out_dict['mags_rest_%d' % ii]
 
                 gid[i_start:i_start+len(l_gid)] = l_gid
                 mag[i_start:i_start+len(l_gid)] = l_m
                 mag_fixed[i_start:i_start+len(l_gid)] = l_mf
+                mag_rest[i_start:i_start+len(l_gid)] = l_mr
                 i_start += len(l_gid)
                 n_written += len(l_gid)
 
@@ -234,10 +243,12 @@ if __name__ == "__main__":
         tag = '%d' % log_mass
         mag = mag.transpose()
         mag_fixed = mag_fixed.transpose()
+        mag_rest = mag_rest.transpose()
         out_file.create_dataset('galaxy_id_'+tag, data=gid)
         for i_bp, bp in enumerate('ugrizy'):
             out_file.create_dataset('%s_%s' % (bp,tag), data=mag[i_bp])
             out_file.create_dataset('%s_fixed_%s' % (bp,tag), data=mag_fixed[i_bp])
+            out_file.create_dataset('%s_rest_%s' % (bp,tag), data=mag_rest[i_bp])
 
 
     exit()
