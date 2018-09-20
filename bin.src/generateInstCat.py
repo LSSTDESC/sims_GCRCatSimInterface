@@ -6,6 +6,7 @@ import copy
 import time
 import multiprocessing
 import numbers
+import json
 from astropy._erfa import ErfaWarning
 
 with warnings.catch_warnings():
@@ -33,6 +34,21 @@ def generate_instance_catalog(args=None, lock=None):
             warnings.filterwarnings('ignore', 'invalid value', RuntimeWarning)
 
         if not hasattr(generate_instance_catalog, 'instcat_writer'):
+            config_dict = {}
+            config_dict['db'] = args.db
+            config_dict['descqa_catalog'] = args.descqa_catalog
+            config_dict['min_mag'] = args.min_mag
+            config_dict['minsource'] = args.minsource
+            config_dict['dither'] = not args.disable_dithering
+            config_dict['proper_motion'] = args.enable_proper_motion
+            config_dict['protoDC2_ra'] = args.protoDC2_ra
+            config_dict['protoDC2_dec'] = args.protoDC2_dec
+            config_dict['agn_db_name'] = args.agn_db_name
+            config_dict['sn_db_name'] = args.sn_db_name
+            config_dict['host_image_dir'] = args.host_image_dir
+            config_dict['host_data_dir'] = args.host_data_dir
+            config_dict['sprinkler'] = args.enable_sprinkler
+
             instcat_writer = InstanceCatalogWriter(args.db, args.descqa_catalog,
                                                    dither=not args.disable_dithering,
                                                    min_mag=args.min_mag,
@@ -44,7 +60,8 @@ def generate_instance_catalog(args=None, lock=None):
                                                    sn_db_name=args.sn_db_name,
                                                    host_image_dir=args.host_image_dir,
                                                    host_data_dir=args.host_data_dir,
-                                                   sprinkler=args.enable_sprinkler)
+                                                   sprinkler=args.enable_sprinkler,
+                                                   config_dict=config_dict)
 
             generate_instance_catalog.instcat_writer = instcat_writer
 
@@ -58,12 +75,18 @@ def generate_instance_catalog(args=None, lock=None):
                 if lock is not None:
                     lock.release()
 
+            pickup_file = None
+            if args.pickup_dir is not None:
+                pickup_file = os.path.join(args.pickup_dir, 'job_log_%.8d.txt' % obsHistID)
+                config_dict['pickup_file'] = pickup_file
+
             full_out_dir = os.path.join(args.out_dir, '%.8d' % obsHistID)
 
             generate_instance_catalog.instcat_writer.write_catalog(obsHistID,
                                                                    out_dir=full_out_dir,
                                                                    fov=args.fov,
-                                                                   status_dir=args.out_dir)
+                                                                   status_dir=args.out_dir,
+                                                                   pickup_file=pickup_file)
 
             if args.job_log is not None:
                 if lock is not None:
@@ -77,6 +100,9 @@ def generate_instance_catalog(args=None, lock=None):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Instance catalog generator')
+    parser.add_argument('--config_file', type=str, default=None,
+                        help='config file containing all of the arguments for this method. '
+                        'Arguments are in a json-ized dict')
     parser.add_argument('--db', type=str,
                         help='path to the OpSim database to query')
     parser.add_argument('--agn_db_name', type=str,
@@ -120,7 +146,15 @@ if __name__ == "__main__":
                         help='Number of jobs to run in parallel with multiprocessing')
     parser.add_argument('--job_log', type=str, default=None,
                         help="file where we will write 'job started/completed' messages")
+    parser.add_argument('--pickup_dir', type=str, default=None,
+                        help='directory to check for aborted job logs')
     args = parser.parse_args()
+
+    if args.config_file is not None:
+        with open(args.config_file, 'r') as in_file:
+            config_dict = json.load(in_file)
+        for kk in config_dict:
+            args.__dict__[kk] = config_dict[kk]
 
     print('args ',args.n_jobs,args.ids)
 
@@ -144,5 +178,6 @@ if __name__ == "__main__":
         for p in job_list:
             p.join()
 
-    with open(args.job_log, 'a') as out_file:
-        out_file.write('%s should be completed\n' % str(args.ids))
+    if args.job_log is not None:
+        with open(args.job_log, 'a') as out_file:
+            out_file.write('%s should be completed\n' % str(args.ids))
