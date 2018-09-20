@@ -9,6 +9,25 @@ import multiprocessing
 import time
 
 def _process_dir(dir_name, obs_gen, star_db):
+    """
+    Scan through a directory and write phosim_*.txt catalogs as needed.
+
+    Parameters
+    ----------
+    dir_name -- this should be the parent directory in which the
+    job_log_NNN.tx files get written; they should have a subdir
+    NNN/containing the InstanceCatalog data
+
+    obs_gen -- an instantiation of ObservationMetaDataGenerator
+    connected to the opsim database used to construct pointings
+
+    star_db -- a connection to the LSST Sims star catalog.  This
+    is unfortunately needed to use the existing API
+
+    This method will walk through dir_name, examine all of the
+    job_log_NNNNNN.txt files and use them to figure out what
+    phosim_*.txt to write and then write those files.
+    """
 
     t_start = time.time()
 
