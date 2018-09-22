@@ -84,7 +84,7 @@ def sed_filter_names_from_catalog(catalog):
                      'wav_min': bulge_wav_min,
                      'wav_width': bulge_wav_width}}
 
-def _create_library_one_sed(_galaxy_sed_dir, sed_name,
+def _create_library_one_sed(_galaxy_sed_dir, sed_file_name,
                             av_grid, rv_grid, bandpass_dict,
                             out_dict):
 
@@ -94,7 +94,7 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_name,
     base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
     ax, bx = base_spec.setupCCMab()
 
-    sed_names = []
+    sed_names = np.array([defaultSpecMap[sed_file_name]]*n_obj)
     rv_out_list = np.zeros(n_obj, dtype=float)
     av_out_list = np.zeros(n_obj, dtype=float)
     sed_mag_norm = np.zeros(n_obj, dtype=float)
@@ -104,7 +104,6 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_name,
     for av in av_grid:
         for rv in rv_grid:
             spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
-            sed_names.append(defaultSpecMap[sed_file_name])
             sed_mag_norm[i_obj] = spec.calcMag(imsim_bp)
             spec.addCCMDust(ax, bx, A_v=av, R_v=rv)
             av_out_list[i_obj] = av
