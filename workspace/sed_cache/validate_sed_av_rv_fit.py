@@ -65,6 +65,9 @@ if __name__ == "__main__":
     out_file_name = os.path.join(args.out_dir,
                                 'fit_mags_vs_cosmo_mags_%d.h5' % args.healpix)
 
+
+    cache_LSST_seds(wavelen_min=0.0, wavelen_max=3000.0)
+
     (disk_redshift, disk_id, disk_sed, disk_mag,
      disk_av, disk_rv) = do_fitting(cat, 'disk', args.healpix)
 
@@ -88,8 +91,6 @@ if __name__ == "__main__":
     print("got controls")
 
     np.testing.assert_array_equal(control_qties['galaxy_id'], disk_id)
-
-    cache_LSST_seds(wavelen_min=200.0, wavelen_max=1600.0)
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
     fit_mags = {}
