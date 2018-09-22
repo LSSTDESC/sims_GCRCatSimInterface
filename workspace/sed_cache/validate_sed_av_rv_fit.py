@@ -11,6 +11,7 @@ from desc.sims.GCRCatSimInterface import sed_filter_names_from_catalog
 from desc.sims.GCRCatSimInterface import sed_from_galacticus_mags
 from lsst.sims.photUtils import BandpassDict, Sed
 from lsst.sims.photUtils import cache_LSST_seds, getImsimFluxNorm
+from lsst.utils import getPackageDir
 
 import argparse
 
@@ -64,6 +65,8 @@ if __name__ == "__main__":
     if not os.path.isdir(args.out_dir):
         os.makedirs(args.out_dir)
 
+    sed_dir = getPackageDir('sims_sed_library')
+
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
     out_file_name = os.path.join(args.out_dir,
@@ -116,7 +119,7 @@ if __name__ == "__main__":
             (ii, len(disk_id), duration, predicted))
 
         disk_sed = Sed()
-        disk_sed.readSED_flambda(disk_sed_name[ii])
+        disk_sed.readSED_flambda(os.path.join(sed_dir, disk_sed_name[ii]))
         fnorm = getImsimFluxNorm(disk_sed, disk_mag[ii])
         disk_sed.multiplyFluxNorm(fnorm)
         if ax is None or not np.array_equal(disk_sed.wavelen, ccm_w):
@@ -126,7 +129,7 @@ if __name__ == "__main__":
         disk_fluxes = bp_dict.fluxListForSed(disk_sed)
 
         bulge_sed = Sed()
-        bulge_sed.readSED_flambda(bulge_sed_name[ii])
+        bulge_sed.readSED_flambda(os.path.join(sed_dir, bulge_sed_name[ii]))
         fnorm = getImsimFluxNorm(bulge_sed, bulge_mag[ii])
         bulge_sed.multiplyFluxNorm(fnorm)
         if ax is None or not np.array_equal(bulge_sed.wavelen, ccm_w):
