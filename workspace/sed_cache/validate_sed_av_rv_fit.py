@@ -50,7 +50,7 @@ def do_fitting(cat, component, healpix):
                                         H0, Om0,
                                         wav_min, wav_width)
 
-    return (qties['redshift_true'], qties['galaxy_id'],
+    return (qties['redshift_true'][:_lim], qties['galaxy_id'][:_lim],
             sed_names, mag_norms, av_arr, rv_arr)
 
 if __name__ == "__main__":
