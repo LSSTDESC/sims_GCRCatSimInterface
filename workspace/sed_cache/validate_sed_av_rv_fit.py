@@ -72,12 +72,12 @@ if __name__ == "__main__":
 
     #cache_LSST_seds(wavelen_min=0.0, wavelen_max=3000.0)
 
-    (disk_redshift, disk_id, disk_sed, disk_mag,
+    (disk_redshift, disk_id, disk_sed_name, disk_mag,
      disk_av, disk_rv) = do_fitting(cat, 'disk', args.healpix)
 
     print("fit disks")
 
-    (bulge_redshift, bulge_id, bulge_sed, bulge_mag,
+    (bulge_redshift, bulge_id, bulge_sed_name, bulge_mag,
      bulge_av, bulge_rv) = do_fitting(cat, 'bulge', args.healpix)
 
     print("fit bulges")
@@ -116,7 +116,7 @@ if __name__ == "__main__":
             (ii, len(disk_id), duration, predicted))
 
         disk_sed = Sed()
-        disk_sed.readSED_flambda(disk_sed[ii])
+        disk_sed.readSED_flambda(disk_sed_name[ii])
         fnorm = getImsimFluxNorm(disk_sed, disk_mag[ii])
         disk_sed.multiplyFluxNorm(fnorm)
         if ax is None or not np.array_equal(disk_sed.wavelen, ccm_w):
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         disk_fluxes = bp_dict.fluxListForSed(disk_sed)
 
         bulge_sed = Sed()
-        bulge_sed.readSED_flambda(bulge_sed[ii])
+        bulge_sed.readSED_flambda(bulge_sed_name[ii])
         fnorm = getImsimFluxNorm(bulge_sed, bulge_mag[ii])
         bulge_sed.multiplyFluxNorm(fnorm)
         if ax is None or not np.array_equal(bulge_sed.wavelen, ccm_w):
