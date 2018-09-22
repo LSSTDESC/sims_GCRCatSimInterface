@@ -133,9 +133,8 @@ if __name__ == "__main__":
         for i_bp, bp in enumerate('ugrizy'):
             fit_mags[bp][ii] = mags[i_bp]
 
-    f = h5py.File(out_file_name, 'w')
-    for bp in 'ugrizy':
-        f.create_dataset('fit_%s' % bp, data=fit_mags[bp])
-        f.create_dataset('cosmo_%s' % bp,
-                         data=control_qties['Mag_true_%s_lsst_z0' % bp])
-    f.close()
+    with h5py.File(out_file_name, 'w') as f:
+        for bp in 'ugrizy':
+            f.create_dataset('fit_%s' % bp, data=fit_mags[bp])
+            f.create_dataset('cosmo_%s' % bp,
+                             data=control_qties['Mag_true_%s_lsst_z0' % bp])
