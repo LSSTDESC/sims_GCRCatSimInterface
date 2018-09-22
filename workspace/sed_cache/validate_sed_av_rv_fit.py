@@ -38,7 +38,7 @@ def do_fitting(cat, component, healpix):
                               ['redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
-    print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
+    print("testing on %d of %d" % (_lim, len(qties['galaxy_id'])))
     with np.errstate(divide='ignore', invalid='ignore'):
         mag_array = np.array([-2.5*np.log10(qties[ff][:_lim]) for ff in filter_names])
 
