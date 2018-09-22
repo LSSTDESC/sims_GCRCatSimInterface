@@ -84,7 +84,7 @@ def sed_filter_names_from_catalog(catalog):
                      'wav_min': bulge_wav_min,
                      'wav_width': bulge_wav_width}}
 
-def _create_library_one_sed(_galaxy_sed_dir, sed_file_name,
+def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                             av_grid, rv_grid, bandpass_dict,
                             out_dict):
 
@@ -93,30 +93,38 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name,
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
-    base_spec = Sed()
-    base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
-    ax, bx = base_spec.setupCCMab()
+    t_start = time.time()
+    for i_sed, sed_file_name in enumerate(sed_file_name_list):
+        if i_sed>0 and i_sed%10 ==0:
+            duration = (time.time()-t_start)/3600.0
+            pred = len(sed_file_name_list)*duration/i_sed
+            print('%d of %d; dur %.2e pred %.2e' %
+            (i_sed, len(sed_file_name_list), duration, pred))
 
-    mag_norm = base_spec.calcMag(imsim_bp)
+        base_spec = Sed()
+        base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
+        ax, bx = base_spec.setupCCMab()
 
-    sed_names = np.array([defaultSpecMap[sed_file_name]]*n_obj)
-    rv_out_list = np.zeros(n_obj, dtype=float)
-    av_out_list = np.zeros(n_obj, dtype=float)
-    sed_mag_norm = mag_norm*np.ones(n_obj, dtype=float)
-    sed_mag_list = []
+        mag_norm = base_spec.calcMag(imsim_bp)
 
-    i_obj = 0
-    for av in av_grid:
-        for rv in rv_grid:
-            spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
-            spec.addCCMDust(ax, bx, A_v=av, R_v=rv)
-            av_out_list[i_obj] = av
-            rv_out_list[i_obj] = rv
-            sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
-            i_obj += 1
+        sed_names = np.array([defaultSpecMap[sed_file_name]]*n_obj)
+        rv_out_list = np.zeros(n_obj, dtype=float)
+        av_out_list = np.zeros(n_obj, dtype=float)
+        sed_mag_norm = mag_norm*np.ones(n_obj, dtype=float)
+        sed_mag_list = []
 
-    out_dict[sed_file_name] = (sed_names, sed_mag_norm, sed_mag_list,
-                               av_out_list, rv_out_list)
+        i_obj = 0
+        for av in av_grid:
+            for rv in rv_grid:
+                spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
+                spec.addCCMDust(ax, bx, A_v=av, R_v=rv)
+                av_out_list[i_obj] = av
+                rv_out_list[i_obj] = rv
+                sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
+                i_obj += 1
+
+        out_dict[sed_file_name] = (sed_names, sed_mag_norm, sed_mag_list,
+                                   av_out_list, rv_out_list)
 
 
 def _create_sed_library_mags(wav_min, wav_width):
@@ -185,32 +193,32 @@ def _create_sed_library_mags(wav_min, wav_width):
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
     i_stored = 0
-    for i_sed, sed_file_name in enumerate(list_of_files):
+    d_start = len(list_of_files)//n_proc
+    i_start_list = range(0, len(list_of_files), d_start)
+    for i_meta, i_start in enumerate(i_start_list):
+        i_end = i_start+d_start
+        if i_meta == len(i_start_list)-1:
+            i_end = len(list_of_files)
+
         p = multiprocessing.Process(target=_create_library_one_sed,
                                     args=(_galaxy_sed_dir,
-                                          sed_file_name,
+                                          list_of_files[i_start:i_end],
                                           av_grid, rv_grid,
                                           bandpass_dict, out_dict))
 
         p.start()
         p_list.append(p)
-        if len(p_list) >= n_proc or i_sed == len(list_of_files)-1:
-            for p in p_list:
-                p.join()
-            for kk in out_dict.keys():
-                n_out = len(out_dict[kk][1])
-                sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
-                sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
-                sed_mag_list += out_dict[kk][2]
-                av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
-                rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
-                i_stored += n_out
-            out_dict = mgr.dict()
-            p_list = []
-            duration = (time.time()-t_start)/3600.0
-            predicted = len(list_of_files)*duration/i_sed
-            print('%d of %d; dur %.2e pred %.2e' %
-            (i_sed, len(list_of_files), duration, predicted))
+
+    for p in p_list:
+        p.join()
+    for kk in out_dict.keys():
+        n_out = len(out_dict[kk][1])
+        sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
+        sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
+        sed_mag_list += out_dict[kk][2]
+        av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
+        rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
+        i_stored += n_out
 
     print('made library')
     assert len(np.where(av_out_list<1.0e-10)[0]) == len(list_of_files)
