@@ -11,8 +11,8 @@ __all__ = ["disk_re", "bulge_re", "sed_filter_names_from_catalog", "sed_from_gal
 
 _galaxy_sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
 
-disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
-bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge_no_host_extinction$')
+disk_re = re.compile(r'sed_(\d+)_(\d+)_disk$')
+bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge$')
 
 def sed_filter_names_from_catalog(catalog):
     """
@@ -97,13 +97,22 @@ def _create_sed_library_mags(wav_min, wav_width):
 
     Returns
     -------
-    sed_names is an array containing the names of the SED files
+    sed_names is an array containing the names of the SED files repeated over
+    combinations of dust parameters (sorry; that wording is awkward)
 
-    sed_mag_list is MxN float array, with M = number of SED files in the library,
-        and N = number of top hat filters in the catalog
+    sed_mag_list is MxN float array, with M = number of SED file, dust parameter
+    combinations in the library, and N = number of top hat filters in the catalog
 
-    sed_mag_norm is 1d float array, with length = number of SED files in the library
+    sed_mag_norm is 1d float array, with length = number of SED file, dust parameter
+    combinations in the library
+
+    av_out_list is a 1d float array of Av
+
+    rv_out_list is a 1d float array of Rv
     """
+
+    av_grid = np.arange(0.0, 3.0, 0.1)
+    rv_grid = np.arange(1.0, 5.0, 0.1)
 
     wav_max = max((wav0+width
                   for wav0, width in zip(wav_min, wav_width)))
@@ -121,18 +130,28 @@ def _create_sed_library_mags(wav_min, wav_width):
     sed_names = list()
     sed_mag_list = list()
     sed_mag_norm = list()
+    av_out_list = list()
+    rv_out_list = list()
 
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
     for sed_file_name in os.listdir(_galaxy_sed_dir):
-        spec = Sed()
-        spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
-        sed_names.append(defaultSpecMap[sed_file_name])
-        sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
-        sed_mag_norm.append(spec.calcMag(imsim_bp))
+        base_spec = Sed()
+        base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
+        ax, bx = base_spec.createCCMab()
+        for av in av_grid:
+            for rv in rv_grid:
+                spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
+                sed_names.append(defaultSpecMap[sed_file_name])
+                sed_mag_norm.append(spec.calcMag(imsim_bp))
+                spec.addCCMDust(ax, bx, A_v=av, R_v=rv)
+                av_out_list.append(av)
+                rv_out_list.append(rv)
+                sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
 
-    return np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm)
+    return (np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm),
+            np.array(av_out_list), np.array(rv_out_list))
 
 
 def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
@@ -173,12 +192,15 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
 
         (sed_names,
          sed_mag_list,
-         sed_mag_norm) = _create_sed_library_mags(wav_min, wav_width)
+         sed_mag_norm,
+         av_grid, rv_grid) = _create_sed_library_mags(wav_min, wav_width)
 
 
         sed_colors = sed_mag_list[:,1:] - sed_mag_list[:,:-1]
         sed_from_galacticus_mags._sed_names = sed_names
         sed_from_galacticus_mags._mag_norm = sed_mag_norm # N_sed
+        sed_from_galacticus_mags._av_grid = av_grid
+        sed_from_galacticus_mags._rv_grid
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
         sed_from_galacticus_mags._color_tree = scipy_spatial.cKDTree(sed_colors)
         sed_from_galacticus_mags._wav_min = wav_min
@@ -209,4 +231,6 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     d_mag = (galacticus_mags_t - sed_from_galacticus_mags._sed_mags[sed_idx]).mean(axis=1)
     output_mag_norm = sed_from_galacticus_mags._mag_norm[sed_idx] + d_mag + distance_modulus
 
-    return output_names, output_mag_norm
+    return (output_names, output_mag_norm,
+            sed_from_galacticus_mags._av_grid[sed_idx],
+            sed_from_galacticus_mags._rv_grid[sed_idx])
