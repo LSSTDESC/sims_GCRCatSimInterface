@@ -62,6 +62,9 @@ if __name__ == "__main__":
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
+    out_file_name = os.path.join(args.outdir,
+                                'fit_mags_vs_cosmo_mags_%d.h5' % args.healpix)
+
     (disk_redshift, disk_id, disk_sed, disk_mag,
      disk_av, disk_rv) = do_fitting(cat, 'disk', args.healpix)
 
@@ -130,8 +133,6 @@ if __name__ == "__main__":
         for i_bp, bp in enumerate('ugrizy'):
             fit_mags[bp][ii] = mags[i_bp]
 
-    out_file_name = os.path.join(args.outdir,
-                                'fit_mags_vs_cosmo_mags_%d.h5' % args.healpix)
     f = h5py.File(out_file_name, 'w')
     for bp in 'ugrizy':
         f.create_dataset('fit_%s' % bp, data=fit_mags[bp])
