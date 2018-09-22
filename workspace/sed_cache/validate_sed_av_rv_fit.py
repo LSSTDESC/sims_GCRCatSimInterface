@@ -36,14 +36,15 @@ def do_fitting(cat, component, healpix):
                               ['redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
+    lim = 10000
     with np.errstate(divide='ignore', invalid='ignore'):
-        mag_array = np.array([-2.5*np.log10(qties[ff]) for ff in filter_names])
+        mag_array = np.array([-2.5*np.log10(qties[ff][:lim]) for ff in filter_names])
 
     (sed_names,
      mag_norms,
      av_arr,
      rv_arr) = sed_from_galacticus_mags(mag_array,
-                                        qties['redshift_true'],
+                                        qties['redshift_true'][:lim],
                                         H0, Om0,
                                         wav_min, wav_width)
 
