@@ -49,15 +49,18 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--healpix', type=int, default=None)
+    parser.add_argument('--out_dir', type=str, default=None)
     args = parser.parse_args()
     assert args.healpix is not None
+    assert args.out_dir is not None
+    if not os.path.isdir(args.out_dir):
+        os.makedirs(args.out_dir)
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
     qties, disk_sed, disk_mag = do_fitting(cat, 'disk', args.healpix)
 
-    out_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache')
-    disk_file = h5py.File(os.path.join(out_dir, 'disk_%d.h5' % args.healpix), 'w')
+    disk_file = h5py.File(os.path.join(args.out_dir, 'disk_%d.h5' % args.healpix), 'w')
     disk_file.create_dataset('galaxy_id', data=qties['galaxy_id'])
     disk_file.create_dataset('redshift', data=qties['redshift_true'])
     disk_file.create_dataset('A_v', data=qties['A_v_disk'])
@@ -72,7 +75,7 @@ if __name__ == "__main__":
     del disk_mag
 
     qties, bulge_sed, bulge_mag = do_fitting(cat, 'bulge', args.healpix)
-    bulge_file = h5py.File(os.path.join(out_dir, 'bulge_%d.h5' % args.healpix), 'w')
+    bulge_file = h5py.File(os.path.join(args.out_dir, 'bulge_%d.h5' % args.healpix), 'w')
     bulge_file.create_dataset('galaxy_id', data=qties['galaxy_id'])
     bulge_file.create_dataset('redshift', data=qties['redshift_true'])
     bulge_file.create_dataset('A_v', data=qties['A_v_bulge'])
