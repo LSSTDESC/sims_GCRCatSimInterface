@@ -155,8 +155,8 @@ def _create_sed_library_mags(wav_min, wav_width):
     rv_out_list is a 1d float array of Rv
     """
 
-    av_grid = np.arange(0.0, 3.0, 0.1)
-    rv_grid = np.arange(1.0, 5.0, 0.1)
+    av_grid = np.arange(0.0, 3.0, 0.2)
+    rv_grid = np.arange(1.0, 5.0, 0.2)
 
     wav_max = max((wav0+width
                   for wav0, width in zip(wav_min, wav_width)))
