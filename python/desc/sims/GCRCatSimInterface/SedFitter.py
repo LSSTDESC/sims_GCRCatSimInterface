@@ -150,7 +150,7 @@ def _create_sed_library_mags(wav_min, wav_width):
                 if i_gen>0 and i_gen%1000==0:
                     duration = (time.time()-t_start)/3600.0
                     predicted = n_tot*duration/i_gen
-                    print('%d of %d; dur %.2e pred %.2e' % (i_gen, n_tot, duration, predicted)
+                    print('%d of %d; dur %.2e pred %.2e' % (i_gen, n_tot, duration, predicted))
                 spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
                 sed_names.append(defaultSpecMap[sed_file_name])
                 sed_mag_norm.append(spec.calcMag(imsim_bp))
