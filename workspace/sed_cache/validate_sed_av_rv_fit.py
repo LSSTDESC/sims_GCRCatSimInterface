@@ -21,7 +21,7 @@ _healpix_list = [10201, 10327, 10328, 10329, 10450,
 
 _healpix_list = [10451]
 
-_lim = 10000
+_lim = 18000000
 
 def do_fitting(cat, component, healpix):
 
