@@ -144,7 +144,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     for sed_file_name in os.listdir(_galaxy_sed_dir):
         base_spec = Sed()
         base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
-        ax, bx = base_spec.createCCMab()
+        ax, bx = base_spec.setupCCMab()
         for av in av_grid:
             for rv in rv_grid:
                 if i_gen>0 and i_gen%1000==0:
