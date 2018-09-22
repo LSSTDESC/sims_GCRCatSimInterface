@@ -196,7 +196,7 @@ def _create_sed_library_mags(wav_min, wav_width):
         p_list.append(p)
         if len(p_list) >= n_proc or i_sed == len(list_of_files)-1:
             for p in p_list:
-                p_list.join()
+                p.join()
             for kk in out_dict.keys():
                 n_out = len(out_dict[kk][1])
                 sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
