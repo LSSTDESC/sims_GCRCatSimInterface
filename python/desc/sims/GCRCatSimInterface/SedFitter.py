@@ -168,7 +168,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
-    list_of_files = len(os.listdir(_galaxy_sed_dir))
+    list_of_files = os.listdir(_galaxy_sed_dir)
     n_tot = len(list_of_files)*len(av_grid)*len(rv_grid)
     t_start = time.time()
 
