@@ -36,7 +36,8 @@ def do_fitting(cat, component, healpix):
                               ['redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
-    lim = 100
+    lim = 1000
+    print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
     with np.errstate(divide='ignore', invalid='ignore'):
         mag_array = np.array([-2.5*np.log10(qties[ff][:lim]) for ff in filter_names])
 
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     for bp in 'ugrizy':
         q_list.append('Mag_true_%s_lsst_z0' % bp)
 
-    h_query = GCRQuery('healpix_pixels==%' % args.healpix)
+    h_query = GCRQuery('healpix_pixels==%d' % args.healpix)
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
 
     print("got controls")
