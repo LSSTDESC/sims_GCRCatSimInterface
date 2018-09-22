@@ -90,21 +90,25 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name,
 
     n_obj = len(av_grid)*len(rv_grid)
 
+    imsim_bp = Bandpass()
+    imsim_bp.imsimBandpass()
+
     base_spec = Sed()
     base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
     ax, bx = base_spec.setupCCMab()
 
+    mag_norm = base_spec.calcMag(imsim_bp)
+
     sed_names = np.array([defaultSpecMap[sed_file_name]]*n_obj)
     rv_out_list = np.zeros(n_obj, dtype=float)
     av_out_list = np.zeros(n_obj, dtype=float)
-    sed_mag_norm = np.zeros(n_obj, dtype=float)
+    sed_mag_norm = mag_norm*np.ones(n_obj, dtype=float)
     sed_mag_list = []
 
     i_obj = 0
     for av in av_grid:
         for rv in rv_grid:
             spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
-            sed_mag_norm[i_obj] = spec.calcMag(imsim_bp)
             spec.addCCMDust(ax, bx, A_v=av, R_v=rv)
             av_out_list[i_obj] = av
             rv_out_list[i_obj] = rv
@@ -164,9 +168,6 @@ def _create_sed_library_mags(wav_min, wav_width):
     sed_mag_norm = list()
     av_out_list = list()
     rv_out_list = list()
-
-    imsim_bp = Bandpass()
-    imsim_bp.imsimBandpass()
 
     list_of_files = os.listdir(_galaxy_sed_dir)
     n_tot = len(list_of_files)*len(av_grid)*len(rv_grid)
