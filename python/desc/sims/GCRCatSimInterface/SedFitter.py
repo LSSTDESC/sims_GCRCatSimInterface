@@ -187,7 +187,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     for i_sed, sed_file_name in enumerate(list_of_files):
         p = multiprocessing.Process(target=_create_library_one_sed,
                                     args=(_galaxy_sed_dir,
-                                          sed_name,
+                                          sed_file_name,
                                           av_grid, rv_grid,
                                           bandpass_dict, out_dict))
 
