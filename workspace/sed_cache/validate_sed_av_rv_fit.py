@@ -9,7 +9,7 @@ from GCR import GCRQuery
 
 from desc.sims.GCRCatSimInterface import sed_filter_names_from_catalog
 from desc.sims.GCRCatSimInterface import sed_from_galacticus_mags
-from lsst.sims.photUtils import BandpassDict
+from lsst.sims.photUtils import BandpassDict, Sed
 from lsst.sims.photUtils import cache_LSST_seds, getImsimFluxNorm
 
 import argparse
