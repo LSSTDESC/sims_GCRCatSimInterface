@@ -303,8 +303,10 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_star by (N_mag - 1)
 
     print("querying")
+    t_start = time.time()
     (sed_dist,
      sed_idx) = sed_from_galacticus_mags._color_tree.query(galacticus_colors, k=1)
+    print("querying took %e" % ((time.time()-t_start)/3600.0))
 
     # cKDTree returns an invalid index (==len(tree_data)) in cases
     # where the distance is not finite
