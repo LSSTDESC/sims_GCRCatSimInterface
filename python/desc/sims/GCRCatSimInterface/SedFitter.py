@@ -221,7 +221,6 @@ def _create_sed_library_mags(wav_min, wav_width):
         sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
         sed_mag_list[i_stored:i_stored+n_out][:] = out_dict[kk][2]
         av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
-        print(len(np.where(out_dict[kk][3]<1.0e-10)[0]))
         rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
         i_stored += n_out
         if i_kk>0 and i_kk%10==0:
@@ -231,7 +230,7 @@ def _create_sed_library_mags(wav_min, wav_width):
 
     print('made library')
     print('%d' % (len(np.where(av_out_list<1.0e-10)[0])))
-    assert len(np.where(av_out_list<1.0e-10)[0]) == len(list_of_files)
+    assert len(np.where(av_out_list<1.0e-10)[0]) == len(list_of_files)*len(rv_grid)
 
     return (sed_names, np.array(sed_mag_list), sed_mag_norm,
             av_out_list, rv_out_list)
