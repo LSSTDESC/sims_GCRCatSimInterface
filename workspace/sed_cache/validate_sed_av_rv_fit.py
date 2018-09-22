@@ -20,6 +20,8 @@ _healpix_list = [10201, 10327, 10328, 10329, 10450,
 
 _healpix_list = [10451]
 
+_lim = 10000
+
 def do_fitting(cat, component, healpix):
 
     filter_data = sed_filter_names_from_catalog(cat)
@@ -36,16 +38,15 @@ def do_fitting(cat, component, healpix):
                               ['redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
-    lim = 1000
     print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
     with np.errstate(divide='ignore', invalid='ignore'):
-        mag_array = np.array([-2.5*np.log10(qties[ff][:lim]) for ff in filter_names])
+        mag_array = np.array([-2.5*np.log10(qties[ff][:_lim]) for ff in filter_names])
 
     (sed_names,
      mag_norms,
      av_arr,
      rv_arr) = sed_from_galacticus_mags(mag_array,
-                                        qties['redshift_true'][:lim],
+                                        qties['redshift_true'][:_lim],
                                         H0, Om0,
                                         wav_min, wav_width)
 
@@ -90,6 +91,8 @@ if __name__ == "__main__":
 
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
+    for kk in control_qties:
+        control_qties[kk] = control_qties[kk][:_lim]
 
     print("got controls")
 
