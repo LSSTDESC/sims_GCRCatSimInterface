@@ -88,7 +88,7 @@ if __name__ == "__main__":
     for bp in 'ugrizy':
         q_list.append('Mag_true_%s_lsst_z0' % bp)
 
-    h_query = GCRQuery('healpix_pixels==%d' % args.healpix)
+    h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
 
     print("got controls")
