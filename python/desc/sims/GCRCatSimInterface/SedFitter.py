@@ -115,8 +115,8 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name,
             sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
             i_obj += 1
 
-    out_dict[sed_name] = (sed_names, sed_mag_norm, sed_mag_list,
-                          av_out_list, rv_out_list)
+    out_dict[sed_file_name] = (sed_names, sed_mag_norm, sed_mag_list,
+                               av_out_list, rv_out_list)
 
 
 def _create_sed_library_mags(wav_min, wav_width):
