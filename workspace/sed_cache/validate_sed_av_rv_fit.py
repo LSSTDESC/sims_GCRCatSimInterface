@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
-    out_file_name = os.path.join(args.outdir,
+    out_file_name = os.path.join(args.out_dir,
                                 'fit_mags_vs_cosmo_mags_%d.h5' % args.healpix)
 
     (disk_redshift, disk_id, disk_sed, disk_mag,
