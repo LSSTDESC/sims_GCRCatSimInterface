@@ -140,7 +140,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     n_tot = len(os.listdir(_galaxy_sed_dir))*len(av_grid)*len(rv_grid)
     i_gen = 0
     t_start = time.time()
-    print('creating library')
+    print('\n\ncreating library')
     for sed_file_name in os.listdir(_galaxy_sed_dir):
         base_spec = Sed()
         base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
