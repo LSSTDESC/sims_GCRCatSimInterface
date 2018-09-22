@@ -66,7 +66,7 @@ if __name__ == "__main__":
                                 'fit_mags_vs_cosmo_mags_%d.h5' % args.healpix)
 
 
-    cache_LSST_seds(wavelen_min=0.0, wavelen_max=3000.0)
+    #cache_LSST_seds(wavelen_min=0.0, wavelen_max=3000.0)
 
     (disk_redshift, disk_id, disk_sed, disk_mag,
      disk_av, disk_rv) = do_fitting(cat, 'disk', args.healpix)
