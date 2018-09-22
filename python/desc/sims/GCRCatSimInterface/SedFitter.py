@@ -212,7 +212,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         sed_from_galacticus_mags._sed_names = sed_names
         sed_from_galacticus_mags._mag_norm = sed_mag_norm # N_sed
         sed_from_galacticus_mags._av_grid = av_grid
-        sed_from_galacticus_mags._rv_grid
+        sed_from_galacticus_mags._rv_grid = rv_grid
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
         sed_from_galacticus_mags._color_tree = scipy_spatial.cKDTree(sed_colors)
         sed_from_galacticus_mags._wav_min = wav_min
