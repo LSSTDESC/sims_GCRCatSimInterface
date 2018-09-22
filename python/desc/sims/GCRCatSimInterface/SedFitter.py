@@ -182,7 +182,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     t_start = time.time()
 
     sed_names = np.empty(n_tot, dtype=(str, 200))
-    sed_mag_list = list()
+    sed_mag_list = np.zeros((n_tot, len(bp_list)), dtype=float)
     sed_mag_norm = np.zeros(n_tot, dtype=float)
     av_out_list = np.zeros(n_tot, dtype=float)
     rv_out_list = np.zeros(n_tot, dtype=float)
@@ -211,14 +211,22 @@ def _create_sed_library_mags(wav_min, wav_width):
 
     for p in p_list:
         p.join()
-    for kk in out_dict.keys():
+
+    print('done calculating')
+    t_start = time.time()
+    n_kk = len(list(out_dict.keys()))
+    for i_kk, kk in enumerate(out_dict.keys()):
         n_out = len(out_dict[kk][1])
         sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
         sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
-        sed_mag_list += out_dict[kk][2]
+        sed_mag_list[i_stored:i_stored+n_out][:] = out_dict[kk][2]
         av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
         rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
         i_stored += n_out
+        if i_kk>0 and i_kk%10==0:
+            d = (time.time()-t_start)/3600.0
+            p = n_kk*d/i_kk
+            print('%d in %.2e; pred %.2e' % (i_kk, d, p))
 
     print('made library')
     assert len(np.where(av_out_list<1.0e-10)[0]) == len(list_of_files)
