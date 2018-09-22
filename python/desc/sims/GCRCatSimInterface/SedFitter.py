@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import GCRCatalogs
+import time
 import scipy.spatial as scipy_spatial
 from lsst.utils import getPackageDir
 from lsst.sims.utils import defaultSpecMap
@@ -136,12 +137,20 @@ def _create_sed_library_mags(wav_min, wav_width):
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
+    n_tot = len(os.listdir(_galaxy_sed_dir))*len(av_grid)*len(rv_grid)
+    i_gen = 0
+    t_start = time.time()
+    print('creating library')
     for sed_file_name in os.listdir(_galaxy_sed_dir):
         base_spec = Sed()
         base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
         ax, bx = base_spec.createCCMab()
         for av in av_grid:
             for rv in rv_grid:
+                if i_gen>0 and i_gen%1000==0:
+                    duration = (time.time()-t_start)/3600.0
+                    predicted = n_tot*duration/i_gen
+                    print('%d of %d; dur %.2e pred %.2e' % (i_gen, n_tot, duration, predicted)
                 spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
                 sed_names.append(defaultSpecMap[sed_file_name])
                 sed_mag_norm.append(spec.calcMag(imsim_bp))
@@ -149,6 +158,9 @@ def _create_sed_library_mags(wav_min, wav_width):
                 av_out_list.append(av)
                 rv_out_list.append(rv)
                 sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
+                i_gen += 1
+
+    print('made library')
 
     return (np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm),
             np.array(av_out_list), np.array(rv_out_list))
