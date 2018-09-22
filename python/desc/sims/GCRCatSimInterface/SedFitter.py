@@ -294,12 +294,15 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
 
         sed_from_galacticus_mags._cosmo = CosmologyObject(H0=H0, Om0=Om0)
 
+    print("done initializing")
+
     galacticus_mags_t = np.asarray(galacticus_mags).T # N_star by N_mag
     assert galacticus_mags_t.shape == (len(redshift), sed_from_galacticus_mags._sed_mags.shape[1])
 
     with np.errstate(invalid='ignore', divide='ignore'):
         galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_star by (N_mag - 1)
 
+    print("querying")
     (sed_dist,
      sed_idx) = sed_from_galacticus_mags._color_tree.query(galacticus_colors, k=1)
 
