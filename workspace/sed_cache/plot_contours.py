@@ -72,8 +72,8 @@ with h5py.File(data_name, 'r') as data:
 
         plt.xlabel('$\Delta$ %s-%s  (cosmoDC2 - CatSim)' % (bp1,bp2), fontsize=30)
         plt.ylabel('$\Delta$ %s-%s (cosmoDC2 - CatSim)' % (bp2,bp3), fontsize=30)
-        plt.xticks(fontsize=30)
-        plt.yticks(fontsize=30)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
         plt.xlim(-0.2, 0.2)
         plt.ylim(-0.2, 0.2)
 
