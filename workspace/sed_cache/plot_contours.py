@@ -123,6 +123,16 @@ with h5py.File(data_name, 'r') as data:
         plt.ylabel('normed histogram', fontsize=30)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
+        if i_fig==1:
+            plt.xlim(-0.5, 0.5)
+        elif i_fig==2:
+            plt.xlim(-0.3, 0.2)
+        elif i_fig==3:
+            plt.xlim(-0.2, 0.2)
+        elif i_fig==4:
+            plt.xlim(-0.2, 0.2)
+        elif i_fig==5:
+            plt.xlim(-0.15,0.15)
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, 'delta_color_1d_dist_10451.png'))
     plt.close()
