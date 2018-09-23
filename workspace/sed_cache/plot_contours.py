@@ -46,6 +46,12 @@ with h5py.File(data_name, 'r') as data:
         plt.ylabel('%s-%s' % (bp2,bp3), fontsize=30)
         plt.xticks(fontsize=30)
         plt.yticks(fontsize=30)
+        if i_fig==3:
+            plt.xlim(-0.2, 0.2)
+            plt.ylim(-0.2, 0.2)
+        if i_fig==4:
+            plt.xlim(-0.2, 0.2)
+            plt.ylim(-0.2, 0.2)
 
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, 'color_color_comparison_10451.png'))
