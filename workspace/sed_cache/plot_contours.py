@@ -74,6 +74,8 @@ with h5py.File(data_name, 'r') as data:
         plt.ylabel('$\Delta$ %s-%s (cosmoDC2 - CatSim)' % (bp2,bp3), fontsize=30)
         plt.xticks(fontsize=30)
         plt.yticks(fontsize=30)
+        plt.xlim(-0.2, 0.2)
+        plt.ylim(-0.2, 0.2)
 
     plt.tight_layout()
     out_dir = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid')
