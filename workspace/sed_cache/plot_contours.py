@@ -44,5 +44,6 @@ with h5py.File(data_name, 'r') as data:
         plt.yticks(fontsize=30)
 
     plt.tight_layout()
-    plt.savefig('color_color_comparison_10451.png')
+    out_dir = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid')
+    plt.savefig(os.path.join(out_dir, 'color_color_comparison_10451.png'))
     plt.close()
