@@ -89,7 +89,7 @@ with h5py.File(data_name, 'r') as data:
     for i_bp1 in range(len(bp_list)-1):
         i_fig += 1
         bp1 = bp_list[i_bp1]
-        bp2 = bp_list[i_bp2]
+        bp2 = bp_list[i_bp1+1]
         c_c = data['cosmo_%s' % bp1].value - data['cosmo_%s' % bp2].value
         a_c = data['fit_%s' % bp1].value - data['fit_%s' % bp2].value
         plt.subplot(3,2,i_fig)
@@ -113,7 +113,7 @@ with h5py.File(data_name, 'r') as data:
     for i_bp1 in range(len(bp_list)-1):
         i_fig += 1
         bp1 = bp_list[i_bp1]
-        bp2 = bp_list[i_bp2]
+        bp2 = bp_list[i_bp1+1]
         c_c = data['cosmo_%s' % bp1].value - data['cosmo_%s' % bp2].value
         a_c = data['fit_%s' % bp1].value - data['fit_%s' % bp2].value
         plt.subplot(3,2,i_fig)
