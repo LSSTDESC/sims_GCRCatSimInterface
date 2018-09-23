@@ -47,8 +47,8 @@ with h5py.File(data_name, 'r') as data:
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
         if i_fig==3:
-            plt.xlim(-0.2, 0.2)
-            plt.ylim(-0.2, 0.2)
+            plt.xlim(-0.2, 0.3)
+            plt.ylim(-0.2, 0.3)
         if i_fig==4:
             plt.xlim(-0.2, 0.2)
             plt.ylim(-0.2, 0.2)
