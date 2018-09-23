@@ -102,6 +102,8 @@ with h5py.File(data_name, 'r') as data:
             plt.legend(handles, labels, loc=0, fontsize=20)
         plt.xlabel('%s-%s' % (bp1, bp2), fontsize=30)
         plt.ylabel('normed histogram', fontsize=30)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, 'color_1d_dist_10451.png'))
     plt.close()
@@ -119,6 +121,8 @@ with h5py.File(data_name, 'r') as data:
 
         plt.xlabel('$\Delta$ %s-%s (cosmoDC2 - CatSim)' % (bp1, bp2), fontsize=30)
         plt.ylabel('normed histogram', fontsize=30)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, 'delta_color_1d_dist_10451.png'))
     plt.close()
