@@ -144,6 +144,7 @@ if __name__ == "__main__":
             fit_mags[bp][ii] = mags[i_bp]
 
     with h5py.File(out_file_name, 'w') as f:
+        f.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
         for bp in 'ugrizy':
             f.create_dataset('fit_%s' % bp, data=fit_mags[bp])
             f.create_dataset('cosmo_%s' % bp,
