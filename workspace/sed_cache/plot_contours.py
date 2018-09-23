@@ -1,6 +1,7 @@
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import numpy as np
 
 import os
@@ -9,6 +10,9 @@ import h5py
 data_name = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid',
                          'fit_mags_vs_cosmo_mags_10451.h5')
 assert os.path.isfile(data_name)
+
+out_dir = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid')
+
 
 with h5py.File(data_name, 'r') as data:
     plt.figure(figsize=(20,20))
@@ -44,7 +48,6 @@ with h5py.File(data_name, 'r') as data:
         plt.yticks(fontsize=30)
 
     plt.tight_layout()
-    out_dir = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid')
     plt.savefig(os.path.join(out_dir, 'color_color_comparison_10451.png'))
     plt.close()
 
@@ -78,6 +81,44 @@ with h5py.File(data_name, 'r') as data:
         plt.ylim(-0.2, 0.2)
 
     plt.tight_layout()
-    out_dir = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid')
     plt.savefig(os.path.join(out_dir, 'delta_color_color_comparison_10451.png'))
+    plt.close()
+
+    plt.figure(figsize=(20,20))
+    i_fig=0
+    for i_bp1 in range(len(bp_list)-1):
+        i_fig += 1
+        bp1 = bp_list[i_bp1]
+        bp2 = bp_list[i_bp2]
+        c_c = data['cosmo_%s' % bp1].value - data['cosmo_%s' % bp2].value
+        a_c = data['fit_%s' % bp1].value - data['fit_%s' % bp2].value
+        plt.subplot(3,2,i_fig)
+        plt.hist(c_c, color='b', bins=100, normed=True)
+        plt.hist(a_c, color='r', bins=100, alpha=0.6, normed=True)
+        if i_fig == 1:
+            labels = ['cosmoDC2', 'CatSim']
+            handles = [Rectangle((0,0),1,1,color='b',ec="k"),
+                       Rectangle((0,0),1,1,color='r',ec="k")]
+            plt.legend(handles, labels, loc=0, fontsize=20)
+        plt.xlabel('%s-%s' % (bp1, bp2), fontsize=30)
+        plt.ylabel('normed histogram', fontsize=30)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'color_1d_dist_10451.png'))
+    plt.close()
+
+    plt.figure(figsize=(20,20))
+    i_fig=0
+    for i_bp1 in range(len(bp_list)-1):
+        i_fig += 1
+        bp1 = bp_list[i_bp1]
+        bp2 = bp_list[i_bp2]
+        c_c = data['cosmo_%s' % bp1].value - data['cosmo_%s' % bp2].value
+        a_c = data['fit_%s' % bp1].value - data['fit_%s' % bp2].value
+        plt.subplot(3,2,i_fig)
+        plt.hist(c_c-a_c, color='r', bins=100, normed=True)
+
+        plt.xlabel('$\Delta$ %s-%s (cosmoDC2 - CatSim)' % (bp1, bp2), fontsize=30)
+        plt.ylabel('normed histogram', fontsize=30)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'delta_color_1d_dist_10451.png'))
     plt.close()
