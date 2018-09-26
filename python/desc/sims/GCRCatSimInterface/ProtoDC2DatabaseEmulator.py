@@ -9,6 +9,7 @@ from desc.sims.GCRCatSimInterface import deg2rad_double, arcsec2rad
 
 from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import DBObject
+from lsst.sims.utils import halfSpaceFromRaDec
 
 __all__ = ["DESCQAObject_protoDC2",
            "bulgeDESCQAObject_protoDC2",
@@ -267,6 +268,7 @@ class AGN_postprocessing_mixin(object):
         query the database specified by agn_params_db to
         find the AGN varParamStr associated with each AGN
         """
+        print('postprocessing AGN')
 
         if self.agn_objid is None:
             gid_name = 'galaxy_id'
@@ -291,43 +293,54 @@ class AGN_postprocessing_mixin(object):
                                         ('magNorm', float),
                                         ('varParamStr', str, 500)])
 
-        gid_arr = master_chunk[gid_name].astype(float)
+        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
+                                        obs_metadata.pointingDec,
+                                        obs_metadata.boundLength)
 
-        gid_min = np.nanmin(gid_arr)
-        gid_max = np.nanmax(gid_arr)
+        if (not hasattr(self, '_cached_half_space') or
+            half_space != self._cached_half_space):
+            print('querying AGN')
 
-        query = 'SELECT galaxy_id, magNorm, varParamStr '
-        query += 'FROM agn_params '
-        query += 'WHERE galaxy_id BETWEEN %d AND %d ' % (gid_min, gid_max)
-        query += 'ORDER BY galaxy_id'
+            self._cached_half_space = half_space
+            trixel_bounds = half_space.findAllTrixels(6)
 
-        agn_data_iter = self._agn_dbo.get_arbitrary_chunk_iterator(query,
-                                                        dtype=self._agn_dtype,
-                                                        chunk_size=1000000)
+            query = 'SELECT galaxy_id, magNorm, varParamStr '
+            query += 'FROM agn_params '
+            query += 'WHERE '
+            for i_bound, bound in enumerate(trixel_bounds):
+                if i_bound>0:
+                    query += 'OR '
+                if bound[0]==bound[1]:
+                    query += 'htmid_6 == %d ' % bound[0]
+                else:
+                    query += '(htmid_6 >= %d AND htmid_6 <= %d) ' % (bound[0], bound[1])
+            query += 'ORDER BY galaxy_id'
 
+            self._agn_query_results = self._agn_dbo.execute_arbitrary(query,
+                                                                      dtype=self._agn_dtype)
 
+        gid_arr = master_chunk[gid_name]
         m_sorted_dex = np.argsort(gid_arr)
         m_sorted_id = gid_arr[m_sorted_dex]
-        for agn_chunk in agn_data_iter:
 
-            # find the indices of the elements in master_chunk
-            # that correspond to elements in agn_chunk
-            m_elements = np.in1d(m_sorted_id, agn_chunk['galaxy_id'])
-            m_dex = m_sorted_dex[m_elements]
+        # find the indices of the elements in master_chunk
+        # that correspond to elements in agn_chunk
+        m_elements = np.in1d(m_sorted_id, self._agn_query_results['galaxy_id'])
+        m_dex = m_sorted_dex[m_elements]
 
-            # find the indices of the elements in agn_chunk
-            # that correspond to elements in master_chunk
-            a_dex = np.in1d(agn_chunk['galaxy_id'], m_sorted_id)
+        # find the indices of the elements in agn_chunk
+        # that correspond to elements in master_chunk
+        a_dex = np.in1d(self._agn_query_results['galaxy_id'], m_sorted_id)
 
-            # make sure we have matched elements correctly
-            np.testing.assert_array_equal(agn_chunk['galaxy_id'][a_dex],
-                                          master_chunk[gid_name][m_dex])
+        # make sure we have matched elements correctly
+        np.testing.assert_array_equal(self._agn_query_results['galaxy_id'][a_dex],
+                                      master_chunk[gid_name][m_dex])
 
-            if varpar_name in master_chunk.dtype.names:
-                master_chunk[varpar_name][m_dex] = agn_chunk['varParamStr'][a_dex]
+        if varpar_name in master_chunk.dtype.names:
+            master_chunk[varpar_name][m_dex] = self._agn_query_results['varParamStr'][a_dex]
 
-            if magnorm_name in master_chunk.dtype.names:
-                master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
+        if magnorm_name in master_chunk.dtype.names:
+            master_chunk[magnorm_name][m_dex] = self._agn_query_results['magNorm'][a_dex]
 
         return self._final_pass(master_chunk)
 
