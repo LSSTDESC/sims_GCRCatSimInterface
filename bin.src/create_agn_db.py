@@ -16,6 +16,7 @@ from desc.sims.GCRCatSimInterface import SF_from_params
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import Sed, BandpassDict, CosmologyObject
 from lsst.sims.photUtils import Bandpass
+from lsst.sims.utils import findHtmid
 
 def create_k_corr_grid():
     """
@@ -134,7 +135,7 @@ if __name__ == "__main__":
         cat_qties = cat.get_quantities(['redshift_true',
                                         'blackHoleMass',
                                         'blackHoleEddingtonRatio',
-                                        'galaxy_id'],
+                                        'galaxy_id', 'ra', 'dec'],
                                         filters=[(lambda x: x>0.0,
                                                   'blackHoleMass'),
                                                  (lambda x: x>0.0,
@@ -147,7 +148,7 @@ if __name__ == "__main__":
         cat_qties = cat.get_quantities(['redshift_true',
                                         'blackHoleMass',
                                         'blackHoleAccretionRate',
-                                        'galaxy_id'],
+                                        'galaxy_id', 'ra', 'dec'],
                                        filters=[(lambda x: x>0.0,
                                                  'blackHoleMass'),
                                                 (lambda x: x>0.0,
@@ -161,6 +162,8 @@ if __name__ == "__main__":
     redshift_full = cat_qties['redshift_true']
     bhm_full = cat_qties['blackHoleMass']
     galaxy_id_full = cat_qties['galaxy_id']
+    ra_full = cat_qties['ra']
+    dec_full = cat_qties['dec']
 
     if use_direct_eddington:
         log_edd_ratio_full = np.log10(cat_qties['blackHoleEddingtonRatio'])
@@ -178,6 +181,8 @@ if __name__ == "__main__":
     redshift_full = redshift_full[sorted_dex]
     bhm_full = bhm_full[sorted_dex]
     galaxy_id_full = galaxy_id_full[sorted_dex]
+    ra_full = ra_full[sorted_dex]
+    dec_full = dec_full[sorted_dex]
     log_edd_ratio_full = log_edd_ratio_full[sorted_dex]
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
@@ -203,10 +208,11 @@ if __name__ == "__main__":
         m_i_grid[i_z] = ss.calcMag(bp_dict['i'])
         mag_norm_grid[i_z] = ss.calcMag(imsimband)
 
+    htmid_level = 6
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
-                          (galaxy_id int, magNorm real, varParamStr text)''')
+                          (galaxy_id int, htmid_%d int, magNorm real, varParamStr text)''' % htmid_level)
 
         connection.commit()
 
@@ -224,6 +230,8 @@ if __name__ == "__main__":
             (i_start,i_end,duration,predicted))
 
             galaxy_id = galaxy_id_full[i_start:i_end]
+            ra = ra_full[i_start:i_end]
+            dec = dec_full[i_start:i_end]
             ct_simulated += len(galaxy_id)
             redshift = redshift_full[i_start:i_end]
             log_edd_ratio = log_edd_ratio_full[i_start:i_end]
@@ -240,6 +248,8 @@ if __name__ == "__main__":
                 log_edd_ratio = log_edd_ratio[valid]
                 abs_mag_i = abs_mag_i[valid]
                 galaxy_id = galaxy_id[valid]
+                ra = ra[valid]
+                dec = dec[valid]
                 obs_mag_i = obs_mag_i[valid]
 
             tau = tau_from_params(redshift,
@@ -263,6 +273,8 @@ if __name__ == "__main__":
                 obs_mag_i = obs_mag_i[valid]
                 bhm = bhm[valid]
                 galaxy_id = galaxy_id[valid]
+                ra = ra[valid]
+                dec = dec[valid]
                 for other_bp in 'ugrizy':
                     sf_dict[other_bp] = sf_dict[other_bp][valid]
 
@@ -272,22 +284,24 @@ if __name__ == "__main__":
 
             seed_arr = rng.randint(1,high=10000000, size=len(tau))
 
-            vals = ((int(ii), mm, '{"m": "applyAgn", '
+            htmid = findHtmid(ra, dec, htmid_level)
+
+            vals = ((int(ii), int(hh), mm, '{"m": "applyAgn", '
                           + '"p": {"seed": %d, "agn_tau": %.3e, "agn_sfu": %.3e, ' % (ss, tt, sfu)
                           + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
                           + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
-                     for ii, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
-                     zip(galaxy_id, mag_norm, seed_arr, tau,
+                     for ii, hh, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
+                     zip(galaxy_id, htmid, mag_norm, seed_arr, tau,
                          sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
                          sf_dict['z'], sf_dict['y']))
 
-            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?)', vals)
+            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
             connection.commit()
 
         assert ct_simulated == full_size
 
         print('creating index')
-        cursor.execute('CREATE INDEX gal_id ON agn_params (galaxy_id)')
+        cursor.execute('CREATE INDEX htmid ON agn_params (htmid_6)')
         connection.commit()
 
     print('all done')
