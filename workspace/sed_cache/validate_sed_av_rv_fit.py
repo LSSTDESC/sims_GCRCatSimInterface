@@ -101,6 +101,18 @@ if __name__ == "__main__":
 
     np.testing.assert_array_equal(control_qties['galaxy_id'], disk_id)
 
+    fit_name = os.path.join(args.out_dir, 'fit_params_%d.h5' % args.healpix)
+    with h5py.File(fit_name, 'w') as out_file:
+        out_file.create_dataset('disk_sed', data=[s.encode('utf-8') for s in disk_sed_name])
+        out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
+        out_file.create_dataset('disk_av', data=disk_av)
+        out_file.create_dataset('disk_rv', data=disk_rv)
+        out_file.create_dataset('bulge_av', data=bulge_av)
+        out_file.create_dataset('bulge_rv', data=bulge_rv)
+        out_file.create_dataset('galaxy_id', data=disk_id)
+
+    exit()
+
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
     fit_mags = {}
     for bp in 'ugrizy':
