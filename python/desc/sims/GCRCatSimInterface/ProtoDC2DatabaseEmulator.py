@@ -329,12 +329,12 @@ class AGN_postprocessing_mixin(object):
 
         # find the indices of the elements in master_chunk
         # that correspond to elements in agn_chunk
-        m_elements = np.in1d(m_sorted_id, valid_agn['galaxy_id'])
+        m_elements = np.in1d(m_sorted_id, valid_agn['galaxy_id'], assume_unique=True)
         m_dex = m_sorted_dex[m_elements]
 
         # find the indices of the elements in agn_chunk
         # that correspond to elements in master_chunk
-        a_dex = np.in1d(valid_agn['galaxy_id'], m_sorted_id)
+        a_dex = np.searchsorted(m_sorted_id, valid_agn['galaxy_id'])
 
         # make sure we have matched elements correctly
         np.testing.assert_array_equal(valid_agn['galaxy_id'][a_dex],
