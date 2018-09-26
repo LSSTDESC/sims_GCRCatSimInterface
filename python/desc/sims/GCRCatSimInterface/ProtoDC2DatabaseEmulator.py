@@ -323,7 +323,7 @@ class AGN_postprocessing_mixin(object):
         m_sorted_dex = np.argsort(gid_arr)
         m_sorted_id = gid_arr[m_sorted_dex]
         valid_agn_dex = np.where(np.logical_and(self._agn_query_results['galaxy_id']>=gid_arr.min(),
-                                                self._agn_query_resutls['galaxy_id']<=gid_arr.max()))
+                                                self._agn_query_results['galaxy_id']<=gid_arr.max()))
 
         valid_agn = self._agn_query_results[valid_agn_dex]
 
