@@ -262,7 +262,7 @@ class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 class AGN_postprocessing_mixin(object):
 
-    def _postprocess_results(self, master_chunk):
+    def _postprocess_results(self, master_chunk, obs_metadata):
         """
         query the database specified by agn_params_db to
         find the AGN varParamStr associated with each AGN

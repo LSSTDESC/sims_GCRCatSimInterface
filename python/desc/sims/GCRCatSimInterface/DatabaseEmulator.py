@@ -162,7 +162,7 @@ class DESCQAChunkIterator(object):
 
             chunk = new_chunk
 
-        return self._descqa_obj._postprocess_results(chunk)
+        return self._descqa_obj._postprocess_results(chunk, self._obs_metadata)
 
     next = __next__
 
@@ -434,7 +434,7 @@ class DESCQAObject(object):
             for col_name in self.descqaDefaultValues:
                 self.columnMap[col_name] = (col_name,)
 
-    def _postprocess_results(self, chunk):
+    def _postprocess_results(self, chunk, obs_metadata):
         """
         A method to add optional data before passing the results
         to the InstanceCatalog class
