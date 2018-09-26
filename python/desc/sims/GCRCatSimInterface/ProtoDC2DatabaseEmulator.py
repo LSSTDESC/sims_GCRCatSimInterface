@@ -322,25 +322,29 @@ class AGN_postprocessing_mixin(object):
         gid_arr = master_chunk[gid_name]
         m_sorted_dex = np.argsort(gid_arr)
         m_sorted_id = gid_arr[m_sorted_dex]
+        valid_agn_dex = np.where(np.logical_and(self._agn_query_results['galaxy_id']>=gid_arr.min(),
+                                                self._agn_query_resutls['galaxy_id']<=gid_arr.max()))
+
+        valid_agn = self._agn_query_results[valid_agn_dex]
 
         # find the indices of the elements in master_chunk
         # that correspond to elements in agn_chunk
-        m_elements = np.in1d(m_sorted_id, self._agn_query_results['galaxy_id'])
+        m_elements = np.in1d(m_sorted_id, valid_agn['galaxy_id'])
         m_dex = m_sorted_dex[m_elements]
 
         # find the indices of the elements in agn_chunk
         # that correspond to elements in master_chunk
-        a_dex = np.in1d(self._agn_query_results['galaxy_id'], m_sorted_id)
+        a_dex = np.in1d(valid_agn['galaxy_id'], m_sorted_id)
 
         # make sure we have matched elements correctly
-        np.testing.assert_array_equal(self._agn_query_results['galaxy_id'][a_dex],
+        np.testing.assert_array_equal(valid_agn['galaxy_id'][a_dex],
                                       master_chunk[gid_name][m_dex])
 
         if varpar_name in master_chunk.dtype.names:
-            master_chunk[varpar_name][m_dex] = self._agn_query_results['varParamStr'][a_dex]
+            master_chunk[varpar_name][m_dex] = valid_agn['varParamStr'][a_dex]
 
         if magnorm_name in master_chunk.dtype.names:
-            master_chunk[magnorm_name][m_dex] = self._agn_query_results['magNorm'][a_dex]
+            master_chunk[magnorm_name][m_dex] = valid_agn['magNorm'][a_dex]
 
         return self._final_pass(master_chunk)
 
