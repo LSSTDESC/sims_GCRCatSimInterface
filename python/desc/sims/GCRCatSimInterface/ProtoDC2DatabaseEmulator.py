@@ -263,10 +263,11 @@ class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 class AGN_postprocessing_mixin(object):
 
-    def _do_agn_query(self, obs_metadata):
+    def _do_agn_query(self, half_space):
         """
         Actually query the AGN parameter database for all AGN
-        inside of the field of view specified by obs_metadata
+        inside of the field of view specified by half_space
+        (which is an lsst.sims.utils.HalfSpace)
         """
 
         if not os.path.exists(self.agn_params_db):
@@ -317,7 +318,7 @@ class AGN_postprocessing_mixin(object):
         if (not hasattr(self, "_agn_query_results") or
             half_space != self._cached_half_space):
 
-            self._do_agn_query(obs_metadata)
+            self._do_agn_query(half_space)
 
         return np.sort(self._agn_query_results['galaxy_id'])
 
@@ -349,7 +350,7 @@ class AGN_postprocessing_mixin(object):
         if (not hasattr(self, "_agn_query_results") or
             half_space != self._cached_half_space):
 
-            self._do_agn_query(obs_metadata)
+            self._do_agn_query(half_space)
 
         gid_arr = master_chunk[gid_name]
         m_sorted_dex = np.argsort(gid_arr)
