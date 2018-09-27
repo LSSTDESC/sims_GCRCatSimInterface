@@ -214,6 +214,11 @@ class DESCQAChunkIterator(object):
             ra = ra_dec['raJ2000']
             dec = ra_dec['decJ2000']
             gid = ra_dec['galaxy_id']
+
+            # Optionally apply a method that returns a list of galaxy_ids that are
+            # actually valid objects for the DESCQAObject being queried.
+            # This is especially useful for AGN simulations, as it allows us to only
+            # keep galaxies that actually contain AGN.
             if hasattr(self._descqa_obj, '_prefilter_galaxy_id'):
                 prefilter_gid = self._descqa_obj._prefilter_galaxy_id(self._obs_metadata)
                 prefilter_indices = np.in1d(gid, prefilter_gid)

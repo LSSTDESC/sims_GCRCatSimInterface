@@ -264,6 +264,13 @@ class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 class AGN_postprocessing_mixin(object):
 
     def _prefilter_galaxy_id(self, obs_metadata):
+        """
+        Accept an ObservationMetaData characterizing
+        the current pointing.
+
+        Return a numpy array of galaxy_ids that are in the
+        field of view and actually contain an AGN.
+        """
         print('prefiltering AGN')
 
         if not hasattr(self, '_agn_dbo'):
