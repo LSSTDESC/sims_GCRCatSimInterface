@@ -110,7 +110,7 @@ class InstanceCatalogWriter(object):
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
                  protoDC2_ra=0, protoDC2_dec=0,
-                 agn_db_name=None, sn_db_name=None,
+                 agn_db_name=None, agn_threads=1, sn_db_name=None,
                  sprinkler=False, host_image_dir=None,
                  host_data_dir=None, config_dict=None):
         """
@@ -134,6 +134,8 @@ class InstanceCatalogWriter(object):
             Desired Dec (J2000 degrees) of protoDC2 center.
         agn_db_name: str [None]
             Filename of the agn parameter sqlite db file.
+        agn_threads: int [1]
+            Number of threads to use when simulating AGN variability
         sn_db_name: str [None]
             Filename of the supernova parameter sqlite db file.
         sprinkler: bool [False]
@@ -173,6 +175,7 @@ class InstanceCatalogWriter(object):
                                port=1433, driver='mssql+pymssql')
         self.sprinkler = sprinkler
 
+        self._agn_threads = agn_threads
         if agn_db_name is None:
             raise IOError("Need to specify an Proto DC2 AGN database.")
         else:
@@ -387,6 +390,7 @@ class InstanceCatalogWriter(object):
                 agn_db.field_dec = self.protoDC2_dec
                 agn_db.agn_params_db = self.agn_db_name
                 cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
+                cat._agn_threads = self._agn_threads
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
                 cat_name = 'agn_'+gal_name
