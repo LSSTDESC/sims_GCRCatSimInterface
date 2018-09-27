@@ -4,6 +4,7 @@ import sqlite3
 import numpy as np
 import os
 import gc
+import time
 
 import GCRCatalogs
 from desc.sims.GCRCatSimInterface import M_i_from_L_Mass
@@ -15,6 +16,7 @@ from desc.sims.GCRCatSimInterface import SF_from_params
 from lsst.utils import getPackageDir
 from lsst.sims.photUtils import Sed, BandpassDict, CosmologyObject
 from lsst.sims.photUtils import Bandpass
+from lsst.sims.utils import findHtmid
 
 def create_k_corr_grid():
     """
@@ -122,84 +124,82 @@ if __name__ == "__main__":
         else:
             os.unlink(out_file_name)
 
-
     cat = GCRCatalogs.load_catalog(args.yaml_file)
 
-    cat_qties = cat.get_quantities(['redshift_true',
-                                    'blackHoleMass', 'blackHoleAccretionRate',
-                                    'galaxy_id'])
+    qty_list = cat.list_all_quantities(include_native=True)
 
-    valid = np.where(np.logical_and(cat_qties['blackHoleMass']>0.0,
-                                    cat_qties['blackHoleAccretionRate']>0.0))
+    use_direct_eddington = ('blackHoleEddingtonRatio' in qty_list)
 
-    redshift = cat_qties['redshift_true'][valid]
-    bhm = cat_qties['blackHoleMass'][valid]
-    accretion_rate = cat_qties['blackHoleAccretionRate'][valid]
-    galaxy_id = cat_qties['galaxy_id'][valid]
+    if use_direct_eddington:
+        print('using native Eddington ratio')
+        cat_qties = cat.get_quantities(['redshift_true',
+                                        'blackHoleMass',
+                                        'blackHoleEddingtonRatio',
+                                        'galaxy_id', 'ra', 'dec'],
+                                        filters=[(lambda x: x>0.0,
+                                                  'blackHoleMass'),
+                                                 (lambda x: x>0.0,
+                                                  'blackHoleEddingtonRatio'),
+                                                 (lambda x:
+                                                     np.log10(x)>args.mbh_cut,
+                                                    'blackHoleMass')])
+
+    else:
+        cat_qties = cat.get_quantities(['redshift_true',
+                                        'blackHoleMass',
+                                        'blackHoleAccretionRate',
+                                        'galaxy_id', 'ra', 'dec'],
+                                       filters=[(lambda x: x>0.0,
+                                                 'blackHoleMass'),
+                                                (lambda x: x>0.0,
+                                                 'blackHoleAccretionRate'),
+                                                (lambda x:
+                                                    np.log10(x)>args.mbh_cut,
+                                                    'blackHoleMass')])
+
+        accretion_rate_full = cat_qties['blackHoleAccretionRate']
+
+    redshift_full = cat_qties['redshift_true']
+    bhm_full = cat_qties['blackHoleMass']
+    galaxy_id_full = cat_qties['galaxy_id']
+    ra_full = cat_qties['ra']
+    dec_full = cat_qties['dec']
+
+    if use_direct_eddington:
+        log_edd_ratio_full = np.log10(cat_qties['blackHoleEddingtonRatio'])
+    else:
+        print('solving for Eddington ratio')
+        log_edd_ratio_full = log_Eddington_ratio(bhm_full,
+                                                 accretion_rate_full)
 
     del cat_qties
     gc.collect()
 
     # sort by galaxy_id so that random scatter in AGN parameters
     # is reproducible
-    sorted_dex = np.argsort(galaxy_id)
-    redshift = redshift[sorted_dex]
-    bhm = bhm[sorted_dex]
-    accretion_rate = accretion_rate[sorted_dex]
-    galaxy_id = galaxy_id[sorted_dex]
-
-    log_edd_ratio = log_Eddington_ratio(bhm, accretion_rate)
-    abs_mag_i = M_i_from_L_Mass(log_edd_ratio, np.log10(bhm))
-
-    obs_mag_i = get_m_i(abs_mag_i, redshift)
-
-    if args.m_i_cut is not None:
-        valid = np.where(obs_mag_i <= args.m_i_cut)
-        redshift = redshift[valid]
-        bhm = bhm[valid]
-        log_edd_ratio = log_edd_ratio[valid]
-        abs_mag_i = abs_mag_i[valid]
-        galaxy_id = galaxy_id[valid]
-        obs_mag_i = obs_mag_i[valid]
-
-    tau = tau_from_params(redshift,
-                          abs_mag_i,
-                          bhm, rng=rng)
+    sorted_dex = np.argsort(galaxy_id_full)
+    redshift_full = redshift_full[sorted_dex]
+    bhm_full = bhm_full[sorted_dex]
+    galaxy_id_full = galaxy_id_full[sorted_dex]
+    ra_full = ra_full[sorted_dex]
+    dec_full = dec_full[sorted_dex]
+    log_edd_ratio_full = log_edd_ratio_full[sorted_dex]
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
-    sf_dict = {}
-    for bp in ('u', 'g', 'r', 'i', 'z', 'y'):
-        eff_wavelen = 10.0*bp_dict[bp].calcEffWavelen()[0]
-        sf_dict[bp] = SF_from_params(redshift, abs_mag_i,
-                                     bhm, eff_wavelen,
-                                     rng=rng)
-
-    # cut on structure function value
-    for bp in 'ugrizy':
-        valid = np.where(sf_dict[bp]<args.max_sf)
-        redshift = redshift[valid]
-        tau = tau[valid]
-        log_edd_ratio = log_edd_ratio[valid]
-        abs_mag_i = abs_mag_i[valid]
-        obs_mag_i = obs_mag_i[valid]
-        bhm = bhm[valid]
-        galaxy_id = galaxy_id[valid]
-        for other_bp in 'ugrizy':
-            sf_dict[other_bp] = sf_dict[other_bp][valid]
-
 
     sed_dir = os.path.join(getPackageDir('sims_sed_library'),
                            'agnSED')
     sed_name = os.path.join(sed_dir, 'agn.spec.gz')
     if not os.path.exists(sed_name):
         raise RuntimeError('\n\n%s\n\nndoes not exist\n\n' % sed_name)
+
     base_sed = Sed()
     base_sed.readSED_flambda(sed_name)
 
     imsimband = Bandpass()
     imsimband.imsimBandpass()
 
-    z_grid = np.arange(0.0, redshift.max(), 0.01)
+    z_grid = np.arange(0.0, redshift_full.max(), 0.01)
     m_i_grid = np.zeros(len(z_grid), dtype=float)
     mag_norm_grid = np.zeros(len(z_grid), dtype=float)
     for i_z, zz in enumerate(z_grid):
@@ -208,30 +208,100 @@ if __name__ == "__main__":
         m_i_grid[i_z] = ss.calcMag(bp_dict['i'])
         mag_norm_grid[i_z] = ss.calcMag(imsimband)
 
-    interpolated_m_i = np.interp(redshift, z_grid, m_i_grid)
-    interpolated_mag_norm = np.interp(redshift, z_grid, mag_norm_grid)
-    mag_norm = interpolated_mag_norm + (obs_mag_i - interpolated_m_i)
-
+    htmid_level = 6
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
-                          (galaxy_id, magNorm real, varParamStr text)''')
+                          (galaxy_id int, htmid_%d int, magNorm real, varParamStr text)''' % htmid_level)
 
         connection.commit()
 
-        seed_arr = rng.randint(1,high=10000000, size=len(tau))
+        chunk_size = 100000
+        full_size = len(redshift_full)
+        print('starting iteration')
+        t_start = time.time()
+        ct_simulated = 0
+        for i_start in range(0, full_size, chunk_size):
+            i_end = i_start + chunk_size
+            duration = (time.time()-t_start)/3600.0
+            per = duration/(1+i_start)
+            predicted = full_size*per
+            print("    %d through %d -- took %.2e hrs; predict %.2e" %
+            (i_start,i_end,duration,predicted))
 
-        vals = ((int(ii), mm, '{"m": "applyAgn", '
-                      + '"p": {"seed": %d, "agn_tau": %.3e, "agn_sfu": %.3e, ' % (ss, tt, sfu)
-                      + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
-                      + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
-                 for ii, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
-                 zip(galaxy_id, mag_norm, seed_arr, tau,
-                     sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
-                     sf_dict['z'], sf_dict['y']))
+            galaxy_id = galaxy_id_full[i_start:i_end]
+            ra = ra_full[i_start:i_end]
+            dec = dec_full[i_start:i_end]
+            ct_simulated += len(galaxy_id)
+            redshift = redshift_full[i_start:i_end]
+            log_edd_ratio = log_edd_ratio_full[i_start:i_end]
+            bhm = bhm_full[i_start:i_end]
 
-        cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?)', vals)
+            abs_mag_i = M_i_from_L_Mass(log_edd_ratio, np.log10(bhm))
+
+            obs_mag_i = get_m_i(abs_mag_i, redshift)
+
+            if args.m_i_cut is not None:
+                valid = np.where(obs_mag_i <= args.m_i_cut)
+                redshift = redshift[valid]
+                bhm = bhm[valid]
+                log_edd_ratio = log_edd_ratio[valid]
+                abs_mag_i = abs_mag_i[valid]
+                galaxy_id = galaxy_id[valid]
+                ra = ra[valid]
+                dec = dec[valid]
+                obs_mag_i = obs_mag_i[valid]
+
+            tau = tau_from_params(redshift,
+                                  abs_mag_i,
+                                  bhm, rng=rng)
+
+            sf_dict = {}
+            for bp in ('u', 'g', 'r', 'i', 'z', 'y'):
+                eff_wavelen = 10.0*bp_dict[bp].calcEffWavelen()[0]
+                sf_dict[bp] = SF_from_params(redshift, abs_mag_i,
+                                             bhm, eff_wavelen,
+                                             rng=rng)
+
+            # cut on structure function value
+            for bp in 'ugrizy':
+                valid = np.where(sf_dict[bp]<args.max_sf)
+                redshift = redshift[valid]
+                tau = tau[valid]
+                log_edd_ratio = log_edd_ratio[valid]
+                abs_mag_i = abs_mag_i[valid]
+                obs_mag_i = obs_mag_i[valid]
+                bhm = bhm[valid]
+                galaxy_id = galaxy_id[valid]
+                ra = ra[valid]
+                dec = dec[valid]
+                for other_bp in 'ugrizy':
+                    sf_dict[other_bp] = sf_dict[other_bp][valid]
+
+            interpolated_m_i = np.interp(redshift, z_grid, m_i_grid)
+            interpolated_mag_norm = np.interp(redshift, z_grid, mag_norm_grid)
+            mag_norm = interpolated_mag_norm + (obs_mag_i - interpolated_m_i)
+
+            seed_arr = rng.randint(1,high=10000000, size=len(tau))
+
+            htmid = findHtmid(ra, dec, htmid_level)
+
+            vals = ((int(ii), int(hh), mm, '{"m": "applyAgn", '
+                          + '"p": {"seed": %d, "agn_tau": %.3e, "agn_sfu": %.3e, ' % (ss, tt, sfu)
+                          + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
+                          + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
+                     for ii, hh, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
+                     zip(galaxy_id, htmid, mag_norm, seed_arr, tau,
+                         sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
+                         sf_dict['z'], sf_dict['y']))
+
+            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
+            connection.commit()
+
+        assert ct_simulated == full_size
+
+        print('creating index')
+        cursor.execute('CREATE INDEX htmid ON agn_params (htmid_6)')
         connection.commit()
 
-        cursor.execute('CREATE INDEX gal_id ON agn_params (galaxy_id)')
-        connection.commit()
+    print('all done')
