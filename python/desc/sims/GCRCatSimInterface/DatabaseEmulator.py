@@ -220,9 +220,9 @@ class DESCQAChunkIterator(object):
             else:
                 prefilter_indices = np.array([True]*len(ra))
 
-            ang_sep = _angular_separation(ra, dec,
-                                          self._obs_metadata._pointingRA,
-                                          self._obs_metadata._pointingDec)
+            ang_sep = _angularSeparation(ra, dec,
+                                         self._obs_metadata._pointingRA,
+                                         self._obs_metadata._pointingDec)
 
             self._data_indices = np.where(np.logical_and(prefilter_indices, ang_sep < radius_rad))[0]
 
