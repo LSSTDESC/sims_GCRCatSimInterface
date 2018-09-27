@@ -208,15 +208,23 @@ class DESCQAChunkIterator(object):
                     else:
                         self._native_filters.append(healpix_filter)
 
-            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000'],
+            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000', 'galaxy_id'],
                                                    native_filters=self._native_filters)
 
             ra = ra_dec['raJ2000']
             dec = ra_dec['decJ2000']
+            gid = ra_dec['galaxy_id']
+            if hasattr(self._descqa_obj, '_prefilter_galaxy_id'):
+                prefilter_gid = self._descqa_obj._prefilter_galaxy_id(self._obs_metadata)
+                prefilter_indices = np.in1d(gid, prefilter_gid)
+            else:
+                prefilter_indices = np.array([True]*len(ra))
 
-            self._data_indices = np.where(_angularSeparation(ra, dec, \
-                    self._obs_metadata._pointingRA, \
-                    self._obs_metadata._pointingDec) < radius_rad)[0]
+            ang_sep = _angular_separation(ra, dec,
+                                          self._obs_metadata._pointingRA,
+                                          self._obs_metadata._pointingDec)
+
+            self._data_indices = np.where(np.logical_and(prefilter_indices, ang_sep < radius_rad))[0]
 
         if self._chunk_size is None:
             self._chunk_size = self._data_indices.size

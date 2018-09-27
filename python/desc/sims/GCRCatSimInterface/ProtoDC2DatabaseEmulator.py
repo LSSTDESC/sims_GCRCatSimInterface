@@ -263,6 +263,45 @@ class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 class AGN_postprocessing_mixin(object):
 
+    def _prefilter_galaxy_id(self, obs_metadata):
+        print('prefiltering AGN')
+
+        if not hasattr(self, '_agn_dbo'):
+            self._agn_dbo = DBObject(database=self.agn_params_db,
+                                     driver='sqlite')
+
+            self._agn_dtype = np.dtype([('galaxy_id', int),
+                                        ('magNorm', float),
+                                        ('varParamStr', str, 500)])
+
+
+
+        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
+                                        obs_metadata.pointingDec,
+                                        obs_metadata.boundLength)
+        print('querying AGN')
+
+        self._cached_half_space = half_space
+        trixel_bounds = half_space.findAllTrixels(6)
+
+        query = 'SELECT galaxy_id, magNorm, varParamStr '
+        query += 'FROM agn_params '
+        query += 'WHERE '
+        for i_bound, bound in enumerate(trixel_bounds):
+            if i_bound>0:
+                query += 'OR '
+            if bound[0]==bound[1]:
+                query += 'htmid_6 == %d ' % bound[0]
+            else:
+                query += '(htmid_6 >= %d AND htmid_6 <= %d) ' % (bound[0], bound[1])
+        query += 'ORDER BY galaxy_id'
+
+        self._agn_query_results = self._agn_dbo.execute_arbitrary(query,
+                                                                  dtype=self._agn_dtype)
+
+        return np.sort(self._agn_query_results['galaxy_id'])
+
+
     def _postprocess_results(self, master_chunk, obs_metadata):
         """
         query the database specified by agn_params_db to
@@ -284,40 +323,6 @@ class AGN_postprocessing_mixin(object):
 
         if not os.path.exists(self.agn_params_db):
             raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
-
-        if not hasattr(self, '_agn_dbo'):
-            self._agn_dbo = DBObject(database=self.agn_params_db,
-                                     driver='sqlite')
-
-            self._agn_dtype = np.dtype([('galaxy_id', int),
-                                        ('magNorm', float),
-                                        ('varParamStr', str, 500)])
-
-        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
-                                        obs_metadata.pointingDec,
-                                        obs_metadata.boundLength)
-
-        if (not hasattr(self, '_cached_half_space') or
-            half_space != self._cached_half_space):
-            print('querying AGN')
-
-            self._cached_half_space = half_space
-            trixel_bounds = half_space.findAllTrixels(6)
-
-            query = 'SELECT galaxy_id, magNorm, varParamStr '
-            query += 'FROM agn_params '
-            query += 'WHERE '
-            for i_bound, bound in enumerate(trixel_bounds):
-                if i_bound>0:
-                    query += 'OR '
-                if bound[0]==bound[1]:
-                    query += 'htmid_6 == %d ' % bound[0]
-                else:
-                    query += '(htmid_6 >= %d AND htmid_6 <= %d) ' % (bound[0], bound[1])
-            query += 'ORDER BY galaxy_id'
-
-            self._agn_query_results = self._agn_dbo.execute_arbitrary(query,
-                                                                      dtype=self._agn_dtype)
 
         gid_arr = master_chunk[gid_name]
         m_sorted_dex = np.argsort(gid_arr)
