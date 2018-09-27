@@ -219,7 +219,9 @@ class DESCQAChunkIterator(object):
             # actually valid objects for the DESCQAObject being queried.
             # This is especially useful for AGN simulations, as it allows us to only
             # keep galaxies that actually contain AGN.
-            if hasattr(self._descqa_obj, '_prefilter_galaxy_id'):
+            if (hasattr(self._descqa_obj, '_prefilter_galaxy_id')
+                and self._descqa_obj._do_prefiltering):
+
                 prefilter_gid = self._descqa_obj._prefilter_galaxy_id(self._obs_metadata)
                 prefilter_indices = np.in1d(gid, prefilter_gid)
             else:
@@ -244,6 +246,7 @@ class DESCQAObject(object):
     objectTypeId = None
     verbose = False
     database = 'LSSTCATSIM'
+    _do_prefiltering = False
 
     epoch = 2000.0
     idColKey = 'galaxy_id'
