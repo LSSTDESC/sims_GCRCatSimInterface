@@ -421,6 +421,7 @@ class InstanceCatalogWriter(object):
             class SprinkledAgnCat(SubCatalogMixin, self.instcats.DESCQACat_Twinkles):
                 subcat_prefix = 'agn_'
                 catalog_type = 'sprinkled_agn_%d' % obs_md.OpsimMetaData['obsHistID']
+                _agn_threads = self._agn_threads
 
             if do_sprinkled:
 
