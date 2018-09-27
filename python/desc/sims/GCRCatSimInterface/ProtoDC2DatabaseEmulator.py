@@ -263,14 +263,14 @@ class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 class AGN_postprocessing_mixin(object):
 
-    def _prefilter_galaxy_id(self, obs_metadata):
+    def _do_agn_query(self, obs_metadata):
         """
-        Accept an ObservationMetaData characterizing
-        the current pointing.
+        Actually query the AGN parameter database for all AGN
+        inside of the field of view specified by obs_metadata
+        """
 
-        Return a numpy array of galaxy_ids that are in the
-        field of view and actually contain an AGN.
-        """
+        if not os.path.exists(self.agn_params_db):
+            raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
 
         if not hasattr(self, '_agn_dbo'):
             self._agn_dbo = DBObject(database=self.agn_params_db,
@@ -281,10 +281,6 @@ class AGN_postprocessing_mixin(object):
                                         ('varParamStr', str, 500)])
 
 
-
-        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
-                                        obs_metadata.pointingDec,
-                                        obs_metadata.boundLength)
 
         self._cached_half_space = half_space
         trixel_bounds = half_space.findAllTrixels(6)
@@ -304,7 +300,28 @@ class AGN_postprocessing_mixin(object):
         self._agn_query_results = self._agn_dbo.execute_arbitrary(query,
                                                                   dtype=self._agn_dtype)
 
+
+    def _prefilter_galaxy_id(self, obs_metadata):
+        """
+        Accept an ObservationMetaData characterizing
+        the current pointing.
+
+        Return a numpy array of galaxy_ids that are in the
+        field of view and actually contain an AGN.
+        """
+
+        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
+                                        obs_metadata.pointingDec,
+                                        obs_metadata.boundLength)
+
+        if (not hasattr(self, "_agn_query_results") or
+            half_space != self._cached_half_space):
+
+            self._do_agn_query(obs_metadata)
+
         return np.sort(self._agn_query_results['galaxy_id'])
+
+
 
 
     def _postprocess_results(self, master_chunk, obs_metadata):
@@ -325,8 +342,14 @@ class AGN_postprocessing_mixin(object):
         if self.agn_params_db is None:
             return(master_chunk)
 
-        if not os.path.exists(self.agn_params_db):
-            raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
+        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
+                                        obs_metadata.pointingDec,
+                                        obs_metadata.boundLength)
+
+        if (not hasattr(self, "_agn_query_results") or
+            half_space != self._cached_half_space):
+
+            self._do_agn_query(obs_metadata)
 
         gid_arr = master_chunk[gid_name]
         m_sorted_dex = np.argsort(gid_arr)
