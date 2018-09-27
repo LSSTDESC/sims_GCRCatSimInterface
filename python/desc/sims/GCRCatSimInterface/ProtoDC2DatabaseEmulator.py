@@ -271,7 +271,6 @@ class AGN_postprocessing_mixin(object):
         Return a numpy array of galaxy_ids that are in the
         field of view and actually contain an AGN.
         """
-        print('prefiltering AGN')
 
         if not hasattr(self, '_agn_dbo'):
             self._agn_dbo = DBObject(database=self.agn_params_db,
@@ -286,7 +285,6 @@ class AGN_postprocessing_mixin(object):
         half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
                                         obs_metadata.pointingDec,
                                         obs_metadata.boundLength)
-        print('querying AGN')
 
         self._cached_half_space = half_space
         trixel_bounds = half_space.findAllTrixels(6)
@@ -314,7 +312,6 @@ class AGN_postprocessing_mixin(object):
         query the database specified by agn_params_db to
         find the AGN varParamStr associated with each AGN
         """
-        print('postprocessing AGN')
 
         if self.agn_objid is None:
             gid_name = 'galaxy_id'
