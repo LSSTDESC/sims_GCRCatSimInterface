@@ -382,6 +382,7 @@ class InstanceCatalogWriter(object):
 
             if do_agn:
                 agn_db = agnDESCQAObject(self.descqa_catalog)
+                agn_db._do_prefiltering = True
                 agn_db.field_ra = self.protoDC2_ra
                 agn_db.field_dec = self.protoDC2_dec
                 agn_db.agn_params_db = self.agn_db_name
