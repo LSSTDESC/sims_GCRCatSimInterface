@@ -15,12 +15,6 @@ from lsst.utils import getPackageDir
 
 import argparse
 
-_healpix_list = [10201, 10327, 10328, 10329, 10450,
-                 10451, 10452, 10453, 10570, 10571,
-                 10572, 10686, 10687]
-
-_healpix_list = [10451]
-
 _lim = 18000000
 
 def do_fitting(cat, component, healpix):
