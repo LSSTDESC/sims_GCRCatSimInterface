@@ -217,12 +217,13 @@ if __name__ == "__main__":
             print("    %d through %d -- took %.2e hrs; predict %.2e" %
             (i_start,i_end,duration,predicted))
 
-            galaxy_id = galaxy_id_full[i_start:i_end]
-            ra = ra_full[i_start:i_end]
-            dec = dec_full[i_start:i_end]
-            redshift = redshift_full[i_start:i_end]
-            log_edd_ratio = log_edd_ratio_full[i_start:i_end]
-            bhm = bhm_full[i_start:i_end]
+            selection = slice(i_start:i_end)
+            galaxy_id = galaxy_id_full[selection]
+            ra = ra_full[selection]
+            dec = dec_full[selection]
+            redshift = redshift_full[selection]
+            log_edd_ratio = log_edd_ratio_full[selection]
+            bhm = bhm_full[selection]
 
             ct_simulated += len(galaxy_id)
 
