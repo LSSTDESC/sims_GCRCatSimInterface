@@ -9,6 +9,7 @@ from desc.sims.GCRCatSimInterface import deg2rad_double, arcsec2rad
 
 from lsst.sims.utils import angularSeparation
 from lsst.sims.catalogs.db import DBObject
+from lsst.sims.utils import halfSpaceFromRaDec
 
 __all__ = ["DESCQAObject_protoDC2",
            "bulgeDESCQAObject_protoDC2",
@@ -262,7 +263,69 @@ class knotsDESCQAObject_protoDC2(DESCQAObject_protoDC2):
 
 class AGN_postprocessing_mixin(object):
 
-    def _postprocess_results(self, master_chunk):
+    def _do_agn_query(self, half_space):
+        """
+        Actually query the AGN parameter database for all AGN
+        inside of the field of view specified by half_space
+        (which is an lsst.sims.utils.HalfSpace)
+        """
+
+        if not os.path.exists(self.agn_params_db):
+            raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
+
+        if not hasattr(self, '_agn_dbo'):
+            self._agn_dbo = DBObject(database=self.agn_params_db,
+                                     driver='sqlite')
+
+            self._agn_dtype = np.dtype([('galaxy_id', int),
+                                        ('magNorm', float),
+                                        ('varParamStr', str, 500)])
+
+
+
+        self._cached_half_space = half_space
+        trixel_bounds = half_space.findAllTrixels(6)
+
+        query = 'SELECT galaxy_id, magNorm, varParamStr '
+        query += 'FROM agn_params '
+        query += 'WHERE '
+        for i_bound, bound in enumerate(trixel_bounds):
+            if i_bound>0:
+                query += 'OR '
+            if bound[0]==bound[1]:
+                query += 'htmid_6 == %d ' % bound[0]
+            else:
+                query += '(htmid_6 >= %d AND htmid_6 <= %d) ' % (bound[0], bound[1])
+        query += 'ORDER BY galaxy_id'
+
+        self._agn_query_results = self._agn_dbo.execute_arbitrary(query,
+                                                                  dtype=self._agn_dtype)
+
+
+    def _prefilter_galaxy_id(self, obs_metadata):
+        """
+        Accept an ObservationMetaData characterizing
+        the current pointing.
+
+        Return a numpy array of galaxy_ids that are in the
+        field of view and actually contain an AGN.
+        """
+
+        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
+                                        obs_metadata.pointingDec,
+                                        obs_metadata.boundLength)
+
+        if (not hasattr(self, "_agn_query_results") or
+            half_space != self._cached_half_space):
+
+            self._do_agn_query(half_space)
+
+        return np.sort(self._agn_query_results['galaxy_id'])
+
+
+
+
+    def _postprocess_results(self, master_chunk, obs_metadata):
         """
         query the database specified by agn_params_db to
         find the AGN varParamStr associated with each AGN
@@ -280,54 +343,41 @@ class AGN_postprocessing_mixin(object):
         if self.agn_params_db is None:
             return(master_chunk)
 
-        if not os.path.exists(self.agn_params_db):
-            raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
+        half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
+                                        obs_metadata.pointingDec,
+                                        obs_metadata.boundLength)
 
-        if not hasattr(self, '_agn_dbo'):
-            self._agn_dbo = DBObject(database=self.agn_params_db,
-                                     driver='sqlite')
+        if (not hasattr(self, "_agn_query_results") or
+            half_space != self._cached_half_space):
 
-            self._agn_dtype = np.dtype([('galaxy_id', int),
-                                        ('magNorm', float),
-                                        ('varParamStr', str, 500)])
+            self._do_agn_query(half_space)
 
-        gid_arr = master_chunk[gid_name].astype(float)
-
-        gid_min = np.nanmin(gid_arr)
-        gid_max = np.nanmax(gid_arr)
-
-        query = 'SELECT galaxy_id, magNorm, varParamStr '
-        query += 'FROM agn_params '
-        query += 'WHERE galaxy_id BETWEEN %d AND %d ' % (gid_min, gid_max)
-        query += 'ORDER BY galaxy_id'
-
-        agn_data_iter = self._agn_dbo.get_arbitrary_chunk_iterator(query,
-                                                        dtype=self._agn_dtype,
-                                                        chunk_size=1000000)
-
-
+        gid_arr = master_chunk[gid_name]
         m_sorted_dex = np.argsort(gid_arr)
         m_sorted_id = gid_arr[m_sorted_dex]
-        for agn_chunk in agn_data_iter:
+        valid_agn_dex = np.where(np.logical_and(self._agn_query_results['galaxy_id']>=gid_arr.min(),
+                                                self._agn_query_results['galaxy_id']<=gid_arr.max()))
 
-            # find the indices of the elements in master_chunk
-            # that correspond to elements in agn_chunk
-            m_elements = np.in1d(m_sorted_id, agn_chunk['galaxy_id'])
-            m_dex = m_sorted_dex[m_elements]
+        valid_agn = self._agn_query_results[valid_agn_dex]
 
-            # find the indices of the elements in agn_chunk
-            # that correspond to elements in master_chunk
-            a_dex = np.in1d(agn_chunk['galaxy_id'], m_sorted_id)
+        # find the indices of the elements in master_chunk
+        # that correspond to elements in agn_chunk
+        m_elements = np.in1d(m_sorted_id, valid_agn['galaxy_id'], assume_unique=True)
+        m_dex = m_sorted_dex[m_elements]
 
-            # make sure we have matched elements correctly
-            np.testing.assert_array_equal(agn_chunk['galaxy_id'][a_dex],
-                                          master_chunk[gid_name][m_dex])
+        # find the indices of the elements in agn_chunk
+        # that correspond to elements in master_chunk
+        a_dex = np.in1d(valid_agn['galaxy_id'], m_sorted_id, assume_unique=True)
 
-            if varpar_name in master_chunk.dtype.names:
-                master_chunk[varpar_name][m_dex] = agn_chunk['varParamStr'][a_dex]
+        # make sure we have matched elements correctly
+        np.testing.assert_array_equal(valid_agn['galaxy_id'][a_dex],
+                                      master_chunk[gid_name][m_dex])
 
-            if magnorm_name in master_chunk.dtype.names:
-                master_chunk[magnorm_name][m_dex] = agn_chunk['magNorm'][a_dex]
+        if varpar_name in master_chunk.dtype.names:
+            master_chunk[varpar_name][m_dex] = valid_agn['varParamStr'][a_dex]
+
+        if magnorm_name in master_chunk.dtype.names:
+            master_chunk[magnorm_name][m_dex] = valid_agn['magNorm'][a_dex]
 
         return self._final_pass(master_chunk)
 
