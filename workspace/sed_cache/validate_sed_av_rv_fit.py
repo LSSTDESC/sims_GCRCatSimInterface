@@ -2,6 +2,7 @@ import os
 import h5py
 import numpy as np
 import healpy
+import multiprocessing
 import time
 
 import GCRCatalogs
@@ -47,15 +48,61 @@ def do_fitting(cat, component, healpix, lim):
     return (qties['redshift_true'][:lim], qties['galaxy_id'][:lim],
             sed_names, mag_norms, av_arr, rv_arr)
 
+def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
+              bluge_sed_list, bulge_magnorm_list, bulge_av_list, bulge_rv_list,
+              out_dict, out_tag):
+
+    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+    fit_mags = np.zeros((6,len(disk_sed_list)), dtype=float)
+
+    ax = None
+    bx = None
+    ccm_w = None
+    t_start = time.time()
+    for ii in range(len(disk_sed_list)):
+        if ii>0 and ii%1000==0:
+            dur = (time.time()-t_start)/3600.0
+            pred = len(disk_sed_list)*dur/ii
+            print('%d of %d; %.2e hrs left' % (ii,len(disk_sed_list), pred-dur))
+
+        disk_sed = Sed()
+        disk_sed.readSED_flambda(os.path.join(sed_dir, disk_sed_list[ii]))
+        fnorm = getImsimFluxNorm(disk_sed, disk_magnorm_list[ii])
+        disk_sed.multiplyFluxNorm(fnorm)
+        if ax is None or not np.array_equal(disk_sed.wavelen, ccm_w):
+            ax, bx = disk_sed.setupCCMab()
+            ccm_w = np.copy(disk_sed.wavelen)
+        disk_sed.addCCMDust(ax, bx, A_v=disk_av_list[ii], R_v=disk_rv_list[ii])
+        disk_fluxes = bp_dict.fluxListForSed(disk_sed)
+
+        bulge_sed = Sed()
+        bulge_sed.readSED_flambda(os.path.join(sed_dir, bulge_sed_list[ii]))
+        fnorm = getImsimFluxNorm(bulge_sed, bulge_magnorm_list[ii])
+        bulge_sed.multiplyFluxNorm(fnorm)
+        if ax is None or not np.array_equal(bulge_sed.wavelen, ccm_w):
+            ax, bx = bulge_sed.setupCCMab()
+            ccm_w = np.copy(bulge_sed.wavelen)
+        bulge_sed.addCCMDust(ax, bx, A_v=bulge_av_list[ii], R_v=bulge_rv_list[ii])
+        bulge_fluxes = bp_dict.fluxListForSed(bulge_sed)
+
+        fluxes = bulge_fluxes + disk_fluxes
+        mags = disk_sed.magFromFlux(fluxes)
+        fit_mags[:,ii] = mags
+
+    out_dict[tag] = fit_mags
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--healpix', type=int, default=None)
     parser.add_argument('--out_dir', type=str, default=None)
     parser.add_argument('--lim', type=int default=180000000)
+    parser.add_argument('--out_name', type=str, default=None)
     args = parser.parse_args()
     assert args.healpix is not None
     assert args.out_dir is not None
+    assert args.out_name is not None
     if not os.path.isdir(args.out_dir):
         os.makedirs(args.out_dir)
 
@@ -63,8 +110,7 @@ if __name__ == "__main__":
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
-    out_file_name = os.path.join(args.out_dir,
-                                'fit_mags_vs_cosmo_mags_%d.h5' % args.healpix)
+    out_file_name = os.path.join(args.out_dir,args.out_name)
 
 
     #cache_LSST_seds(wavelen_min=0.0, wavelen_max=3000.0)
@@ -95,63 +141,45 @@ if __name__ == "__main__":
 
     np.testing.assert_array_equal(control_qties['galaxy_id'], disk_id)
 
-    fit_name = os.path.join(args.out_dir, 'fit_params_%d.h5' % args.healpix)
-    with h5py.File(fit_name, 'w') as out_file:
+    p_list = []
+    mgr = multiprocessing.Manager()
+    out_dict = mgr.dict()
+    fit_mags = np.zeros((6, len(disk_av)), dtype=float)
+    d_gal = len(disk_av)//23
+    for i_start in range(0, len(disk_av), d_gal):
+        i_end = i_start + d_gal
+        selection = slice(i_start, i_end)
+        p = mutiprocessing.Process(target=calc_mags,
+                                   args=(disk_sed_name[selection],
+                                          disk_mag[selection],
+                                          disk_av[selection],
+                                          disk_rv[selection],
+                                          bulge_sed_name[selection],
+                                          bulge_mag[selection],
+                                          bulge_av[selection],
+                                          bulge_rv[selection],
+                                          out_dict,
+                                          i_start))
+
+        p.start()
+        p_list.append(p)
+
+    for p in p_list:
+        p.join()
+
+    for i_start in range(0, len(disk_av), d_gal):
+        i_end = i_start+d_gal
+        fit_mags[:,i_start:i_end] = out_dict[i_start]
+
+    with h5py.File(out_file_name, 'w') as out_file:
+        out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
         out_file.create_dataset('disk_sed', data=[s.encode('utf-8') for s in disk_sed_name])
         out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
         out_file.create_dataset('disk_av', data=disk_av)
         out_file.create_dataset('disk_rv', data=disk_rv)
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
-        out_file.create_dataset('galaxy_id', data=disk_id)
-
-    exit()
-
-    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
-    fit_mags = {}
-    for bp in 'ugrizy':
-        fit_mags[bp] = np.zeros(len(disk_id), dtype=float)
-
-    ax = None
-    bx = None
-    ccm_w = None
-
-    t_start = time.time()
-    for ii in range(len(disk_id)):
-        if ii>0 and ii%1000==0:
-            duration = (time.time()-t_start)/3600.0
-            predicted = len(disk_id)*duration/ii
-            print('%d of %d; dur %.2e pred %.2e' %
-            (ii, len(disk_id), duration, predicted))
-
-        disk_sed = Sed()
-        disk_sed.readSED_flambda(os.path.join(sed_dir, disk_sed_name[ii]))
-        fnorm = getImsimFluxNorm(disk_sed, disk_mag[ii])
-        disk_sed.multiplyFluxNorm(fnorm)
-        if ax is None or not np.array_equal(disk_sed.wavelen, ccm_w):
-            ax, bx = disk_sed.setupCCMab()
-            ccm_w = np.copy(disk_sed.wavelen)
-        disk_sed.addCCMDust(ax, bx, A_v=disk_av[ii], R_v=disk_rv[ii])
-        disk_fluxes = bp_dict.fluxListForSed(disk_sed)
-
-        bulge_sed = Sed()
-        bulge_sed.readSED_flambda(os.path.join(sed_dir, bulge_sed_name[ii]))
-        fnorm = getImsimFluxNorm(bulge_sed, bulge_mag[ii])
-        bulge_sed.multiplyFluxNorm(fnorm)
-        if ax is None or not np.array_equal(bulge_sed.wavelen, ccm_w):
-            ax, bx = bulge_sed.setupCCMab()
-            ccm_w = np.copy(bulge_sed.wavelen)
-        bulge_sed.addCCMDust(ax, bx, A_v=bulge_av[ii], R_v=bulge_rv[ii])
-        bulge_fluxes = bp_dict.fluxListForSed(bulge_sed)
-
-        fluxes = bulge_fluxes + disk_fluxes
-        mags = disk_sed.magFromFlux(fluxes)
         for i_bp, bp in enumerate('ugrizy'):
-            fit_mags[bp][ii] = mags[i_bp]
-
-    with h5py.File(out_file_name, 'w') as f:
-        f.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
-        for bp in 'ugrizy':
-            f.create_dataset('fit_%s' % bp, data=fit_mags[bp])
-            f.create_dataset('cosmo_%s' % bp,
-                             data=control_qties['Mag_true_%s_lsst_z0' % bp])
+            out_file.create_dataset('fit_%s' % bp, data=fit_mags[i_bp])
+            out_file.create_dataset('cosmo_%s' % bp,
+                                    data=control_qties['Mag_true_%s_lsst_z0' % bp])
