@@ -97,7 +97,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--healpix', type=int, default=None)
     parser.add_argument('--out_dir', type=str, default=None)
-    parser.add_argument('--lim', type=int default=180000000)
+    parser.add_argument('--lim', type=int, default=180000000)
     parser.add_argument('--out_name', type=str, default=None)
     args = parser.parse_args()
     assert args.healpix is not None
