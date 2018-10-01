@@ -149,8 +149,8 @@ if __name__ == "__main__":
     for i_start in range(0, len(disk_av), d_gal):
         i_end = i_start + d_gal
         selection = slice(i_start, i_end)
-        p = mutiprocessing.Process(target=calc_mags,
-                                   args=(disk_sed_name[selection],
+        p = multiprocessing.Process(target=calc_mags,
+                                    args=(disk_sed_name[selection],
                                           disk_mag[selection],
                                           disk_av[selection],
                                           disk_rv[selection],
