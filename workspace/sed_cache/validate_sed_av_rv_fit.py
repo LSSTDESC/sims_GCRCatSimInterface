@@ -117,26 +117,37 @@ def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
             pred = len(disk_sed_list)*dur/ii
             print('%d of %d; %.2e hrs left' % (ii,len(disk_sed_list), pred-dur))
 
+        # load the disk SED
         disk_sed = Sed()
         disk_sed.readSED_flambda(os.path.join(sed_dir, disk_sed_list[ii]))
+
+        # normalize the disk SED
         fnorm = getImsimFluxNorm(disk_sed, disk_magnorm_list[ii])
         disk_sed.multiplyFluxNorm(fnorm)
+
+        # apply dust to the diskSED
         if ax is None or not np.array_equal(disk_sed.wavelen, ccm_w):
             ax, bx = disk_sed.setupCCMab()
             ccm_w = np.copy(disk_sed.wavelen)
         disk_sed.addCCMDust(ax, bx, A_v=disk_av_list[ii], R_v=disk_rv_list[ii])
         disk_fluxes = bp_dict.fluxListForSed(disk_sed)
 
+        # load the bluge SED
         bulge_sed = Sed()
         bulge_sed.readSED_flambda(os.path.join(sed_dir, bulge_sed_list[ii]))
+
+        # normalize the bulge SED
         fnorm = getImsimFluxNorm(bulge_sed, bulge_magnorm_list[ii])
         bulge_sed.multiplyFluxNorm(fnorm)
+
+        # apply dust to the bulge SED
         if ax is None or not np.array_equal(bulge_sed.wavelen, ccm_w):
             ax, bx = bulge_sed.setupCCMab()
             ccm_w = np.copy(bulge_sed.wavelen)
         bulge_sed.addCCMDust(ax, bx, A_v=bulge_av_list[ii], R_v=bulge_rv_list[ii])
         bulge_fluxes = bp_dict.fluxListForSed(bulge_sed)
 
+        # combine disk and bulge SED to get total galaxy magnitudes
         fluxes = bulge_fluxes + disk_fluxes
         mags = disk_sed.magFromFlux(fluxes)
         fit_mags[:,ii] = mags
