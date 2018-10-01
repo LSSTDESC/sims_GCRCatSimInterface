@@ -21,6 +21,14 @@ from lsst.sims.photUtils import BandpassDict
 import argparse
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--field_ra', type=float, default=55.064,
+                    help='The RA of the center of the field to which '
+                    'the extragalactic catalog needs to be rotated '
+                    '(in degrees).  Default: 55.064'')
+parser.add_argument('--field_dec', type=float, default=-29.783,
+                    help='The Dec of the center of the field to which '
+                    'the extragalactic catalog needs to be rotated '
+                    '(in degrees).  Default: -29.783')
 parser.add_argument('--sql_dir', type=str, default=None)
 parser.add_argument('--sql_file', type=str, default='sprinkled_objects.sqlite')
 parser.add_argument('--fov', type=float, default=None)
@@ -51,8 +59,8 @@ pointing_dir = os.path.join(os.environ['HOME'], 'DC2_Repo', 'data', 'Run1.1')
 
 t_start = time.time()
 (sql_file_name, table_names) = write_sprinkled_param_db(obs,
-                                                 field_ra=55.064,
-                                                 field_dec=-29.783,
+                                                 field_ra=args.field_ra,
+                                                 field_dec=args.field_dec,
                                                  agn_db=args.agn,
                                                  yaml_file=args.yaml,
                                                  out_dir=args.sql_dir,
