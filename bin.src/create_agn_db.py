@@ -253,9 +253,19 @@ if __name__ == "__main__":
                                              bhm, eff_wavelen,
                                              rng=rng)
 
-            # cut on structure function value
+            # Cut on structure function value.
+            # Specifically, we are looping over all LSST bandpasses
+            # and cutting out any AGN that has a structure function
+            # value greater than args.max_sf in that bandpass.  At
+            # the end of this block of code, the only AGN that should
+            # remain are those for whom all structure function values
+            # are less than args.max_sf.
             for bp in 'ugrizy':
                 valid = np.where(sf_dict[bp]<args.max_sf)
+
+                # update all data structures, including sf_dict
+                # to reflect the current cut on structure function
+                # values
                 redshift = redshift[valid]
                 tau = tau[valid]
                 log_edd_ratio = log_edd_ratio[valid]
