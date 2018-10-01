@@ -144,8 +144,7 @@ if __name__ == "__main__":
     if args.config_file is not None:
         with open(args.config_file, 'r') as in_file:
             config_dict = json.load(in_file)
-        for kk in config_dict:
-            args.__dict__[kk] = config_dict[kk]
+            args.__dict__.update(config_dict)
 
     print('args ',args.n_jobs,args.ids)
 
