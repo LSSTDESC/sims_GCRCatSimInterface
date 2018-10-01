@@ -15,9 +15,8 @@ from lsst.utils import getPackageDir
 
 import argparse
 
-_lim = 18000000
 
-def do_fitting(cat, component, healpix):
+def do_fitting(cat, component, healpix, lim):
 
     filter_data = sed_filter_names_from_catalog(cat)
     filter_names = filter_data[component]['filter_name']
@@ -33,19 +32,19 @@ def do_fitting(cat, component, healpix):
                               ['redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
-    print("testing on %d of %d" % (_lim, len(qties['galaxy_id'])))
+    print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
     with np.errstate(divide='ignore', invalid='ignore'):
-        mag_array = np.array([-2.5*np.log10(qties[ff][:_lim]) for ff in filter_names])
+        mag_array = np.array([-2.5*np.log10(qties[ff][:lim]) for ff in filter_names])
 
     (sed_names,
      mag_norms,
      av_arr,
      rv_arr) = sed_from_galacticus_mags(mag_array,
-                                        qties['redshift_true'][:_lim],
+                                        qties['redshift_true'][:lim],
                                         H0, Om0,
                                         wav_min, wav_width)
 
-    return (qties['redshift_true'][:_lim], qties['galaxy_id'][:_lim],
+    return (qties['redshift_true'][:lim], qties['galaxy_id'][:lim],
             sed_names, mag_norms, av_arr, rv_arr)
 
 if __name__ == "__main__":
@@ -53,6 +52,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--healpix', type=int, default=None)
     parser.add_argument('--out_dir', type=str, default=None)
+    parser.add_argument('--lim', type=int default=180000000)
     args = parser.parse_args()
     assert args.healpix is not None
     assert args.out_dir is not None
@@ -70,12 +70,12 @@ if __name__ == "__main__":
     #cache_LSST_seds(wavelen_min=0.0, wavelen_max=3000.0)
 
     (disk_redshift, disk_id, disk_sed_name, disk_mag,
-     disk_av, disk_rv) = do_fitting(cat, 'disk', args.healpix)
+     disk_av, disk_rv) = do_fitting(cat, 'disk', args.healpix, args.lim)
 
     print("fit disks")
 
     (bulge_redshift, bulge_id, bulge_sed_name, bulge_mag,
-     bulge_av, bulge_rv) = do_fitting(cat, 'bulge', args.healpix)
+     bulge_av, bulge_rv) = do_fitting(cat, 'bulge', args.healpix, args.lim)
 
     print("fit bulges")
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
     for kk in control_qties:
-        control_qties[kk] = control_qties[kk][:_lim]
+        control_qties[kk] = control_qties[kk][:args.lim]
 
     print("got controls")
 
