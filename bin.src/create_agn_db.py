@@ -220,10 +220,11 @@ if __name__ == "__main__":
             galaxy_id = galaxy_id_full[i_start:i_end]
             ra = ra_full[i_start:i_end]
             dec = dec_full[i_start:i_end]
-            ct_simulated += len(galaxy_id)
             redshift = redshift_full[i_start:i_end]
             log_edd_ratio = log_edd_ratio_full[i_start:i_end]
             bhm = bhm_full[i_start:i_end]
+
+            ct_simulated += len(galaxy_id)
 
             abs_mag_i = M_i_from_L_Mass(log_edd_ratio, np.log10(bhm))
 
