@@ -154,7 +154,7 @@ class InstanceCatalogWriter(object):
         plc = ParametrizedLightCurveMixin()
         plc.load_parametrized_light_curves()
 
-        self.config_dict = config_dict
+        self.config_dict = config_dict if config_dict is not None else {}
 
         self.descqa_catalog = descqa_catalog
         self.dither = dither
