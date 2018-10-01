@@ -130,33 +130,21 @@ if __name__ == "__main__":
 
     use_direct_eddington = ('blackHoleEddingtonRatio' in qty_list)
 
+    qty_names= ['redshift_true', 'blackHoleMass', 'galaxy_id', 'ra', 'dec']
+    filters = [(lambda x: x>0.0, 'blackHoleMass'),
+               (lambda x: np.log10(x)>args.mbh_cut, 'blackHoleMass')]
+
     if use_direct_eddington:
         print('using native Eddington ratio')
-        cat_qties = cat.get_quantities(['redshift_true',
-                                        'blackHoleMass',
-                                        'blackHoleEddingtonRatio',
-                                        'galaxy_id', 'ra', 'dec'],
-                                        filters=[(lambda x: x>0.0,
-                                                  'blackHoleMass'),
-                                                 (lambda x: x>0.0,
-                                                  'blackHoleEddingtonRatio'),
-                                                 (lambda x:
-                                                     np.log10(x)>args.mbh_cut,
-                                                    'blackHoleMass')])
+        qty_names.append('blackHoleEddingtonRatio')
+        filters.append((lambda x:x>0.0, 'blackHoleEddingtonRatio')
 
     else:
-        cat_qties = cat.get_quantities(['redshift_true',
-                                        'blackHoleMass',
-                                        'blackHoleAccretionRate',
-                                        'galaxy_id', 'ra', 'dec'],
-                                       filters=[(lambda x: x>0.0,
-                                                 'blackHoleMass'),
-                                                (lambda x: x>0.0,
-                                                 'blackHoleAccretionRate'),
-                                                (lambda x:
-                                                    np.log10(x)>args.mbh_cut,
-                                                    'blackHoleMass')])
+        qty_names.append('blackHoleAccretionRate')
+        filters.append((lambda x: x>0.0, 'blackHoleAccretionRate'))
 
+    cat_qties = cat.get_quantities(qty_names, filters=filters)
+    if not use_direct_eddington:
         accretion_rate_full = cat_qties['blackHoleAccretionRate']
 
     redshift_full = cat_qties['redshift_true']
