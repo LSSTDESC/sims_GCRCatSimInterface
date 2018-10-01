@@ -49,7 +49,7 @@ def do_fitting(cat, component, healpix, lim):
             sed_names, mag_norms, av_arr, rv_arr)
 
 def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
-              bluge_sed_list, bulge_magnorm_list, bulge_av_list, bulge_rv_list,
+              bulge_sed_list, bulge_magnorm_list, bulge_av_list, bulge_rv_list,
               out_dict, out_tag):
 
     bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
