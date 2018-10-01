@@ -89,7 +89,7 @@ def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
         mags = disk_sed.magFromFlux(fluxes)
         fit_mags[:,ii] = mags
 
-    out_dict[tag] = fit_mags
+    out_dict[out_tag] = fit_mags
 
 
 if __name__ == "__main__":
