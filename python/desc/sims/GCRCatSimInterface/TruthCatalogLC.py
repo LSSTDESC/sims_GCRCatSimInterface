@@ -175,7 +175,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
-        values = ((obs, mjd_dict[obs], filter_dict[obs])
+        values = ((int(obs), mjd_dict[obs], filter_dict[obs])
                   for obs in mjd_dict)
         cursor.executemany('''INSERT INTO obs_metadata VALUES (?,?,?)''', values)
         cursor.execute('''CREATE INDEX obs_filter
