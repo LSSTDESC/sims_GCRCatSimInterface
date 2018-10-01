@@ -63,6 +63,10 @@ with open('sorted_visit_list.json', 'r') as in_file:
     sorted_visit_list = json.load(in_file)
     obs_list = list([int(vv[1]) for vv in sorted_visit_list])
 
+write_script('agn_run_script.sl', [277065,316730])
+
+exit()
+
 first_thousand = obs_list[:1000]
 
 for ii in range(0,1000,200):
