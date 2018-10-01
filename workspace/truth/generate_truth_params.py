@@ -49,16 +49,6 @@ opsim_db += '/groups/SSim/DC2/minion_1016_desc_dithered_v4.db'
 
 pointing_dir = os.path.join(os.environ['HOME'], 'DC2_Repo', 'data', 'Run1.1')
 
-h5_name = os.path.join(os.environ['SCRATCH'], 'h5_file_test', 'agn_lc.h5')
-h5_name = os.path.join(os.environ['SCRATCH'], 'sql_lc_test_small', 'agn_lc.db')
-
-if os.path.exists(h5_name):
-    os.unlink(h5_name)
-
-#sql_dir = tempfile.mkdtemp(dir=os.environ['SCRATCH'],
-#                           prefix='sprinkled_sql_')
-
-
 t_start = time.time()
 (sql_file_name, table_names) = write_sprinkled_param_db(obs,
                                                  field_ra=55.064,
@@ -70,13 +60,3 @@ t_start = time.time()
 
 print('\nwrote\n%s\n' % sql_file_name)
 print('fov %e in %e sec' % (args.fov, time.time()-t_start))
-exit()
-
-### NOTHING BELOW HERE ACTUALLY HAPPENS ###
-
-write_sprinkled_lc(h5_name, obs,
-                   pointing_dir, opsim_db,
-                   sql_file_name=sql_file_name,
-                   bp_dict=bp_dict)
-
-print('\nparam db\n%s\n' % sql_file_name)
