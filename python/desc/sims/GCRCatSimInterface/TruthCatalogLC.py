@@ -84,7 +84,7 @@ def create_sprinkled_sql_file(sql_name):
         cmd += '''(obshistid int, mjd float, filter int)'''
         cursor.execute(cmd)
 
-        cmd = '''CREATE TABLE sprinkled_objects '''
+        cmd = '''CREATE TABLE variables_and_transients '''
         cmd += '''(uniqueId int, galaxy_id int,
                    ra float, dec float, sprinkled int)'''
         cursor.execute(cmd)
@@ -147,7 +147,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
         - mjd -- the date of the pointing
         - filter -- an int corresponding to the telescope filter (0==u, 1==g..)
 
-    sprinkled_objects:
+    variables_and_transients:
         - uniqueId -- an int unique to all objects
         - galaxy_id -- an int indicating the host galaxy
         - ra -- in degrees
@@ -268,7 +268,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                            int(agn_results['is_sprinkled'][i_obj])))
                           for i_obj in range(len(agn_results)))
 
-                cursor.executemany('''INSERT INTO sprinkled_objects VALUES
+                cursor.executemany('''INSERT INTO variables_and_transients VALUES
                                       (?,?,?,?,?)''', values)
 
                 agn_simulator = AgnSimulator(agn_results['redshift'])
