@@ -186,7 +186,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     db = DBObject(sql_file_name, driver='sqlite')
 
-    query = 'SELECT DISTINCT htmid FROM zpoint WHERE is_agn=1'
+    query = 'SELECT DISTINCT htmid FROM zpoint WHERE is_agn=1 OR is_sn=1'
     dtype = np.dtype([('htmid', int)])
 
     results = db.execute_arbitrary(query, dtype=dtype)
