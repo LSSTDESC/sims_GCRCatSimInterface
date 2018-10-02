@@ -60,6 +60,7 @@ class AgnSimulator(ExtraGalacticVariabilityModels, TimeDelayVariability):
 
     def __init__(self, redshift_arr):
         self._redshift_arr = redshift_arr
+        self._agn_threads = 12
 
     def column_by_name(self, key):
         if key!= 'redshift':
