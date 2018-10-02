@@ -86,7 +86,7 @@ def create_sprinkled_sql_file(sql_name):
 
         cmd = '''CREATE TABLE sprinkled_objects '''
         cmd += '''(uniqueId int, galaxy_id int,
-                   ra float, dec float)'''
+                   ra float, dec float, sprinkled int)'''
         cursor.execute(cmd)
 
         conn.commit()
@@ -196,21 +196,23 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     agn_dtype = np.dtype([('uniqueId', int), ('galaxy_id', int),
                           ('ra', float), ('dec', float),
                           ('redshift', float), ('sed', str, 500),
-                          ('magnorm', float), ('varParamStr', str, 500)])
+                          ('magnorm', float), ('varParamStr', str, 500),
+                          ('is_sprinkled', int)])
 
     agn_base_query = 'SELECT uniqueId, galaxy_id, '
     agn_base_query += 'raJ2000, decJ2000, '
     agn_base_query += 'redshift, sedFilepath, '
-    agn_base_query += 'magNorm, varParamStr '
+    agn_base_query += 'magNorm, varParamStr, is_sprinkled '
     agn_base_query += 'FROM zpoint WHERE is_agn=1 '
 
     sn_dtype = np.dtype([('uniqueId', int), ('galaxy_id', int),
                          ('ra', float), ('dec', float),
-                         ('redshift', float), ('sn_truth_params', str, 500)])
+                         ('redshift', float), ('sn_truth_params', str, 500),
+                         ('is_sprinkled', int)])
 
     sn_base_query = 'SELECT uniqueId, galaxy_id, '
     sn_base_query += 'raJ2000, decJ2000, '
-    sn_base_query += 'redshift, sn_truth_params '
+    sn_base_query += 'redshift, sn_truth_params, is_sprinkled '
     sn_base_query += 'FROM zpoint WHERE is_sn=1 '
 
     filter_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
@@ -262,11 +264,12 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                 values = ((int(agn_results['uniqueId'][i_obj]),
                            int(agn_results['galaxy_id'][i_obj]),
                            np.degrees(agn_results['ra'][i_obj]),
-                           np.degrees(agn_results['dec'][i_obj]))
+                           np.degrees(agn_results['dec'][i_obj]),
+                           int(agn_results['is_sprinkled'][i_obj])))
                           for i_obj in range(len(agn_results)))
 
                 cursor.executemany('''INSERT INTO sprinkled_objects VALUES
-                                      (?,?,?,?)''', values)
+                                      (?,?,?,?,?)''', values)
 
                 agn_simulator = AgnSimulator(agn_results['redshift'])
 
