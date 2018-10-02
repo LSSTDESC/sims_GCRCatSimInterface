@@ -2,9 +2,11 @@ import os
 import numpy as np
 import sqlite3
 import json
+import copy
 
 from lsst.sims.utils import findHtmid
 from lsst.utils import getPackageDir
+from lsst.sims.catUtils.supernovae import SNObject
 from desc.sims.GCRCatSimInterface.TruthCatalogUtils import _truth_trixel_level
 
 
@@ -48,6 +50,8 @@ def add_unsprinkled_sne_params(sqlite_file,
                       ('x1', float), ('c', float), ('z', float),
                       ('snra', float), ('sndec', float)])
 
+    base_sn_obj = SNObject(0., 0.)
+
     with sqlite3.connect(sqlite_file) as conn:
         cursor = conn.cursor()
         for i_cat, csv_file_name in enumerate(list_of_sne_files):
@@ -58,15 +62,25 @@ def add_unsprinkled_sne_params(sqlite_file,
             htmid_arr = findHtmid(sne_data['snra'], sne_data['sndec'],
                                   _truth_trixel_level)
 
+            sn_param_arr = []
+            for i_obj in range(len(sne_data)):
+                sn_dict = copy.deepcopy(base_sn_obj.SNstate)
+                sn_dict['_ra'] = np.radians(sne_data['snra'][i_obj])
+                sn_dict['_dec'] = np.radians(sne_data['sndec'][i_obj])
+                sn_dict['z'] = sne_data['z'][i_obj]
+                sn_dict['c'] = sne_data['c'][i_obj]
+                sn_dict['x0'] = sne_data['x0'][i_obj]
+                sn_dict['x1'] = sne_data['x1'][i_obj]
+                sn_dict['t0'] = sne_data['t0'][i_obj]
+                sn_obj = SNObject.fromSNState(sn_dict)
+                sn_obj.mwEBVfromMaps()
+                sn_param_arr.append(json.dumps(sn_obj.SNstate))
+
             values = ((int(sne_data['snid'][i_obj]*1024+i_cat+sne_obj_id),
                        -1, int(htmid_arr[i_obj]),
                        sne_data['snra'][i_obj], sne_data['sndec'][i_obj],
                        sne_data['z'][i_obj], 'None', -1.0, 'None',
-                       str(json.dumps({'x0': sne_data['x0'][i_obj],
-                                       't0': sne_data['t0'][i_obj],
-                                        'x1': sne_data['x1'][i_obj],
-                                        'c': sne_data['c'][i_obj],
-                                        'z': sne_data['z'][i_obj]})),
+                       sn_param_arr[i_obj],
                        sne_data['t0'][i_obj],
                        0,1,0,0.0,0.0,0.0)
                       for i_obj in range(len(sne_data)))
