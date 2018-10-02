@@ -3,6 +3,7 @@ import numpy as np
 import shutil
 import sqlite3
 import json
+import multiprocessing
 import time
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
@@ -22,8 +23,12 @@ class SneSimulator(object):
         """
         self._bp_dict = bp_dict
 
-    def calculate_sn_magnitudes(self, sn_truth_params, mjd_arr, filter_arr):
+    def _calculate_batch_of_sn(self, sn_truth_params, mjd_arr, filter_arr,
+                               out_dict, tag):
         """
+        For processing SNe in batches using multiprocessing
+
+        -----
         sn_truth_params is a numpy array of json-ized
         dicts defining the state of an SNObject
 
@@ -32,6 +37,11 @@ class SneSimulator(object):
 
         filter_arr is a numpy array of ints indicating
         the filter being observed at each time
+
+        out_dict is a multprocessing.Manager().dict() to store
+        the results
+
+        tag is an integer denoting which batch of SNe this is.
         """
 
         int_to_filter = 'ugrizy'
@@ -52,6 +62,44 @@ class SneSimulator(object):
                 if ff>1.0e-300:
                     mm = sn_sed.magFromFlux(ff)
                     mags[i_obj][i_time] = mm
+
+        out_dict[tag] = mags
+
+    def calculate_sn_magnitudes(self, sn_truth_params, mjd_arr, filter_arr):
+        """
+        sn_truth_params is a numpy array of json-ized
+        dicts defining the state of an SNObject
+
+        mjd_arr is a numpy array of the TAI times of
+        observations
+
+        filter_arr is a numpy array of ints indicating
+        the filter being observed at each time
+        """
+        n_threads = 12
+        d_sne = len(sn_truth_params)//(n_threads-1)
+        p_list = []
+        mgr = multiprocessing.Manager()
+        out_dict = mgr.dict()
+        for i_start in range(0, len(sn_truth_params), d_sne):
+            i_end = i_start+d_sne
+            selection = slice(i_start, i_end)
+            p = multiprocessing.Process(target=self._calculate_batch_of_sn,
+                                        args=(sn_truth_params[selection],
+                                              mjd_arr, filter_arr,
+                                              out_dict, i_start))
+
+            p.start()
+            p_list.append(p)
+
+        for p in p_list:
+            p.join()
+
+        mags = np.NaN*np.ones((len(sn_truth_params), len(mjd_arr)), dtype=float)
+        for i_start in range(0, len(sn_truth_params), d_sne):
+            i_end = i_start + d_sne
+            selection = slice(i_start, i_end)
+            mags[selection] = out_dict[i_start]
 
         return mags
 
