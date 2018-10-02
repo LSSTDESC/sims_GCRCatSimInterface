@@ -306,6 +306,18 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
             for sn_results in sn_iter:
                 t0_sne = time.time()
+
+                values = ((int(sn_results['uniqueId'][i_obj]),
+                           int(sn_results['galaxy_id'][i_obj]),
+                           np.degrees(sn_results['ra'][i_obj]),
+                           np.degrees(sn_results['dec'][i_obj]),
+                           int(sn_results['is_sprinkled'][i_obj]))
+                          for i_obj in range(len(sn_results)))
+
+                cursor.executemany('''INSERT INTO variables_and_transients VALUES
+                                      (?,?,?,?,?)''', values)
+                con.commit()
+
                 sn_mags = sn_simulator.calculate_sn_magnitudes(sn_results['sn_truth_params'],
                                                                mjd_arr, filter_arr)
                 print('    did %d sne in %e seconds' % (len(sn_results), time.time()-t0_sne))
