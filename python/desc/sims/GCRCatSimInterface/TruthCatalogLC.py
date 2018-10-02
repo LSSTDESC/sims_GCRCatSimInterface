@@ -77,7 +77,7 @@ class SneSimulator(object):
         the filter being observed at each time
         """
         n_threads = 12
-        d_sne = len(sn_truth_params)//(n_threads-1)
+        d_sne = max(12, len(sn_truth_params)//(n_threads-1))
         p_list = []
         mgr = multiprocessing.Manager()
         out_dict = mgr.dict()
