@@ -223,11 +223,10 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
         t_before_htmid = time.time()
         for htmid_dex, htmid in enumerate(object_htmid):
             if htmid_dex>0:
-                htmid_duration = time.time()-t_before_htmid
+                htmid_duration = (time.time()-t_before_htmid)/3600.0
                 htmid_prediction = len(object_htmid)*htmid_duration/htmid_dex
-                htmid_prediction /= 3600.0
-                print('%d htmid in %e sec; predict %e hours' %
-                (htmid_dex, htmid_duration,htmid_prediction))
+                print('%d htmid in %e sec; predict %e hours remaining' %
+                (htmid_dex, htmid_duration,htmid_prediction-htmid_duration))
             mjd_arr = []
             obs_arr = []
             filter_arr = []
