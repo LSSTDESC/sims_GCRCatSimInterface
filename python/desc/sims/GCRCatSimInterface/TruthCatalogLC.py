@@ -230,7 +230,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
             mjd_arr = []
             obs_arr = []
             filter_arr = []
-            t_start = time.time()
+
             for obshistid in htmid_dict:
                 is_contained = False
                 for bounds in htmid_dict[obshistid]:
@@ -250,8 +250,6 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
             mjd_arr = mjd_arr[sorted_dex]
             obs_arr = obs_arr[sorted_dex]
             filter_arr = filter_arr[sorted_dex]
-            duration = time.time()-t_start
-            print('made mjd_arr in %e seconds' % duration)
 
             agn_query = agn_base_query + 'AND htmid=%d' % htmid
 
