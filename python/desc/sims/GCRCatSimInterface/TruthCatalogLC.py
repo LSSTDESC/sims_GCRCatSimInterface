@@ -225,7 +225,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
             if htmid_dex>0:
                 htmid_duration = (time.time()-t_before_htmid)/3600.0
                 htmid_prediction = len(object_htmid)*htmid_duration/htmid_dex
-                print('%d htmid out of %d in %e sec; predict %e hours remaining' %
+                print('%d htmid out of %d in %e hours; predict %e hours remaining' %
                 (htmid_dex, len(object_htmid), htmid_duration,htmid_prediction-htmid_duration))
             mjd_arr = []
             obs_arr = []
