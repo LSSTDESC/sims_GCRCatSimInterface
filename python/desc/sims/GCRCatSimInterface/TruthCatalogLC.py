@@ -265,7 +265,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                            int(agn_results['galaxy_id'][i_obj]),
                            np.degrees(agn_results['ra'][i_obj]),
                            np.degrees(agn_results['dec'][i_obj]),
-                           int(agn_results['is_sprinkled'][i_obj])))
+                           int(agn_results['is_sprinkled'][i_obj]))
                           for i_obj in range(len(agn_results)))
 
                 cursor.executemany('''INSERT INTO variables_and_transients VALUES
