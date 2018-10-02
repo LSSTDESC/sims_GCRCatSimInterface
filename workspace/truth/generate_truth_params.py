@@ -24,7 +24,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--field_ra', type=float, default=55.064,
                     help='The RA of the center of the field to which '
                     'the extragalactic catalog needs to be rotated '
-                    '(in degrees).  Default: 55.064'')
+                    '(in degrees).  Default: 55.064')
 parser.add_argument('--field_dec', type=float, default=-29.783,
                     help='The Dec of the center of the field to which '
                     'the extragalactic catalog needs to be rotated '
