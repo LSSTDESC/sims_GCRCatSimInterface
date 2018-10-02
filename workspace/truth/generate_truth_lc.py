@@ -1,11 +1,11 @@
 import os
 
 param_dir = os.path.join('/astro', 'store', 'pogo3', 'danielsf')
-param_dir = os.path.join(param_dir, 'desc_dc2_truth')
+param_dir = os.path.join(param_dir, 'truth_181002')
 
 assert os.path.isdir(param_dir)
 
-param_file = os.path.join(param_dir, 'run1p1_sprinkled_params_180808.db')
+param_file = os.path.join(param_dir, 'truth_params_181002_protodc2_v3.db')
 
 assert os.path.isfile(param_file)
 
@@ -23,7 +23,7 @@ from lsst.sims.utils import ObservationMetaData
 obs_tot = ObservationMetaData(pointingRA=55.064, pointingDec=-29.783,
                               boundType='circle', boundLength=4.0)
 
-out_name = os.path.join(param_dir, 'trial_lc.db')
+out_name = os.path.join(param_dir, 'run_1.2_trial_lc.db')
 
 assert not os.path.isfile(out_name)
 
