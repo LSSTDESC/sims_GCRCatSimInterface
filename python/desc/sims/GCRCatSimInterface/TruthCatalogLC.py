@@ -316,7 +316,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
                 cursor.executemany('''INSERT INTO variables_and_transients VALUES
                                       (?,?,?,?,?)''', values)
-                con.commit()
+                conn.commit()
 
                 sn_mags = sn_simulator.calculate_sn_magnitudes(sn_results['sn_truth_params'],
                                                                mjd_arr, filter_arr)
