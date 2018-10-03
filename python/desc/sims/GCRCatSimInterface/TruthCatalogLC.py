@@ -222,9 +222,11 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                        dec_colname=dec_colname)
     t_htmid_dict = time.time()-t_start
 
+    bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4 'y':5}
+
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
-        values = ((int(obs), mjd_dict[obs], filter_dict[obs])
+        values = ((int(obs), mjd_dict[obs], bp_to_int[filter_dict[obs]])
                   for obs in mjd_dict)
         cursor.executemany('''INSERT INTO obs_metadata VALUES (?,?,?)''', values)
         cursor.execute('''CREATE INDEX obs_filter
