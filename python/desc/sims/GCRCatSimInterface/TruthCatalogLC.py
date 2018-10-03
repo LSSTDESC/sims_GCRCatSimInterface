@@ -230,7 +230,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     t_htmid_dict = time.time()-t_start
 
-    bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4 'y':5}
+    bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
