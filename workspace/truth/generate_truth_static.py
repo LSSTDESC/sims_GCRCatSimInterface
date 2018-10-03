@@ -1,7 +1,7 @@
 """
 This is the script that actually generates the
-truth catalog based on the database of
-parameters generated in generate_truth_params.
+truth catalog of static sources based on the database
+of parameters generated in generate_truth_params.
 
 It took about 1.5 hours to run for protoDC2.
 """
