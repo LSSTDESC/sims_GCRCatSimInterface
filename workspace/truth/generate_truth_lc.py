@@ -1,4 +1,8 @@
 import os
+from lsst.sims.utils import ObservationMetaData
+from lsst.sims.photUtils import BandpassDict
+from desc.sims.GCRCatSimInterface import write_sprinkled_lc
+
 
 param_dir = os.path.join('/astro', 'store', 'pogo3', 'danielsf')
 param_dir = os.path.join(param_dir, 'truth_181002')
@@ -19,7 +23,6 @@ opsim_db = os.path.join(opsim_db, 'minion_1016_desc_dithered_v4.db')
 
 assert os.path.isfile(opsim_db)
 
-from lsst.sims.utils import ObservationMetaData
 obs_tot = ObservationMetaData(pointingRA=55.064, pointingDec=-29.783,
                               boundType='circle', boundLength=4.0)
 
@@ -27,11 +30,7 @@ out_name = os.path.join(param_dir, 'run_1.2_trial_lc_chipname.db')
 
 assert not os.path.isfile(out_name)
 
-from lsst.sims.photUtils import BandpassDict
-
 bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
-
-from desc.sims.GCRCatSimInterface import write_sprinkled_lc
 
 write_sprinkled_lc(out_name, obs_tot, ptng_dir, opsim_db,
                    sql_file_name=param_file,
