@@ -153,7 +153,7 @@ def _actually_on_chip(ra, dec, obs_md):
     out_arr = np.array([False]*len(ra))
     d_ang = obs_md.boundLength+0.01
     good_radii = np.where(angularSeparation(ra, dec, obs_md.pointingRA, obs_md.pointingDec)<d_ang)
-    print('radii filtered %d down to %d' % (len(ra), len(good_radii[0]))
+    print('radii filtered %d down to %d' % (len(ra), len(good_radii[0])))
     chip_names = chipNameFromRaDecLSST(ra[good_radii], dec[good_radii], obs_metadata=obs_md).astype(str)
     vals = np.where(np.char.find(chip_names, 'None')==0, False, True)
     out_arr[good_radii] = vals
