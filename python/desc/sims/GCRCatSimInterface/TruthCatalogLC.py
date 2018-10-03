@@ -151,7 +151,7 @@ def _actually_on_chip(ra, dec, obs_md):
     which of the objects are actually on a chip and which are not
     """
     out_arr = [False]*len(ra)
-    d_ang = obs_md.boundLenght+0.01
+    d_ang = obs_md.boundLength+0.01
     good_radii = np.where(angularSeparation(ra, dec, obs_md.pointingRA, obs_md.pointingDec)<d_ang)
     chip_names = chipNameFromRaDecLSST(ra[good_radii], dec[good_radii], obs_metadata=obs_md).astype(str)
     vals = np.where(np.char.find(chip_names, 'None')==0, False, True)
