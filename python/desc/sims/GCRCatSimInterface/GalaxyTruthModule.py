@@ -122,7 +122,6 @@ def calculate_mags(galaxy_list, out_dict):
 
     bulge_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     disk_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
-    agn_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
 
     magnification = np.array([1.0/((1.0-g[14])**2-g[12]**2-g[13]**2)
                               for g in galaxy_list])
@@ -137,10 +136,7 @@ def calculate_mags(galaxy_list, out_dict):
         if galaxy[2] is not None and galaxy[3] is not None:
             disk_fluxes[i_gal] = _fluxes(galaxy[2], galaxy[3], galaxy[6])
 
-        if galaxy[4] is not None and galaxy[5] is not None:
-            agn_fluxes[i_gal] = _fluxes(galaxy[4], galaxy[5], galaxy[6])
-
-    tot_fluxes = bulge_fluxes + disk_fluxes + agn_fluxes
+    tot_fluxes = bulge_fluxes + disk_fluxes
 
     for i_filter in range(6):
         tot_fluxes[:,i_filter] *= magnification
