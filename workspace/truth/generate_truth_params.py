@@ -42,8 +42,6 @@ args = parser.parse_args()
 if args.fov is None:
     raise RuntimeError("must specify fov")
 
-bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
-
 assert os.path.isfile(args.agn)
 
 obs = ObservationMetaData(pointingRA=55.064,
@@ -51,11 +49,6 @@ obs = ObservationMetaData(pointingRA=55.064,
                           mjd=59580.0,
                           boundType='circle',
                           boundLength=args.fov)
-
-opsim_db = '/global/projecta/projectdirs/lsst'
-opsim_db += '/groups/SSim/DC2/minion_1016_desc_dithered_v4.db'
-
-pointing_dir = os.path.join(os.environ['HOME'], 'DC2_Repo', 'data', 'Run1.1')
 
 t_start = time.time()
 (sql_file_name, table_names) = write_sprinkled_param_db(obs,
