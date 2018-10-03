@@ -4,34 +4,36 @@ from lsst.sims.photUtils import BandpassDict
 from desc.sims.GCRCatSimInterface import write_sprinkled_lc
 
 
-param_dir = os.path.join('/astro', 'store', 'pogo3', 'danielsf')
-param_dir = os.path.join(param_dir, 'truth_181002')
+if __name__ == "__main__":
 
-assert os.path.isdir(param_dir)
+    param_dir = os.path.join('/astro', 'store', 'pogo3', 'danielsf')
+    param_dir = os.path.join(param_dir, 'truth_181002')
 
-param_file = os.path.join(param_dir, 'truth_params_181002_protodc2_v3.db')
+    assert os.path.isdir(param_dir)
 
-assert os.path.isfile(param_file)
+    param_file = os.path.join(param_dir, 'truth_params_181002_protodc2_v3.db')
 
-ptng_dir = os.path.join('/local', 'lsst', 'danielsf', 'DC2-production', 'data')
-ptng_dir = os.path.join(ptng_dir, 'Run1.1')
+    assert os.path.isfile(param_file)
 
-assert os.path.isdir(ptng_dir)
+    ptng_dir = os.path.join('/local', 'lsst', 'danielsf', 'DC2-production', 'data')
+    ptng_dir = os.path.join(ptng_dir, 'Run1.1')
 
-opsim_db = os.path.join('/local', 'lsst', 'danielsf', 'OpSimData')
-opsim_db = os.path.join(opsim_db, 'minion_1016_desc_dithered_v4.db')
+    assert os.path.isdir(ptng_dir)
 
-assert os.path.isfile(opsim_db)
+    opsim_db = os.path.join('/local', 'lsst', 'danielsf', 'OpSimData')
+    opsim_db = os.path.join(opsim_db, 'minion_1016_desc_dithered_v4.db')
 
-obs_tot = ObservationMetaData(pointingRA=55.064, pointingDec=-29.783,
-                              boundType='circle', boundLength=4.0)
+    assert os.path.isfile(opsim_db)
 
-out_name = os.path.join(param_dir, 'run_1.2_trial_lc_chipname.db')
+    obs_tot = ObservationMetaData(pointingRA=55.064, pointingDec=-29.783,
+                                  boundType='circle', boundLength=4.0)
 
-assert not os.path.isfile(out_name)
+    out_name = os.path.join(param_dir, 'run_1.2_trial_lc_chipname.db')
 
-bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+    assert not os.path.isfile(out_name)
 
-write_sprinkled_lc(out_name, obs_tot, ptng_dir, opsim_db,
-                   sql_file_name=param_file,
-                   bp_dict=bp_dict)
+    bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+
+    write_sprinkled_lc(out_name, obs_tot, ptng_dir, opsim_db,
+                       sql_file_name=param_file,
+                       bp_dict=bp_dict)
