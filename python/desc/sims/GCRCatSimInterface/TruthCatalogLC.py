@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import time
 from lsst.sims.utils import ObservationMetaData
+from lsst.sims.utils import angularSeparation
 from lsst.sims.coordUtils import chipNameFromRaDecLSST
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
@@ -141,6 +142,22 @@ def create_sprinkled_sql_file(sql_name):
         cursor.execute(cmd)
 
         conn.commit()
+
+
+def _actually_on_chip(ra, dec, obs_md):
+    """
+    Take a numpy array of RA in degrees, a numpy array of Decin degrees
+    and an ObservationMetaData and return a boolean array indicating
+    which of the objects are actually on a chip and which are not
+    """
+    out_arr = [False]*len(ra)
+    d_ang = obs_md.boundLenght+0.01
+    good_radii = np.where(angularSeparation(ra, dec, obs_md.pointingRA, obs_md.pointingDec)<d_ang)
+    chip_names = chipNameFromRaDecLSST(ra[good_radii], dec[good_radii], obs_metadata=obs_md).astype(str)
+    vals = np.where(np.char.find(chip_names, 'None')==0, False, True)
+    out_arr[good_radii] = vals
+    return out_arr
+
 
 def write_sprinkled_lc(out_file_name, total_obs_md,
                        pointing_dir, opsim_db_name,
@@ -346,11 +363,10 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
 
                 for i_time, obshistid in enumerate(obs_arr):
-                    chipname_list = chipNameFromRaDecLSST(np.degrees(agn_results['ra']),
-                                                          np.degrees(agn_results['dec']),
-                                                          obs_metadata=obsmd_dict[obshistid]).astype(str)
-
-                    valid_agn = np.where(np.char.find(np.char.lower(chipname_list), 'none')<0)
+                    are_on_chip = _actually_on_chip(np.degrees(agn_results['ra']),
+                                                    np.degrees(agn_results['dec']),
+                                                    obsmd_dict[obshistid])
+                    valid_agn = np.where(are_on_chip)
 
                     if len(valid_agn[0])==0:
                         continue
@@ -391,12 +407,12 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                 print('    did %d sne in %e seconds' % (len(sn_results), time.time()-t0_sne))
 
                 for i_time, obshistid in enumerate(obs_arr):
-                    chipname_list = chipNameFromRaDecLSST(np.degrees(sn_results['ra']),
-                                                          np.degrees(sn_results['dec']),
-                                                          obs_metadata=obsmd_dict[obshistid]).astype(str)
+                    are_on_chip = _actually_on_chip(np.degrees(sn_results['ra']),
+                                                    np.degrees(sn_results['dec']),
+                                                    obsmd_dict[obshistid])
 
                     valid_obj = np.where(np.logical_and(np.isfinite(sn_mags[:,i_time]),
-                                                        np.char.find(np.char.lower(chipname_list), 'none')<0))
+                                                        are_on_chip))
 
                     if len(valid_obj[0]) == 0:
                         continue
