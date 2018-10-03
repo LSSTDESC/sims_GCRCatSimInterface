@@ -23,7 +23,7 @@ from lsst.sims.utils import ObservationMetaData
 obs_tot = ObservationMetaData(pointingRA=55.064, pointingDec=-29.783,
                               boundType='circle', boundLength=4.0)
 
-out_name = os.path.join(param_dir, 'run_1.2_trial_lc.db')
+out_name = os.path.join(param_dir, 'run_1.2_trial_lc_chipname.db')
 
 assert not os.path.isfile(out_name)
 
