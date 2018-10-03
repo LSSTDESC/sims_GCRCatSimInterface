@@ -8,6 +8,8 @@ from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.utils import findHtmid, halfSpaceFromRaDec
 from lsst.sims.utils import defaultSpecMap
+from lsst.sims.utils import _getRotSkyPos
+from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import Sed, getImsimFluxNorm
 from lsst.sims.catUtils.baseCatalogModels import StarObj
 from . import sprinklerCompound_DC2_truth
@@ -217,7 +219,8 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
 
 def get_pointing_htmid(pointing_dir, opsim_db_name,
                        ra_colname = 'descDitheredRA',
-                       dec_colname = 'descDitheredDec'):
+                       dec_colname = 'descDitheredDec',
+                       rottel_colname = 'descDitheredRotTelPos'):
     """
     For a list of OpSim pointings, find dicts mapping those pointings to:
     - The trixels filling the pointings
@@ -240,6 +243,9 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
     dec_colname is the column used for the Dec of the pointing (default:
     descDitheredDec)
 
+    rottel_colname is the column used for the rotTelPos of the pointing
+    (default: desckDitheredRotTelPos')
+
     Returns
     -------
     htmid_bound_dict -- a dict keyed on ObsHistID.  Values are the list of trixels filling
@@ -249,6 +255,9 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
 
     filter_dict -- a dict keyed on ObsHistID.  Values are the 'ugrizy' filter of the
     OpSim pointings.
+
+    obsmd_dict -- a dict keyed on ObsHistID.  The values are ObservationMetaData with the
+    RA, Dec, MJD, and rotSkyPos of the pointings (for use in focal plane geometry calculations)
     """
 
     radius = 2.0  # field of view of a pointing in degrees
@@ -274,11 +283,12 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
 
     db = DBObject(opsim_db_name, driver='sqlite')
     dtype = np.dtype([('obshistid', int), ('mjd', float), ('band', str, 1),
-                      ('ra', float), ('dec', float)])
+                      ('ra', float), ('dec', float), ('rotTelPos', float)])
 
     htmid_bound_dict = {}
     mjd_dict = {}
     filter_dict = {}
+    obsmd_dict = {}
 
     d_obs = len(obs_data)//5
     for i_start in range(0,len(obs_data), d_obs):
@@ -288,7 +298,8 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
 
         subset = obs_data[i_start:i_end]
 
-        query = 'SELECT obsHistId, expMJD, filter, %s, %s FROM Summary' % (ra_colname, dec_colname)
+        query = 'SELECT obsHistId, expMJD, filter,'
+        query += ' %s, %s, %s FROM Summary' % (ra_colname, dec_colname, rottel_colname)
         query += ' WHERE obsHistID BETWEEN %d and %e' % (subset.min(), subset.max())
         query += ' GROUP BY obsHistID'
 
@@ -307,7 +318,16 @@ def get_pointing_htmid(pointing_dir, opsim_db_name,
             htmid_bound_dict[obshistid] = trixel_bounds
             mjd_dict[obshistid] = results['mjd'][ii]
             filter_dict[obshistid] = results['band'][ii]
+            obs_md = ObservationMetaData(pointingRA=np.degrees(results['ra'][ii]),
+                                         pointingDec=np.degrees(results['dec'][ii]),
+                                         mjd = results['mjd'][ii])
 
+            rotsky_rad = _getRotSkyPos(results['ra'][ii], results['dec'][ii],
+                                       obs_md, results['rotTelPos'][ii])
+            obsmd_dict[obshistid] = ObservationMetaData(pointingRA=np.degrees(results['ra'][ii]),
+                                                        pointingDec=np.degrees(results['dec'][ii]),
+                                                        mjd = results['mjd'][ii],
+                                                        rotSkyPos=np.degrees(rotsky_rad))
     assert len(obs_data) == len(htmid_bound_dict)
 
-    return htmid_bound_dict, mjd_dict, filter_dict
+    return htmid_bound_dict, mjd_dict, filter_dict, obsmd_dict

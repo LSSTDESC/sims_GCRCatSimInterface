@@ -5,6 +5,8 @@ import sqlite3
 import json
 import multiprocessing
 import time
+from lsst.sims.utils import ObservationMetaData
+from lsst.sims.coordUtils import chipNameFromRaDecLSST
 from lsst.sims.catalogs.db import DBObject
 from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 from lsst.sims.photUtils import BandpassDict, Sed, getImsimFluxNorm
@@ -144,6 +146,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                        pointing_dir, opsim_db_name,
                        ra_colname='descDitheredRA',
                        dec_colname='descDitheredDec',
+                       rottel_colname = 'descDitheredRotTelPos',
                        sql_file_name=None,
                        bp_dict=None):
 
@@ -173,6 +176,9 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     dec_colname is the column used for the Dec of the pointing (default:
     descDitheredDec)
+
+    rottel_colname is the column used for the rotTelPos of the pointing
+    (default: desckDitheredRotTelPos')
 
     sql_file_name is the name of the parameter database produced by
     write_sprinkled_param_db to be used
@@ -217,9 +223,11 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     t_start = time.time()
     (htmid_dict,
      mjd_dict,
-     filter_dict) = get_pointing_htmid(pointing_dir, opsim_db_name,
-                                       ra_colname=ra_colname,
-                                       dec_colname=dec_colname)
+     filter_dict,
+     obsmd_dict) = get_pointing_htmid(pointing_dir, opsim_db_name,
+                                      ra_colname=ra_colname,
+                                      dec_colname=dec_colname)
+
     t_htmid_dict = time.time()-t_start
 
     bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4 'y':5}
@@ -337,12 +345,21 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                                       expmjd=mjd_arr)
 
 
-                for i_time in range(len(obs_arr)):
+                for i_time, obshistid in enumerate(obs_arr):
+                    chipname_list = chipNameFromRaDecLSST(np.degrees(agn_results['ra']),
+                                                          np.degrees(agn_results['dec']),
+                                                          obs_metadata=obsmd_dict[obshistid]).astype(str)
+
+                    valid_agn = np.where(np.char.find(np.char.lower(chipname_list), 'none')<0)
+
+                    if len(valid_agn[0])==0:
+                        continue
+
                     values = ((int(agn_results['uniqueId'][i_obj]),
                                int(obs_arr[i_time]),
                                quiescent_mag[i_obj][filter_arr[i_time]]+
                                dmag[filter_arr[i_time]][i_obj][i_time])
-                              for i_obj in range(len(agn_results)))
+                              for i_obj in valid_agn[0])
                     cursor.executemany('''INSERT INTO agn_lc VALUES
                                        (?,?,?)''', values)
 
@@ -373,8 +390,14 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                                                mjd_arr, filter_arr)
                 print('    did %d sne in %e seconds' % (len(sn_results), time.time()-t0_sne))
 
-                for i_time in range(len(mjd_arr)):
-                    valid_obj = np.where(np.isfinite(sn_mags[:,i_time]))
+                for i_time, obshistid in enumerate(obs_arr):
+                    chipname_list = chipNameFromRaDecLSST(np.degrees(sn_results['ra']),
+                                                          np.degrees(sn_results['dec']),
+                                                          obs_metadata=obsmd_dict[obshistid]).astype(str)
+
+                    valid_obj = np.where(np.logical_and(np.isfinite(sn_mags[:,i_time]),
+                                                        np.char.find(np.char.lower(chipname_list), 'none')<0))
+
                     if len(valid_obj[0]) == 0:
                         continue
 
