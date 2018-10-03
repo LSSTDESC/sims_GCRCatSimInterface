@@ -7,14 +7,17 @@ from lsst.utils import getPackageDir
 from lsst.sims.utils import defaultSpecMap
 from lsst.sims.photUtils import BandpassDict, Bandpass, Sed, CosmologyObject
 
-__all__ = ["disk_re", "bulge_re", "sed_filter_names_from_catalog", "sed_from_galacticus_mags"]
+__all__ = ["disk_re", "bulge_re", "disk_re_extincted", "bulge_re_extincted",
+           "sed_filter_names_from_catalog", "sed_from_galacticus_mags"]
 
 _galaxy_sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
 
 disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
 bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge_no_host_extinction$')
+disk_re_extincted = re.compile(r'sed_(\d+)_(\d+)$')
+bulge_re_extincted = re.compile(r'sed_(\d+)_(\d+)$')
 
-def sed_filter_names_from_catalog(catalog):
+def sed_filter_names_from_catalog(catalog, use_extincted=False):
     """
     Takes an already-loaded GCR catalog and returns the names, wavelengths,
     and widths of the SED-defining bandpasses
@@ -47,13 +50,13 @@ def sed_filter_names_from_catalog(catalog):
     disk_wav_width = []
 
     for qty_name in all_quantities:
-        disk_match = disk_re.match(qty_name)
+        disk_match = disk_re_extincted.match(qty_name) if use_extincted else disk_re.match(qty_name)
         if disk_match is not None:
             disk_names.append(qty_name)
             disk_wav_min.append(0.1*float(disk_match[1]))  # 0.1 converts to nm
             disk_wav_width.append(0.1*float(disk_match[2]))
 
-        bulge_match = bulge_re.match(qty_name)
+        bulge_match = bulge_re_extincted.match(qty_name) if use_extincted else bulge_re.match(qty_name)
         if bulge_match is not None:
             bulge_names.append(qty_name)
             bulge_wav_min.append(0.1*float(bulge_match[1]))
@@ -145,7 +148,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     ----------
 
     galacticus_mags is a numpy array such that
-    galacticus_mags[i][j] is the magnitude of the jth star in the ith bandpass,
+    galacticus_mags[i][j] is the magnitude of the jth galaxy in the ith bandpass,
     where the bandpasses are ordered in ascending order of minimum wavelength.
 
     redshift is an array of redshifts for the galaxies being fit
@@ -162,7 +165,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
 
     Returns
     -------
-    a numpy array of SED names and a numpy array of magNorms.
+    a numpy array of SED names and a numpy array of magNorms and a numpy array of cKDTree distances
     """
 
     if (not hasattr(sed_from_galacticus_mags, '_color_tree') or
@@ -184,17 +187,17 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         sed_from_galacticus_mags._wav_min = wav_min
         sed_from_galacticus_mags._wav_width = wav_width
 
-    if (not hasattr(sed_from_galacticus_mags, '_cosmo') or
-        np.abs(sed_from_galacticus_mags._cosmo.H()-H0)>1.0e-6 or
-        np.abs(sed_from_galacticus_mags._cosmo.OmegaMatter()-Om0)>1.0e-6):
+    #if (not hasattr(sed_from_galacticus_mags, '_cosmo') or
+    #    np.abs(sed_from_galacticus_mags._cosmo.H()-H0)>1.0e-6 or
+    #    np.abs(sed_from_galacticus_mags._cosmo.OmegaMatter()-Om0)>1.0e-6):
 
-        sed_from_galacticus_mags._cosmo = CosmologyObject(H0=H0, Om0=Om0)
+    #    sed_from_galacticus_mags._cosmo = CosmologyObject(H0=H0, Om0=Om0)
 
     galacticus_mags_t = np.asarray(galacticus_mags).T # N_star by N_mag
     assert galacticus_mags_t.shape == (len(redshift), sed_from_galacticus_mags._sed_mags.shape[1])
 
     with np.errstate(invalid='ignore', divide='ignore'):
-        galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_star by (N_mag - 1)
+        galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_gals by (N_mag - 1)
 
     (sed_dist,
      sed_idx) = sed_from_galacticus_mags._color_tree.query(galacticus_colors, k=1)
@@ -204,9 +207,10 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     sed_idx = np.where(sed_idx<len(sed_from_galacticus_mags._sed_names),
                        sed_idx, 0)
 
-    distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(redshift=redshift)
+    #distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(redshift=redshift)
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
     d_mag = (galacticus_mags_t - sed_from_galacticus_mags._sed_mags[sed_idx]).mean(axis=1)
-    output_mag_norm = sed_from_galacticus_mags._mag_norm[sed_idx] + d_mag + distance_modulus
+    #output_mag_norm = sed_from_galacticus_mags._mag_norm[sed_idx] + d_mag + distance_modulus
+    output_mag_norm = sed_from_galacticus_mags._mag_norm[sed_idx] + d_mag
 
-    return output_names, output_mag_norm
+    return output_names, output_mag_norm, sed_dist
