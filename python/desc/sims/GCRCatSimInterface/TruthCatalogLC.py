@@ -19,10 +19,15 @@ __all__ = ["write_sprinkled_lc"]
 
 
 class SneSimulator(object):
+    """
+    A class to enable the simulation of SNe photometry.
+    See the method calculate_sn_magnitudes() for details.
+    """
 
     def __init__(self, bp_dict):
         """
-        bp_dict is a BandpassDict
+        bp_dict is a BandpassDict containing the filters in which
+        we will want to compute the supernovae's photometry
         """
         self._bp_dict = bp_dict
 
@@ -108,8 +113,22 @@ class SneSimulator(object):
 
 
 class AgnSimulator(ExtraGalacticVariabilityModels, TimeDelayVariability):
+    """
+    A class that will allow us to use the same variability methods
+    used for InstanceCatalogs to simulate the variability of a pre-specified
+    chunk of AGN.
+
+    To use, instantiate this class with a numpy array of redshifts for the
+    desired AGN.  Then call applyVariability(var_par, expmjd=mjd), where varpar
+    is a numpy array of varParamStr for the AGN and mjd is the date(s)
+    at which you want to simulate photometry.
+    """
 
     def __init__(self, redshift_arr):
+        """
+        redshift_arr is a numpy array of redshifts for the objects
+        whose photometry this AgnSimulator will be used to simulate
+        """
         self._redshift_arr = redshift_arr
         self._agn_threads = 12
 
