@@ -239,6 +239,8 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     create_sprinkled_sql_file(out_file_name)
 
     t_start = time.time()
+
+    # get data about the pointings being simulated
     (htmid_dict,
      mjd_dict,
      filter_dict,
@@ -250,6 +252,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
+    # put the data about the pointings in the obs_metadata table
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
         values = ((int(obs), mjd_dict[obs], bp_to_int[filter_dict[obs]])
@@ -263,6 +266,8 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
 
     db = DBObject(sql_file_name, driver='sqlite')
 
+    # get a list of htmid corresponding to trixels in which
+    # variables and transients can be found
     query = 'SELECT DISTINCT htmid FROM zpoint WHERE is_agn=1 OR is_sn=1'
     dtype = np.dtype([('htmid', int)])
 
@@ -298,6 +303,9 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     with sqlite3.connect(out_file_name) as conn:
         cursor = conn.cursor()
         t_before_htmid = time.time()
+
+        # loop over trixels containing variables and transients, simulating
+        # the light curves of those objects
         for htmid_dex, htmid in enumerate(object_htmid):
             if htmid_dex>0:
                 htmid_duration = (time.time()-t_before_htmid)/3600.0
@@ -308,6 +316,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
             obs_arr = []
             filter_arr = []
 
+            # Find only those pointings which overlap the current trixel
             for obshistid in htmid_dict:
                 is_contained = False
                 for bounds in htmid_dict[obshistid]:
@@ -334,6 +343,8 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                                        dtype=agn_dtype,
                                                        chunk_size=10000)
 
+            # put static data about the AGN (position, etc.) into the
+            # variables_and_transients table
             for i_chunk, agn_results in enumerate(agn_iter):
                 values = ((int(agn_results['uniqueId'][i_obj]),
                            int(agn_results['galaxy_id'][i_obj]),
@@ -359,14 +370,19 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                     mag_list = bp_dict.magListForSed(spec)
                     quiescent_mag[i_obj] = mag_list
 
+                # simulate AGN variability
                 dmag = agn_simulator.applyVariability(agn_results['varParamStr'],
                                                       expmjd=mjd_arr)
 
-
+                # loop over pointings that overlap the current trixel, writing
+                # out simulated photometry for each AGN observed in that pointing
                 for i_time, obshistid in enumerate(obs_arr):
+
+                    # only include objects that were actually on a detector
                     are_on_chip = _actually_on_chip(np.degrees(agn_results['ra']),
                                                     np.degrees(agn_results['dec']),
                                                     obsmd_dict[obshistid])
+
                     valid_agn = np.where(are_on_chip)
 
                     if len(valid_agn[0])==0:
@@ -392,6 +408,8 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
             for sn_results in sn_iter:
                 t0_sne = time.time()
 
+                # write static information about SNe to the
+                # variables_and_transients table
                 values = ((int(sn_results['uniqueId'][i_obj]),
                            int(sn_results['galaxy_id'][i_obj]),
                            np.degrees(sn_results['ra'][i_obj]),
@@ -407,7 +425,11 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                                                mjd_arr, filter_arr)
                 print('    did %d sne in %e seconds' % (len(sn_results), time.time()-t0_sne))
 
+                # loop over pointings that overlap the current trixel, writing
+                # out simulated photometry for each SNe observed in that pointing
                 for i_time, obshistid in enumerate(obs_arr):
+
+                    # only include objects that fell on a detector
                     are_on_chip = _actually_on_chip(np.degrees(sn_results['ra']),
                                                     np.degrees(sn_results['dec']),
                                                     obsmd_dict[obshistid])
