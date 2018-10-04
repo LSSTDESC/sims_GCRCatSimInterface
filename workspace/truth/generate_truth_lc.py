@@ -26,7 +26,7 @@ if __name__ == "__main__":
     parser.add_argument('--Dec', type=float, default=-29.783,
                         help='Dec at center of simulated area in degrees '
                         '(default -29.783)')
-    parser.add_argumetn('--fov', type=float, default=4.0,
+    parser.add_argument('--fov', type=float, default=4.0,
                         help='radius in degrees of simulated area '
                         '(default 4.0)')
 
