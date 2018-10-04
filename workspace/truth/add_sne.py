@@ -8,6 +8,8 @@ if __name__ == "__main__":
                         help='Path to the sqlite database to which you '
                         'wish to add unsprinkled supernova parameters')
 
+    args = parser.parse_args()
+
     if args.param_db is None:
         raise RuntimeError("Must specify param_db")
 
