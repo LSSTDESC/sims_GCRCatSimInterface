@@ -37,7 +37,7 @@ columns
 Step (4) reads in the variable and transient parameters from the database
 created in step (1) and creates a sqlite database with several tables.
 
-    agn_lc/sn_lc with columns
+    light_curves with columns
         - uniqueId -- an int unique to all objects
         - obshistid -- an int unique to all pointings
         - mag -- the magnitude observed for this object at that pointing
@@ -52,3 +52,5 @@ created in step (1) and creates a sqlite database with several tables.
         - galaxy_id -- an int indicating the host galaxy
         - ra -- in degrees
         - dec -- in degrees
+        - agn -- ==1 if object is an AGN
+        - sn -- ==1 if object is a supernova

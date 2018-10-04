@@ -141,12 +141,7 @@ class AgnSimulator(ExtraGalacticVariabilityModels, TimeDelayVariability):
 def create_sprinkled_sql_file(sql_name):
     with sqlite3.connect(sql_name) as conn:
         cursor = conn.cursor()
-        cmd = '''CREATE TABLE agn_lc '''
-        cmd += '''(uniqueId int,
-                   obshistid int, mag float)'''
-        cursor.execute(cmd)
-
-        cmd = '''CREATE TABLE sne_lc '''
+        cmd = '''CREATE TABLE light_curves '''
         cmd += '''(uniqueId int,
                    obshistid int, mag float)'''
         cursor.execute(cmd)
@@ -157,7 +152,8 @@ def create_sprinkled_sql_file(sql_name):
 
         cmd = '''CREATE TABLE variables_and_transients '''
         cmd += '''(uniqueId int, galaxy_id int,
-                   ra float, dec float, sprinkled int)'''
+                   ra float, dec float, sprinkled int,
+                   agn int, sn int)'''
         cursor.execute(cmd)
 
         conn.commit()
@@ -229,7 +225,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
     Writes out a database to out_file_name.  The tables of this database and
     their columns are:
 
-    agn_lc/sn_lc:
+    light_curves:
         - uniqueId -- an int unique to all objects
         - obshistid -- an int unique to all pointings
         - mag -- the magnitude observed for this object at that pointing
@@ -244,6 +240,8 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
         - galaxy_id -- an int indicating the host galaxy
         - ra -- in degrees
         - dec -- in degrees
+        - agn -- ==1 if object is an AGN
+        - sn -- ==1 if object is a supernova
     """
 
     t0_master = time.time()
@@ -369,11 +367,12 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                            int(agn_results['galaxy_id'][i_obj]),
                            np.degrees(agn_results['ra'][i_obj]),
                            np.degrees(agn_results['dec'][i_obj]),
-                           int(agn_results['is_sprinkled'][i_obj]))
+                           int(agn_results['is_sprinkled'][i_obj]),
+                           1,0)
                           for i_obj in range(len(agn_results)))
 
                 cursor.executemany('''INSERT INTO variables_and_transients VALUES
-                                      (?,?,?,?,?)''', values)
+                                      (?,?,?,?,?,?,?)''', values)
 
                 agn_simulator = AgnSimulator(agn_results['redshift'])
 
@@ -412,7 +411,7 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                quiescent_mag[i_obj][filter_arr[i_time]]+
                                dmag[filter_arr[i_time]][i_obj][i_time])
                               for i_obj in valid_agn[0])
-                    cursor.executemany('''INSERT INTO agn_lc VALUES
+                    cursor.executemany('''INSERT INTO light_curves VALUES
                                        (?,?,?)''', values)
 
                 conn.commit()
@@ -433,11 +432,12 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                            int(sn_results['galaxy_id'][i_obj]),
                            np.degrees(sn_results['ra'][i_obj]),
                            np.degrees(sn_results['dec'][i_obj]),
-                           int(sn_results['is_sprinkled'][i_obj]))
+                           int(sn_results['is_sprinkled'][i_obj]),
+                           0,1)
                           for i_obj in range(len(sn_results)))
 
                 cursor.executemany('''INSERT INTO variables_and_transients VALUES
-                                      (?,?,?,?,?)''', values)
+                                      (?,?,?,?,?,?,?)''', values)
                 conn.commit()
 
                 sn_mags = sn_simulator.calculate_sn_magnitudes(sn_results['sn_truth_params'],
@@ -464,13 +464,11 @@ def write_sprinkled_lc(out_file_name, total_obs_md,
                                sn_mags[i_obj][i_time])
                               for i_obj in valid_obj[0])
 
-                    cursor.executemany('''INSERT INTO sne_lc VALUES (?,?,?)''', values)
+                    cursor.executemany('''INSERT INTO light_curves VALUES (?,?,?)''', values)
                     conn.commit()
                     n_floats += len(valid_obj[0])
 
-        cursor.execute('CREATE INDEX unq_obs_agn ON agn_lc (uniqueId, obshistid)')
-        conn.commit()
-        cursor.execute('CREATE INDEX unq_obs_sne ON sne_lc (uniqueId, obshistid)')
+        cursor.execute('CREATE INDEX unq_obs ON light_curves (uniqueId, obshistid)')
         conn.commit()
 
     print('n_floats %d' % n_floats)
