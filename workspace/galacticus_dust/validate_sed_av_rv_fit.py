@@ -109,7 +109,7 @@ def calc_mags(disk_sed_list, disk_magnorm_list,
 
         # load the disk SED
         disk_sed = Sed()
-        disk_sed.readSED_flambda(os.path.join(sed_dir, disk_sed_list[ii]))
+        disk_sed.readSED_flambda(disk_sed_list[ii])
 
         # normalize the disk SED
         fnorm = getImsimFluxNorm(disk_sed, disk_magnorm_list[ii])
@@ -119,7 +119,7 @@ def calc_mags(disk_sed_list, disk_magnorm_list,
 
         # load the bluge SED
         bulge_sed = Sed()
-        bulge_sed.readSED_flambda(os.path.join(sed_dir, bulge_sed_list[ii]))
+        bulge_sed.readSED_flambda(bulge_sed_list[ii])
 
         # normalize the bulge SED
         fnorm = getImsimFluxNorm(bulge_sed, bulge_magnorm_list[ii])
@@ -196,9 +196,9 @@ if __name__ == "__main__":
     p_list = []
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
-    fit_mags = np.zeros((6, len(disk_av)), dtype=float)
-    d_gal = len(disk_av)//63
-    for i_start in range(0, len(disk_av), d_gal):
+    fit_mags = np.zeros((6, len(disk_sed_name)), dtype=float)
+    d_gal = len(disk_sed_name)//63
+    for i_start in range(0, len(disk_sed_name), d_gal):
         i_end = i_start + d_gal
         selection = slice(i_start, i_end)
         p = multiprocessing.Process(target=calc_mags,
@@ -215,7 +215,7 @@ if __name__ == "__main__":
     for p in p_list:
         p.join()
 
-    for i_start in range(0, len(disk_av), d_gal):
+    for i_start in range(0, len(disk_sed_name), d_gal):
         i_end = i_start+d_gal
         fit_mags[:,i_start:i_end] = out_dict[i_start]
 
@@ -225,10 +225,6 @@ if __name__ == "__main__":
         out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
         out_file.create_dataset('disk_sed', data=[s.encode('utf-8') for s in disk_sed_name])
         out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
-        out_file.create_dataset('disk_av', data=disk_av)
-        out_file.create_dataset('disk_rv', data=disk_rv)
-        out_file.create_dataset('bulge_av', data=bulge_av)
-        out_file.create_dataset('bulge_rv', data=bulge_rv)
         for i_bp, bp in enumerate('ugrizy'):
             out_file.create_dataset('fit_%s' % bp, data=fit_mags[i_bp])
             out_file.create_dataset('cosmo_%s' % bp,
