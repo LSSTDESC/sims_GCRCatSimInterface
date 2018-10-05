@@ -236,7 +236,7 @@ if __name__ == "__main__":
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
     fit_mags = np.zeros((6, len(disk_sed_name)), dtype=float)
-    d_gal = len(disk_sed_name)//63
+    d_gal = len(disk_sed_name)//11
     for i_start in range(0, len(disk_sed_name), d_gal):
         i_end = i_start + d_gal
         selection = slice(i_start, i_end)
