@@ -44,7 +44,7 @@ for fname in list_of_sed_files:
         wav = np.copy(data['wav'])
         wav_ang=10.0*wav
         for aa in a_grid:
-            dust = extinction_curve(wav, aa)
+            dust = extinction_curve(wav_ang, aa)
             a_grid_dict[aa] = dust
 
 print('starting fit')
