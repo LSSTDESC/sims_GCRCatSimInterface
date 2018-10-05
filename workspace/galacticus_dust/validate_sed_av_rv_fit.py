@@ -16,6 +16,18 @@ from lsst.utils import getPackageDir
 
 import argparse
 
+def _parallel_do_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
+                         out_dict, tag):
+
+    (sed_names,
+     mag_norms) = sed_from_galacticus_mags(mag_array,
+                                        redshift,
+                                        H0, Om0,
+                                        wav_min, wav_width)
+
+    out_dict[tag] = (sed_names, mag_norms)
+
+
 
 def do_fitting(cat, component, healpix, lim):
     """
@@ -60,11 +72,38 @@ def do_fitting(cat, component, healpix, lim):
     with np.errstate(divide='ignore', invalid='ignore'):
         mag_array = np.array([-2.5*np.log10(qties[ff][:lim]) for ff in filter_names])
 
+    redshift = qties['redshift_true'][:lim]
+
     (sed_names,
-     mag_norms) = sed_from_galacticus_mags(mag_array,
-                                        qties['redshift_true'][:lim],
-                                        H0, Om0,
-                                        wav_min, wav_width)
+     mag_norms) = sed_from_galacticus_mags(mag_array[:,:2],
+                                           redshift[:2],
+                                           H0, Om0,
+                                           wav_min, wav_width)
+
+    n_gal = len(redshift)
+    d_gal = n_gal//23
+
+    p_list= []
+    mgr = multiprocessing.Manager()
+    out_dict = mgr.dict()
+    for i_start in range(0,n_gal,d_gal):
+        s = slice(i_start,i_start+d_gal)
+        p = multiprocessing.Process(target=_parallel_do_fitting,
+                                    args=(mag_array[:,s], redshift[s],
+                                          H0, Om0, wav_min, wav_width,
+                                          out_dict, i_start))
+        p.start()
+        p_list.append(p)
+
+    for p in p_list:
+        p.join()
+
+    sed_names = np.empty(len(redshift), dtype=(str,200))
+    mag_norms = np.zeros(len(redshift), dtype=float)
+    for i_start in out_dict.keys():
+        s = slice(i_start,i_start+d_gal)
+        sed_names[s] = out_dict[i_start][0]
+        mag_norms[s] = out_dict[i_start][1]
 
     return (qties['redshift_true'][:lim], qties['galaxy_id'][:lim],
             sed_names, mag_norms)
