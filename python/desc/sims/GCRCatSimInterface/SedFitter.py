@@ -1,6 +1,7 @@
 import os
 import re
 import numpy as np
+import multiprocessing
 import time
 import GCRCatalogs
 import scipy.spatial as scipy_spatial
@@ -83,6 +84,31 @@ def sed_filter_names_from_catalog(catalog):
                      'wav_min': bulge_wav_min,
                      'wav_width': bulge_wav_width}}
 
+def _parallel_sed_mags(sed_file_name_list, bandpass_dict, out_dict, tag):
+    imsim_bp = Bandpass()
+    imsim_bp.imsimBandpass()
+    sed_names = np.empty(len(sed_file_name_list), dtype=(str, 200))
+    sed_mag_list = np.zeros((len(sed_file_name_list), len(bandpass_dict)), dtype=float)
+    sed_mag_norm = np.zeros(len(sed_file_name_list), dtype=float)
+    t_start = time.time()
+
+    assert len(bandpass_dict)==30
+
+    for i_sed, sed_file_name in enumerate(sed_file_name_list):
+        if i_sed>0 and i_sed%100==0:
+            d = (time.time()-t_start)/3600.0
+            p = len(sed_file_name_list)*d/i_sed
+            print('run %d of %d; %.2e hrs left' %
+            (i_sed, len(sed_file_name_list), p-d))
+
+        spec = Sed()
+        spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
+        sed_names[i_sed] = os.path.join(_galaxy_sed_dir, sed_file_name)
+        sed_mag_list[i_sed] = bandpass_dict.magListForSed(spec)
+        sed_mag_norm[i_sed] = spec.calcMag(imsim_bp)
+
+    out_dict[tag] = (sed_names, sed_mag_list, sed_mag_norm)
+
 
 def _create_sed_library_mags(wav_min, wav_width):
     """
@@ -119,29 +145,41 @@ def _create_sed_library_mags(wav_min, wav_width):
 
     bandpass_dict = BandpassDict(bp_list, bp_name_list)
 
-    sed_names = list()
-    sed_mag_list = list()
-    sed_mag_norm = list()
-
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
     print('creating arrays')
-    t_start = time.time()
-    list_of_sed_names = os.listdir(_galaxy_sed_dir)
-    for i_sed, sed_file_name in enumerate(list_of_sed_names):
-        if i_sed>0 and i_sed%100==0:
-            duration = (time.time()-t_start)/3600.0
-            predicted = len(list_of_sed_names)*duration/i_sed
-            print('built %d of %d; %.2e hrs left' %
-            (i_sed,len(list_of_sed_names),predicted-duration))
-        spec = Sed()
-        spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
-        sed_names.append(defaultSpecMap[sed_file_name])
-        sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
-        sed_mag_norm.append(spec.calcMag(imsim_bp))
 
-    return np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm)
+    list_of_sed_names = os.listdir(_galaxy_sed_dir)
+    sed_names_out = np.empty(len(list_of_sed_names), dtype=(str,200))
+    sed_mag_list_out = np.zeros((len(list_of_sed_names),
+                             len(bandpass_dict)), dtype=float)
+    sed_mag_norm_out = np.zeros(len(list_of_sed_names), dtype=float)
+
+    t_start = time.time()
+    d_sed = len(list_of_sed_names)//63
+    p_list = []
+    mgr = multiprocessing.Manager()
+    out_dict = mgr.dict()
+    for i_start in range(0, len(list_of_sed_names), d_sed):
+        s = slice(i_start,i_start+d_sed)
+        p = multiprocessing.Process(target=_parallel_sed_mags,
+                                    args=(list_of_sed_names[s],
+                                          bandpass_dict,
+                                          out_dict, i_start))
+        p.start()
+        p_list.append(p)
+
+    for p in p_list:
+        p.join()
+
+    for i_start in out_dict.keys():
+        s=slice(i_start,i_start+d_sed)
+        sed_names_out[s] = out_dict[i_start][0]
+        sed_mag_list_out[s] = out_dict[i_start][1]
+        sed_mag_norm_out[s] = out_dict[i_start][2]
+
+    return sed_names_out, sed_mag_list_out, sed_mag_norm_out
 
 
 def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
