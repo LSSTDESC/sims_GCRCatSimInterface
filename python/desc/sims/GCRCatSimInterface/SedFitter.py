@@ -9,7 +9,7 @@ from lsst.sims.photUtils import BandpassDict, Bandpass, Sed, CosmologyObject
 
 __all__ = ["disk_re", "bulge_re", "sed_filter_names_from_catalog", "sed_from_galacticus_mags"]
 
-_galaxy_sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
+_galaxy_sed_dir = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_seds')
 
 disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
 bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge_no_host_extinction$')
