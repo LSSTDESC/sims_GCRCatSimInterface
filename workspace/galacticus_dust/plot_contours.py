@@ -7,11 +7,11 @@ import numpy as np
 import os
 import h5py
 
-data_name = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid',
-                         'fit_mags_vs_cosmo_mags_10451.h5')
+data_name = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_fit',
+                         'galaxy_fitted_a0.01.h5')
 assert os.path.isfile(data_name)
 
-out_dir = os.path.join(os.environ['SCRATCH'], 'sed_dust_grid')
+out_dir = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_fit')
 
 
 with h5py.File(data_name, 'r') as data:
