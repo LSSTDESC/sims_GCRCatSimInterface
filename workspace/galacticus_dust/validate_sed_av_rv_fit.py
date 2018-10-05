@@ -61,20 +61,18 @@ def do_fitting(cat, component, healpix, lim):
         mag_array = np.array([-2.5*np.log10(qties[ff][:lim]) for ff in filter_names])
 
     (sed_names,
-     mag_norms,
-     av_arr,
-     rv_arr) = sed_from_galacticus_mags(mag_array,
+     mag_norms) = sed_from_galacticus_mags(mag_array,
                                         qties['redshift_true'][:lim],
                                         H0, Om0,
                                         wav_min, wav_width)
 
     return (qties['redshift_true'][:lim], qties['galaxy_id'][:lim],
-            sed_names, mag_norms, av_arr, rv_arr)
+            sed_names, mag_norms)
 
 
 
-def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
-              bulge_sed_list, bulge_magnorm_list, bulge_av_list, bulge_rv_list,
+def calc_mags(disk_sed_list, disk_magnorm_list,
+              bulge_sed_list, bulge_magnorm_list,
               out_dict, out_tag):
     """
     Calculate the magnitudes of galaxies as fit by CatSim.
@@ -86,17 +84,9 @@ def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
 
     disk_magnorm_list -- array of magNorm for disks
 
-    disk_av_list -- array of Av for disks
-
-    disk_rv_list -- array of Rv for disks
-
     bulge_sed_list -- array of SED names for bulges
 
     bulge_magnorm_list -- array of magNorm for bulges
-
-    bulge_av_list -- array of Av for bulges
-
-    bulge_rv_list -- array of Rv for Bulges
 
     out_dict -- a multiprocessing.Manager().dict() to store the results
     (results will be a numpy array of magnitudes of shape (6, N_galaxies))
@@ -125,11 +115,6 @@ def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
         fnorm = getImsimFluxNorm(disk_sed, disk_magnorm_list[ii])
         disk_sed.multiplyFluxNorm(fnorm)
 
-        # apply dust to the diskSED
-        if ax is None or not np.array_equal(disk_sed.wavelen, ccm_w):
-            ax, bx = disk_sed.setupCCMab()
-            ccm_w = np.copy(disk_sed.wavelen)
-        disk_sed.addCCMDust(ax, bx, A_v=disk_av_list[ii], R_v=disk_rv_list[ii])
         disk_fluxes = bp_dict.fluxListForSed(disk_sed)
 
         # load the bluge SED
@@ -140,11 +125,6 @@ def calc_mags(disk_sed_list, disk_magnorm_list, disk_av_list, disk_rv_list,
         fnorm = getImsimFluxNorm(bulge_sed, bulge_magnorm_list[ii])
         bulge_sed.multiplyFluxNorm(fnorm)
 
-        # apply dust to the bulge SED
-        if ax is None or not np.array_equal(bulge_sed.wavelen, ccm_w):
-            ax, bx = bulge_sed.setupCCMab()
-            ccm_w = np.copy(bulge_sed.wavelen)
-        bulge_sed.addCCMDust(ax, bx, A_v=bulge_av_list[ii], R_v=bulge_rv_list[ii])
         bulge_fluxes = bp_dict.fluxListForSed(bulge_sed)
 
         # combine disk and bulge SED to get total galaxy magnitudes
@@ -163,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument('--out_dir', type=str, default=None,
                         help='The directory in which to write the output file')
     parser.add_argument('--lim', type=int, default=180000000,
-                        help='The number of galaxies to fit (if you are just testing))
+                        help='The number of galaxies to fit (if you are just testing)')
     parser.add_argument('--out_name', type=str, default=None,
                         help='The name of the output file')
     args = parser.parse_args()
@@ -181,13 +161,15 @@ if __name__ == "__main__":
 
     ########## actually fit SED, magNorm, and dust parameters to disks and bulges
 
-    (disk_redshift, disk_id, disk_sed_name, disk_mag,
-     disk_av, disk_rv) = do_fitting(cat, 'disk', args.healpix, args.lim)
+    (disk_redshift, disk_id,
+     disk_sed_name, disk_mag) = do_fitting(cat, 'disk',
+                                           args.healpix, args.lim)
 
     print("fit disks")
 
-    (bulge_redshift, bulge_id, bulge_sed_name, bulge_mag,
-     bulge_av, bulge_rv) = do_fitting(cat, 'bulge', args.healpix, args.lim)
+    (bulge_redshift, bulge_id,
+     bulge_sed_name, bulge_mag) = do_fitting(cat, 'bulge',
+                                             args.healpix, args.lim)
 
     print("fit bulges")
 
@@ -215,19 +197,15 @@ if __name__ == "__main__":
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
     fit_mags = np.zeros((6, len(disk_av)), dtype=float)
-    d_gal = len(disk_av)//23
+    d_gal = len(disk_av)//63
     for i_start in range(0, len(disk_av), d_gal):
         i_end = i_start + d_gal
         selection = slice(i_start, i_end)
         p = multiprocessing.Process(target=calc_mags,
                                     args=(disk_sed_name[selection],
                                           disk_mag[selection],
-                                          disk_av[selection],
-                                          disk_rv[selection],
                                           bulge_sed_name[selection],
                                           bulge_mag[selection],
-                                          bulge_av[selection],
-                                          bulge_rv[selection],
                                           out_dict,
                                           i_start))
 

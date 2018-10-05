@@ -1,6 +1,7 @@
 import os
 import re
 import numpy as np
+import time
 import GCRCatalogs
 import scipy.spatial as scipy_spatial
 from lsst.utils import getPackageDir
@@ -125,7 +126,15 @@ def _create_sed_library_mags(wav_min, wav_width):
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
-    for sed_file_name in os.listdir(_galaxy_sed_dir):
+    print('creating arrays')
+    t_start = time.time()
+    list_of_sed_names = os.listdir(_galaxy_sed_dir)
+    for i_sed, sed_file_name in enumerate(list_of_sed_names):
+        if i_sed>0 and i_sed%100==0:
+            duration = (time.time()-t_start)/3600.0
+            predicted = len(list_of_sed_names)*duration/i_sed
+            print('built %d of %d; %.2e hrs left' %
+            (i_sed,len(list_of_sed_names),predicted-duration))
         spec = Sed()
         spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
         sed_names.append(defaultSpecMap[sed_file_name])
@@ -180,7 +189,9 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         sed_from_galacticus_mags._sed_names = sed_names
         sed_from_galacticus_mags._mag_norm = sed_mag_norm # N_sed
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
+        print('making tree')
         sed_from_galacticus_mags._color_tree = scipy_spatial.cKDTree(sed_colors)
+        print('made tree')
         sed_from_galacticus_mags._wav_min = wav_min
         sed_from_galacticus_mags._wav_width = wav_width
 
