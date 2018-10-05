@@ -8,6 +8,9 @@ global_logx0 = 3.75
 global_Acut = 0.98
 
 
+__all__ = ["extinction_curve"]
+
+
 def extinction_curve(wavelength, A, logx0=global_logx0,
             C=0.9, alpha=0.0002, Acut=global_Acut, bump_height=None):
     """ Fraction of the restframe flux absorbed by dust as a function of wavelength.
