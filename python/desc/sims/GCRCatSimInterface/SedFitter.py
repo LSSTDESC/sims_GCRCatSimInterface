@@ -13,8 +13,8 @@ __all__ = ["disk_re", "bulge_re", "sed_filter_names_from_catalog", "sed_from_gal
 
 _galaxy_sed_dir = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_seds')
 
-disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
-bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge_no_host_extinction$')
+disk_re = re.compile(r'sed_(\d+)_(\d+)_disk$')
+bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge$')
 
 def sed_filter_names_from_catalog(catalog):
     """
