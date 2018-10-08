@@ -8,7 +8,8 @@ import os
 import h5py
 
 data_name = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_fit',
-                         'galaxy_fitted_a0.01.h5')
+                         'galaxy_angstrom_a0.01_fit.h5')
+
 assert os.path.isfile(data_name)
 
 out_dir = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_fit')
