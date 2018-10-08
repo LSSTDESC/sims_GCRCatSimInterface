@@ -268,3 +268,5 @@ if __name__ == "__main__":
             out_file.create_dataset('fit_%s' % bp, data=fit_mags[i_bp])
             out_file.create_dataset('cosmo_%s' % bp,
                                     data=control_qties['Mag_true_%s_lsst_z0' % bp])
+
+    pritn('\n\nall done\n')
