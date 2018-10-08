@@ -11,6 +11,9 @@ from lsst.sims.photUtils import BandpassDict, Bandpass, Sed, CosmologyObject
 
 __all__ = ["disk_re", "bulge_re", "sed_filter_names_from_catalog", "sed_from_galacticus_mags"]
 
+disk_re = re.compile(r'sed_(\d+)_(\d+)_disk$')
+bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge$')
+
 _galaxy_sed_dir = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_seds')
 
 def sed_filter_names_from_catalog(catalog):
