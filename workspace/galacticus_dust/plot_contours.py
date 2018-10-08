@@ -60,7 +60,7 @@ with h5py.File(data_name, 'r') as data:
             plt.ylim(-0.2, 0.2)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_color_color_comparison_9556.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_lsst_bands_color_color_comparison_9556.png'))
     plt.close()
 
     plt.figure(figsize=(20,20))
@@ -93,7 +93,7 @@ with h5py.File(data_name, 'r') as data:
         plt.ylim(-0.2, 0.2)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_delta_color_color_comparison_9556.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_lsst_bands_delta_color_color_comparison_9556.png'))
     plt.close()
 
     plt.figure(figsize=(20,20))
@@ -117,7 +117,7 @@ with h5py.File(data_name, 'r') as data:
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_color_1d_dist_9556.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_lsst_bands_color_1d_dist_9556.png'))
     plt.close()
 
     plt.figure(figsize=(20,20))
@@ -146,5 +146,5 @@ with h5py.File(data_name, 'r') as data:
         elif i_fig==5:
             plt.xlim(-0.15,0.15)
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_delta_color_1d_dist_9556.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_lsst_bands_delta_color_1d_dist_9556.png'))
     plt.close()
