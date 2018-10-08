@@ -13,9 +13,6 @@ __all__ = ["disk_re", "bulge_re", "sed_filter_names_from_catalog", "sed_from_gal
 
 _galaxy_sed_dir = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_seds')
 
-disk_re = re.compile(r'sed_(\d+)_(\d+)_disk$')
-bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge$')
-
 def sed_filter_names_from_catalog(catalog):
     """
     Takes an already-loaded GCR catalog and returns the names, wavelengths,
@@ -38,51 +35,18 @@ def sed_filter_names_from_catalog(catalog):
     All outputs will be returned in order of increasing wav_min
     """
 
-    all_quantities = catalog.list_all_quantities()
-
-    bulge_names = []
-    bulge_wav_min = []
-    bulge_wav_width = []
-
     disk_names = []
-    disk_wav_min = []
-    disk_wav_width = []
-
-    for qty_name in all_quantities:
-        disk_match = disk_re.match(qty_name)
-        if disk_match is not None:
-            disk_names.append(qty_name)
-            disk_wav_min.append(0.1*float(disk_match[1]))  # 0.1 converts to nm
-            disk_wav_width.append(0.1*float(disk_match[2]))
-
-        bulge_match = bulge_re.match(qty_name)
-        if bulge_match is not None:
-            bulge_names.append(qty_name)
-            bulge_wav_min.append(0.1*float(bulge_match[1]))
-            bulge_wav_width.append(0.1*float(bulge_match[2]))
-
-    disk_wav_min = np.array(disk_wav_min)
-    disk_wav_width = np.array(disk_wav_width)
-    disk_names = np.array(disk_names)
-    sorted_dex = np.argsort(disk_wav_min)
-    disk_wav_width = disk_wav_width[sorted_dex]
-    disk_names = disk_names[sorted_dex]
-    disk_wav_min = disk_wav_min[sorted_dex]
-
-    bulge_wav_min = np.array(bulge_wav_min)
-    bulge_wav_width = np.array(bulge_wav_width)
-    bulge_names = np.array(bulge_names)
-    sorted_dex = np.argsort(bulge_wav_min)
-    bulge_wav_width = bulge_wav_width[sorted_dex]
-    bulge_names = bulge_names[sorted_dex]
-    bulge_wav_min = bulge_wav_min[sorted_dex]
+    bulge_names = []
+    for bp in 'ugrizy':
+        disk_names.append('LSST_filters/diskLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
+        bulge_names.append('LSST_filters/bulgeLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
 
     return {'disk':{'filter_name': disk_names,
-                    'wav_min': disk_wav_min,
-                    'wav_width': disk_wav_width},
+                    'wav_min': None,
+                    'wav_width': None},
             'bulge':{'filter_name': bulge_names,
-                     'wav_min': bulge_wav_min,
-                     'wav_width': bulge_wav_width}}
+                     'wav_min': None,
+                     'wav_width': None}}
 
 def _parallel_sed_mags(sed_file_name_list, bandpass_dict, out_dict, tag):
     imsim_bp = Bandpass()
@@ -132,18 +96,8 @@ def _create_sed_library_mags(wav_min, wav_width):
     sed_mag_norm is 1d float array, with length = number of SED files in the library
     """
 
-    wav_max = max((wav0+width
-                  for wav0, width in zip(wav_min, wav_width)))
-    wav_grid = np.arange(wav_min.min(), wav_max, 0.1)
-
-    bp_name_list = list()
-    bp_list = list()
-    for wav0, width in zip(wav_min, wav_width):
-        sb_grid = ((wav_grid >= wav0) & (wav_grid <= (wav0+width))).astype(float)
-        bp_list.append(Bandpass(wavelen=wav_grid, sb=sb_grid))
-        bp_name_list.append('%d_%d' % (wav0, width))
-
-    bandpass_dict = BandpassDict(bp_list, bp_name_list)
+    (total_bp_dict,
+     bandpass_dict) = BandpassDict.loadBandpassesFromFiles()
 
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
@@ -212,11 +166,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     a numpy array of SED names and a numpy array of magNorms.
     """
 
-    if (not hasattr(sed_from_galacticus_mags, '_color_tree') or
-        not np.allclose(wav_min, sed_from_galacticus_mags._wav_min,
-                        atol=1.0e-10, rtol=0.0) or
-        not np.allclose(wav_width, sed_from_galacticus_mags._wav_width,
-                        atol=1.0e-10, rtol=0.0)):
+    if not hasattr(sed_from_galacticus_mags, '_color_tree'):
 
         (sed_names,
          sed_mag_list,
