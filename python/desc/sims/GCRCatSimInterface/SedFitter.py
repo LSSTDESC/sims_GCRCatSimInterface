@@ -59,7 +59,7 @@ def _parallel_sed_mags(sed_file_name_list, bandpass_dict, out_dict, tag):
     sed_mag_norm = np.zeros(len(sed_file_name_list), dtype=float)
     t_start = time.time()
 
-    assert len(bandpass_dict)==30
+    #assert len(bandpass_dict)==30
 
     for i_sed, sed_file_name in enumerate(sed_file_name_list):
         if i_sed>0 and i_sed%100==0:
