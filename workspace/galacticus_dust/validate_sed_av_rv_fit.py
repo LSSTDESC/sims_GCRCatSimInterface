@@ -269,4 +269,4 @@ if __name__ == "__main__":
             out_file.create_dataset('cosmo_%s' % bp,
                                     data=control_qties['Mag_true_%s_lsst_z0' % bp])
 
-    pritn('\n\nall done\n')
+    print('\n\nall done\n')

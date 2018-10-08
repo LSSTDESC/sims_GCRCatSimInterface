@@ -157,7 +157,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     sed_mag_norm_out = np.zeros(len(list_of_sed_names), dtype=float)
 
     t_start = time.time()
-    d_sed = len(list_of_sed_names)//63
+    d_sed = len(list_of_sed_names)//23
     p_list = []
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
