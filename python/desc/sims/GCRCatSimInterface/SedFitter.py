@@ -42,7 +42,7 @@ def sed_filter_names_from_catalog(catalog):
     bulge_names = []
     for bp in 'ugrizy':
         disk_names.append('LSST_filters/diskLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
-        bulge_names.append('LSST_filters/bulgeLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
+        bulge_names.append('LSST_filters/spheroidLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
 
     return {'disk':{'filter_name': disk_names,
                     'wav_min': None,
