@@ -7,13 +7,18 @@ import numpy as np
 import os
 import h5py
 
-data_name = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_fit',
-                         'galaxy_angstrom_a0.01_fit.h5')
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--in_name', type=str, default=None)
+parser.add_argument('--out_dir', type=str, default=None)
+args = parser.parse_args()
+
+
+data_name = args.in_name
 assert os.path.isfile(data_name)
 
-out_dir = os.path.join(os.environ['SCRATCH'], 'extincted_galaxy_fit')
-
+out_dir = args.out_dir
 
 with h5py.File(data_name, 'r') as data:
     plt.figure(figsize=(20,20))
@@ -55,7 +60,7 @@ with h5py.File(data_name, 'r') as data:
             plt.ylim(-0.2, 0.2)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_color_color_comparison_10451.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_color_color_comparison_9556.png'))
     plt.close()
 
     plt.figure(figsize=(20,20))
@@ -88,7 +93,7 @@ with h5py.File(data_name, 'r') as data:
         plt.ylim(-0.2, 0.2)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_delta_color_color_comparison_10451.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_delta_color_color_comparison_9556.png'))
     plt.close()
 
     plt.figure(figsize=(20,20))
@@ -112,7 +117,7 @@ with h5py.File(data_name, 'r') as data:
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_color_1d_dist_10451.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_color_1d_dist_9556.png'))
     plt.close()
 
     plt.figure(figsize=(20,20))
@@ -141,5 +146,5 @@ with h5py.File(data_name, 'r') as data:
         elif i_fig==5:
             plt.xlim(-0.15,0.15)
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'galacticus_dust_delta_color_1d_dist_10451.png'))
+    plt.savefig(os.path.join(out_dir, 'galacticus_dust_delta_color_1d_dist_9556.png'))
     plt.close()
