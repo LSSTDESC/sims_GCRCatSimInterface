@@ -110,8 +110,9 @@ def do_fitting(cat, component, healpix, lim):
 
 
 
-def calc_mags(disk_sed_list, disk_magnorm_list,
-              bulge_sed_list, bulge_magnorm_list,
+def calc_mags(disk_sed_list, disk_magnorm_list, disk_redshift_list,
+              bulge_sed_list, bulge_magnorm_list, bulge_redshift_list,
+              observer_frame,
               out_dict, out_tag):
     """
     Calculate the magnitudes of galaxies as fit by CatSim.
@@ -154,6 +155,9 @@ def calc_mags(disk_sed_list, disk_magnorm_list,
         fnorm = getImsimFluxNorm(disk_sed, disk_magnorm_list[ii])
         disk_sed.multiplyFluxNorm(fnorm)
 
+        if observer_frame:
+            disk_sed.redshiftSED(disk_redshift_list[ii], dimming=True)
+
         disk_fluxes = bp_dict.fluxListForSed(disk_sed)
 
         # load the bluge SED
@@ -163,6 +167,9 @@ def calc_mags(disk_sed_list, disk_magnorm_list,
         # normalize the bulge SED
         fnorm = getImsimFluxNorm(bulge_sed, bulge_magnorm_list[ii])
         bulge_sed.multiplyFluxNorm(fnorm)
+
+        if observer_frame:
+            bulge_sed.redshiftSED(bulge_redshift_list[ii], dimming=True)
 
         bulge_fluxes = bp_dict.fluxListForSed(bulge_sed)
 
@@ -185,6 +192,7 @@ if __name__ == "__main__":
                         help='The number of galaxies to fit (if you are just testing)')
     parser.add_argument('--out_name', type=str, default=None,
                         help='The name of the output file')
+    parser.add_argument('--observer', default=False, action='store_true')
     args = parser.parse_args()
     assert args.healpix is not None
     assert args.out_dir is not None
@@ -217,9 +225,10 @@ if __name__ == "__main__":
 
     ############ get true values of magnitudes from extragalactic catalog
 
-    q_list = ['galaxy_id']
+    q_list = ['galaxy_id', 'redshift_true']
     for bp in 'ugrizy':
         q_list.append('Mag_true_%s_lsst_z0' % bp)
+        q_list.append('mag_true_%s_lsst' % bp)
 
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
@@ -240,11 +249,16 @@ if __name__ == "__main__":
     for i_start in range(0, len(disk_sed_name), d_gal):
         i_end = i_start + d_gal
         selection = slice(i_start, i_end)
+        np.testing.assert_array_equal(disk_redshift[selection],
+                                      bulge_redshfit[selection])
         p = multiprocessing.Process(target=calc_mags,
                                     args=(disk_sed_name[selection],
                                           disk_mag[selection],
+                                          disk_redshift[selection],
                                           bulge_sed_name[selection],
                                           bulge_mag[selection],
+                                          bulge_redsfhit[selection],
+                                          args.observer,
                                           out_dict,
                                           i_start))
 
@@ -266,7 +280,14 @@ if __name__ == "__main__":
         out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
         for i_bp, bp in enumerate('ugrizy'):
             out_file.create_dataset('fit_%s' % bp, data=fit_mags[i_bp])
-            out_file.create_dataset('cosmo_%s' % bp,
-                                    data=control_qties['Mag_true_%s_lsst_z0' % bp])
+            if not args.observer:
+                out_file.create_dataset('cosmo_%s' % bp,
+                                        data=control_qties['Mag_true_%s_lsst_z0' % bp])
+            else:
+                out_file.create_dataset('cosmo_%s' % bp,
+                                        data=control_qties['mag_true_%s_lsst' % bp])
+
+
+
 
     print('\n\nall done\n')
