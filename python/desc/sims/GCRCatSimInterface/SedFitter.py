@@ -346,7 +346,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         spec.addCCMDust(ax, bx, A_v=av_arr[i_obj], R_v=rv_arr[i_obj])
         spec.redshiftSED(redshift[i_obj], dimming=True)
         lsst_mags = lsst_bp_dict.magListForSed(spec)
-        d_mag = lsst_mags - obs_lsst_mags[:,i_obj]
+        d_mag = obs_lsst_mags[:,i_obj] - lsst_mags
         output_mag_norm[:,i_obj] += d_mag
 
     return (output_names, output_mag_norm, rv_arr, av_arr)
