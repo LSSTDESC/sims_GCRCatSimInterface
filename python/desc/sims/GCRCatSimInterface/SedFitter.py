@@ -331,7 +331,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     base_norm = sed_from_galacticus_mags._mag_norm[sed_idx]
     for ii in range(6):
         output_mag_norm[ii,:] = base_norm
-        d_mag = sed_from_galacticus_mags._lsst_mags[:,ii]-obs_lsst_mags[ii,:]
+        d_mag = sed_from_galacticus_mags._lsst_mags[sed_idx,ii]-obs_lsst_mags[ii,:]
         output_mag_norm[ii,:] += d_mag
 
     return (output_names, output_mag_norm,
