@@ -226,8 +226,8 @@ def _create_sed_library_mags(wav_min, wav_width):
         sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
         sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
         sed_mag_list[i_stored:i_stored+n_out][:] = out_dict[kk][2]
-        av_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
-        rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][5]
+        av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
+        rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
         i_stored += n_out
         if i_kk>0 and i_kk%10==0:
             d = (time.time()-t_start)/3600.0
