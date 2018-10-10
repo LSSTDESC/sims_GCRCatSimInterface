@@ -171,12 +171,6 @@ def _create_sed_library_mags(wav_min, wav_width):
 
     bandpass_dict = BandpassDict(bp_list, bp_name_list)
 
-    sed_names = list()
-    sed_mag_list = list()
-    sed_mag_norm = list()
-    av_out_list = list()
-    rv_out_list = list()
-
     list_of_files = os.listdir(_galaxy_sed_dir)
     n_tot = len(list_of_files)*len(av_grid)*len(rv_grid)
     t_start = time.time()
