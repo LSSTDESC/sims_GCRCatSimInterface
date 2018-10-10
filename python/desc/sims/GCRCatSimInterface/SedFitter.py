@@ -90,6 +90,9 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
 
     n_obj = len(av_grid)*len(rv_grid)
 
+    (tot_bp_dict,
+     lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
+
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
@@ -112,6 +115,7 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
         av_out_list = np.zeros(n_obj, dtype=float)
         sed_mag_norm = mag_norm*np.ones(n_obj, dtype=float)
         sed_mag_list = []
+        lsst_mag_list = []
 
         i_obj = 0
         for av in av_grid:
@@ -121,10 +125,11 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                 av_out_list[i_obj] = av
                 rv_out_list[i_obj] = rv
                 sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
+                lsst_mag_list.append(tuple(lsst_bp_dict.magListForSed(spec)))
                 i_obj += 1
 
         out_dict[sed_file_name] = (sed_names, sed_mag_norm, sed_mag_list,
-                                   av_out_list, rv_out_list)
+                                   lsst_mag_list, av_out_list, rv_out_list)
 
 
 def _create_sed_library_mags(wav_min, wav_width):
@@ -149,6 +154,10 @@ def _create_sed_library_mags(wav_min, wav_width):
 
     sed_mag_norm is 1d float array, with length = number of SED file, dust parameter
     combinations in the library
+
+    sed_lsst_mags is a 2D numpy array giving the magnitude of the SEDs in
+    the LSST bands.  sed_lsst_mags[:,0] contains the u band magnitude of
+    every SED, etc.
 
     av_out_list is a 1d float array of Av
 
@@ -180,6 +189,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     sed_mag_norm = np.zeros(n_tot, dtype=float)
     av_out_list = np.zeros(n_tot, dtype=float)
     rv_out_list = np.zeros(n_tot, dtype=float)
+    sed_lsst_mags = np.zeros((n_tot, 6), dtype=float)
 
     print('\n\ncreating library')
     p_list = []
@@ -214,8 +224,9 @@ def _create_sed_library_mags(wav_min, wav_width):
         sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
         sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
         sed_mag_list[i_stored:i_stored+n_out][:] = out_dict[kk][2]
-        av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
-        rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
+        sed_lsst_mags[i_stored:i_stored+n_out][:] = out_dict[kk][3]
+        av_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
+        rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][5]
         i_stored += n_out
         if i_kk>0 and i_kk%10==0:
             d = (time.time()-t_start)/3600.0
@@ -226,12 +237,12 @@ def _create_sed_library_mags(wav_min, wav_width):
     print('%d' % (len(np.where(av_out_list<1.0e-10)[0])))
     assert len(np.where(av_out_list<1.0e-10)[0]) == len(list_of_files)*len(rv_grid)
 
-    return (sed_names, np.array(sed_mag_list), sed_mag_norm,
-            av_out_list, rv_out_list)
+    return (sed_names, sed_mag_list, sed_mag_norm,
+            sed_lsst_mags, av_out_list, rv_out_list)
 
 
 def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
-                             wav_min, wav_width):
+                             wav_min, wav_width, obs_lsst_mags):
     """
     Fit SEDs from sims_sed_library to Galacticus galaxies based on the
     magnitudes in tophat filters.
@@ -255,6 +266,9 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     wav_grid is a numpy array of the widths of the tophat filters
     (in nm)
 
+    ob_lsst_mags is a numpy array of observer frame LSST magnitudes.
+    obs_lsst_mags[0] will contain the u band magnitudes of every object.
+
     Returns
     -------
     a numpy array of SED names and a numpy array of magNorms.
@@ -269,6 +283,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         (sed_names,
          sed_mag_list,
          sed_mag_norm,
+         sed_lsst_mags,
          av_grid, rv_grid) = _create_sed_library_mags(wav_min, wav_width)
 
 
@@ -281,6 +296,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         sed_from_galacticus_mags._color_tree = scipy_spatial.cKDTree(sed_colors)
         sed_from_galacticus_mags._wav_min = wav_min
         sed_from_galacticus_mags._wav_width = wav_width
+        sed_from_galacticus_mags._lsst_mags = sed_lsst_mags
 
     if (not hasattr(sed_from_galacticus_mags, '_cosmo') or
         np.abs(sed_from_galacticus_mags._cosmo.H()-H0)>1.0e-6 or
@@ -310,7 +326,13 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(redshift=redshift)
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
     d_mag = (galacticus_mags_t - sed_from_galacticus_mags._sed_mags[sed_idx]).mean(axis=1)
-    output_mag_norm = sed_from_galacticus_mags._mag_norm[sed_idx] + d_mag + distance_modulus
+
+    output_mag_norm = np.zeros((6, len(output_names)), dtype=float)
+    base_norm = sed_from_galacticus_mags._mag_norm[sed_idx]
+    for ii in range(6):
+        output_mag_norm[ii,:] = base_norm
+        d_mag = sed_from_galacticus_mags._lsst_mags[:,ii]-obs_lsst_mags[ii,:]
+        output_mag_norm[ii,:] += d_mag
 
     return (output_names, output_mag_norm,
             sed_from_galacticus_mags._av_grid[sed_idx],
