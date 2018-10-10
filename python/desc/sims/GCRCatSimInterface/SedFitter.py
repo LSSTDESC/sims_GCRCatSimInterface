@@ -80,8 +80,8 @@ def sed_filter_names_from_catalog(catalog):
     disk_lsst_names = []
     bulge_lsst_names = []
     for bp in 'ugrizy':
-        disk_lsst_names.append('LSST_filters/diskLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
-        bulge_lsst_names.append('LSST_filters/spheroidLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
+        disk_lsst_names.append('LSST_filters/diskLuminositiesStellar:LSST_%s:observed:dustAtlas' % bp)
+        bulge_lsst_names.append('LSST_filters/spheroidLuminositiesStellar:LSST_%s:observed:dustAtlas' % bp)
 
     return {'disk':{'filter_name': disk_names,
                     'wav_min': disk_wav_min,
@@ -97,9 +97,6 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                             out_dict):
 
     n_obj = len(av_grid)*len(rv_grid)
-
-    (tot_bp_dict,
-     lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
 
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
@@ -123,7 +120,6 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
         av_out_list = np.zeros(n_obj, dtype=float)
         sed_mag_norm = mag_norm*np.ones(n_obj, dtype=float)
         sed_mag_list = []
-        lsst_mag_list = []
 
         i_obj = 0
         for av in av_grid:
@@ -133,11 +129,10 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                 av_out_list[i_obj] = av
                 rv_out_list[i_obj] = rv
                 sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
-                lsst_mag_list.append(tuple(lsst_bp_dict.magListForSed(spec)))
                 i_obj += 1
 
         out_dict[sed_file_name] = (sed_names, sed_mag_norm, sed_mag_list,
-                                   lsst_mag_list, av_out_list, rv_out_list)
+                                   av_out_list, rv_out_list)
 
 
 def _create_sed_library_mags(wav_min, wav_width):
@@ -197,7 +192,6 @@ def _create_sed_library_mags(wav_min, wav_width):
     sed_mag_norm = np.zeros(n_tot, dtype=float)
     av_out_list = np.zeros(n_tot, dtype=float)
     rv_out_list = np.zeros(n_tot, dtype=float)
-    sed_lsst_mags = np.zeros((n_tot, 6), dtype=float)
 
     print('\n\ncreating library')
     p_list = []
@@ -232,7 +226,6 @@ def _create_sed_library_mags(wav_min, wav_width):
         sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
         sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
         sed_mag_list[i_stored:i_stored+n_out][:] = out_dict[kk][2]
-        sed_lsst_mags[i_stored:i_stored+n_out][:] = out_dict[kk][3]
         av_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
         rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][5]
         i_stored += n_out
@@ -246,7 +239,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     assert len(np.where(av_out_list<1.0e-10)[0]) == len(list_of_files)*len(rv_grid)
 
     return (sed_names, sed_mag_list, sed_mag_norm,
-            sed_lsst_mags, av_out_list, rv_out_list)
+            av_out_list, rv_out_list)
 
 
 def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
@@ -291,7 +284,6 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         (sed_names,
          sed_mag_list,
          sed_mag_norm,
-         sed_lsst_mags,
          av_grid, rv_grid) = _create_sed_library_mags(wav_min, wav_width)
 
 
@@ -304,7 +296,6 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         sed_from_galacticus_mags._color_tree = scipy_spatial.cKDTree(sed_colors)
         sed_from_galacticus_mags._wav_min = wav_min
         sed_from_galacticus_mags._wav_width = wav_width
-        sed_from_galacticus_mags._lsst_mags = sed_lsst_mags
 
     if (not hasattr(sed_from_galacticus_mags, '_cosmo') or
         np.abs(sed_from_galacticus_mags._cosmo.H()-H0)>1.0e-6 or
@@ -335,13 +326,27 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
     d_mag = (galacticus_mags_t - sed_from_galacticus_mags._sed_mags[sed_idx]).mean(axis=1)
 
+    (tot_bp_dict,
+     lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
+
     output_mag_norm = np.zeros((6, len(output_names)), dtype=float)
     base_norm = sed_from_galacticus_mags._mag_norm[sed_idx]
-    for ii in range(6):
-        output_mag_norm[ii,:] = base_norm
-        d_mag = sed_from_galacticus_mags._lsst_mags[sed_idx,ii]-obs_lsst_mags[ii,:]
-        output_mag_norm[ii,:] += d_mag
+    ccm_w = None
+    av_arr = sed_from_galacticus_mags._av_grid[sed_idx]
+    rv_arr = sed_from_galacticus_mags._rv_grid[sed_idx]
+    for i_bp in range(6):
+        output_mag_norm[i_bp,:] = base_norm
 
-    return (output_names, output_mag_norm,
-            sed_from_galacticus_mags._av_grid[sed_idx],
-            sed_from_galacticus_mags._rv_grid[sed_idx])
+    for i_obj in range(len(output_names)):
+        spec = Sed()
+        spec.readSED_flambda(os.path.join(_galaxy_sed_dir, output_names[i_obj]))
+        if ccm_w is None or not np.array(equal(spec.wavelen, ccm_w)):
+            ccm_w = np.copy(spec.wavelen)
+            ax, bx = spec.setupCCMab()
+        spec.addCCMDust(ax, bx, A_v=av_arr[i_obj], R_v=rv_arr[i_obj])
+        spec.redshiftSED(redshift[i_obj], dimming=True)
+        lsst_mags = lsst_bp_dict.magListForSed(spec)
+        d_mag = lsst_mags - obs_lsst_mags[:,i_obj]
+        output_mag_norm[:,i_obj] += d_mag
+
+    return (output_names, output_mag_norm, rv_arr, av_arr)
