@@ -77,12 +77,20 @@ def sed_filter_names_from_catalog(catalog):
     bulge_names = bulge_names[sorted_dex]
     bulge_wav_min = bulge_wav_min[sorted_dex]
 
+    disk_lsst_names = []
+    bulge_lsst_names = []
+    for bp in 'ugrizy':
+        disk_lsst_names.append('LSST_filters/diskLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
+        bulge_lsst_names.append('LSST_filters/spheroidLuminositiesStellar:LSST_%s:rest:dustAtlas' % bp)
+
     return {'disk':{'filter_name': disk_names,
                     'wav_min': disk_wav_min,
-                    'wav_width': disk_wav_width},
+                    'wav_width': disk_wav_width,
+                    'lsst_fluxes': np.array(disk_lsst_names)},
             'bulge':{'filter_name': bulge_names,
                      'wav_min': bulge_wav_min,
-                     'wav_width': bulge_wav_width}}
+                     'wav_width': bulge_wav_width,
+                     'lsst_fluxes': np.array(bulge_lsst_names)}}
 
 def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                             av_grid, rv_grid, bandpass_dict,
