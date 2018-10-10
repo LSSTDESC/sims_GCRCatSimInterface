@@ -163,7 +163,7 @@ if __name__ == "__main__":
     parser.add_argument('--out_dir', type=str, default=None,
                         help='The directory in which to write the output file')
     parser.add_argument('--lim', type=int, default=180000000,
-                        help='The number of galaxies to fit (if you are just testing))
+                        help='The number of galaxies to fit (if you are just testing)')
     parser.add_argument('--out_name', type=str, default=None,
                         help='The name of the output file')
     args = parser.parse_args()
