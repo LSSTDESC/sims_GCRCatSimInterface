@@ -44,6 +44,7 @@ def do_fitting(cat, component, healpix, lim):
 
     filter_data = sed_filter_names_from_catalog(cat)
     filter_names = filter_data[component]['filter_name']
+    lsst_filter_names = filter_data[component]['lsst_fluxes']
     wav_min = filter_data[component]['wav_min']
     wav_width = filter_data[component]['wav_width']
 
@@ -52,13 +53,15 @@ def do_fitting(cat, component, healpix, lim):
 
     healpix_query = GCRQuery('healpix_pixel==%d' % healpix)
 
-    qties = cat.get_quantities(list(filter_names) +
+    qties = cat.get_quantities(list(filter_names) + list(lsst_filter_names) +
                               ['redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
     print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
     with np.errstate(divide='ignore', invalid='ignore'):
         mag_array = np.array([-2.5*np.log10(qties[ff][:lim]) for ff in filter_names])
+        lsst_mag_array = np.array([-2.5*np.log10(qties[ff][:lim] for ff in lsst_filter_names])
+
 
     (sed_names,
      mag_norms,
@@ -66,7 +69,11 @@ def do_fitting(cat, component, healpix, lim):
      rv_arr) = sed_from_galacticus_mags(mag_array,
                                         qties['redshift_true'][:lim],
                                         H0, Om0,
-                                        wav_min, wav_width)
+                                        wav_min, wav_width,
+                                        lsst_mag_array)
+
+    (tot_bp_dict,
+     lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
 
     return (qties['redshift_true'][:lim], qties['galaxy_id'][:lim],
             sed_names, mag_norms, av_arr, rv_arr)
