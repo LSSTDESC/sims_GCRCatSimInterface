@@ -340,7 +340,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     assert rv_arr.min()>0.0
     assert len(np.where(np.logical_not(np.isfinite(rv_arr)))[0])==0
     for i_bp in range(6):
-        output_mag_norm[i_bp,:] = base_norm
+        output_mag_norm[i_bp,:] = base_norm + distance_modulus
 
     sed_dir = getPackageDir('sims_sed_library')
 
