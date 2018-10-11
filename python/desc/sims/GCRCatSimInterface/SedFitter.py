@@ -286,6 +286,8 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
          sed_mag_norm,
          av_grid, rv_grid) = _create_sed_library_mags(wav_min, wav_width)
 
+        assert rv_grid.min()>0.0
+        assert len(np.where(np.logical_not(np.isfinite(rv_grid)))[0])==0
 
         sed_colors = sed_mag_list[:,1:] - sed_mag_list[:,:-1]
         sed_from_galacticus_mags._sed_names = sed_names
@@ -331,16 +333,21 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
 
     output_mag_norm = np.zeros((6, len(output_names)), dtype=float)
     base_norm = sed_from_galacticus_mags._mag_norm[sed_idx]
+    assert len(np.where(np.logical_not(np.isfinite(base_norm)))[0])==0
     ccm_w = None
     av_arr = sed_from_galacticus_mags._av_grid[sed_idx]
     rv_arr = sed_from_galacticus_mags._rv_grid[sed_idx]
+    assert rv_arr.min()>0.0
+    assert len(np.where(np.logical_not(np.isfinite(rv_arr)))[0])==0
     for i_bp in range(6):
         output_mag_norm[i_bp,:] = base_norm
 
+    sed_dir = getPackageDir('sims_sed_library')
+
     for i_obj in range(len(output_names)):
         spec = Sed()
-        spec.readSED_flambda(os.path.join(_galaxy_sed_dir, output_names[i_obj]))
-        if ccm_w is None or not np.array(equal(spec.wavelen, ccm_w)):
+        spec.readSED_flambda(os.path.join(sed_dir, output_names[i_obj]))
+        if ccm_w is None or not np.array_equal(spec.wavelen, ccm_w):
             ccm_w = np.copy(spec.wavelen)
             ax, bx = spec.setupCCMab()
         spec.addCCMDust(ax, bx, A_v=av_arr[i_obj], R_v=rv_arr[i_obj])
@@ -349,4 +356,4 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         d_mag = obs_lsst_mags[:,i_obj] - lsst_mags
         output_mag_norm[:,i_obj] += d_mag
 
-    return (output_names, output_mag_norm, rv_arr, av_arr)
+    return (output_names, output_mag_norm, av_arr, rv_arr)
