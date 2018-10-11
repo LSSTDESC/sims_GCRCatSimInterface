@@ -233,6 +233,8 @@ if __name__ == "__main__":
         out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
         out_file.create_dataset('disk_sed', data=[s.encode('utf-8') for s in disk_sed_name])
         out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
+        out_file.create_dataset('bulge_magnorm', data=bulge_mag)
+        out_file.create_dataset('disk_magnorm', data=disk_mag)
         out_file.create_dataset('disk_av', data=disk_av)
         out_file.create_dataset('disk_rv', data=disk_rv)
         out_file.create_dataset('bulge_av', data=bulge_av)
