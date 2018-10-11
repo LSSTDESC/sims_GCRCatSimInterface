@@ -62,7 +62,7 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
             spec.redshiftSED(redshift[ii], dimming=True)
             mm = spec.calcMag(lsst_bp_dict[bp])
             lsst_fit_mags[i_bp][ii] = mm
-        if ii%10==0 and ii>0:
+        if ii%1000==0 and ii>0:
             duration = (time.time()-t_start)/3600.0
             prediction = len(sed_names)*duration/ii
             print('%d of %d; pred %.2e left of %.2e' %
