@@ -325,8 +325,8 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
                        sed_idx, 0)
 
     distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(redshift=redshift)
+
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
-    d_mag = (galacticus_mags_t - sed_from_galacticus_mags._sed_mags[sed_idx]).mean(axis=1)
 
     (tot_bp_dict,
      lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
