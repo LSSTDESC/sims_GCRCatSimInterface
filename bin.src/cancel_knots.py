@@ -191,7 +191,7 @@ def process_instance_catalog(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Instance catalog crawler applying corrections in post-processing')
-    parser.add_argument('--n_process', type=int, default=64, help='Number of processes for parallel processing')
+    parser.add_argument('--n_process', type=int, default=1, help='Number of processes for parallel processing')
     parser.add_argument('input_cats', type=str, help='List of instance catalogs')
     parser.add_argument('output_path', type=str, help='Directory in which to store the corrected catalog')
     args = parser.parse_args()
