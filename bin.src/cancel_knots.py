@@ -116,7 +116,7 @@ def fix_disk_knots(in_instcat_disk, in_instcat_knots,
             magnorm_disk = np.float(tokens_disk[4])
             magnorm_knots = np.float(tokens_knots[4])
             total_flux = 10.**(-magnorm_disk/2.5) + 10.**(-magnorm_knots/2.5)
-            
+
             magnorm_disk = -2.5*np.log10(total_flux)
 
             # Update the entry
@@ -185,13 +185,14 @@ def process_instance_catalog(args):
     os.system("mv %s %s"%(tmp_knots, output_knots))
 
     print('Gzipping....')
-    os.system("gzip --fast -f %s %s %s" % (output_disk, output_knots))
+    os.system("gzip --fast -f %s %s" % (output_disk, output_knots))
 
     print('Done.')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Instance catalog crawler applying corrections in post-processing')
-    parser.add_argument('input_cats', type=str,help='List of instance catalogs')
+    parser.add_argument('--n_process', type=int, default=64, help='Number of processes for parallel processing')
+    parser.add_argument('input_cats', type=str, help='List of instance catalogs')
     parser.add_argument('output_path', type=str, help='Directory in which to store the corrected catalog')
     args = parser.parse_args()
 
@@ -201,5 +202,5 @@ if __name__ == '__main__':
             if len(line.strip()) > 0:
                 filenames.append(line.strip())
 
-    p = Pool(24)
+    p = Pool(args.n_process)
     p.map(process_instance_catalog, [(f,args.output_path) for f in filenames] )
