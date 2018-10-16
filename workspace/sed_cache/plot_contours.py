@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import numpy as np
 
+import GCRCatalogs
+from GCR import GCRQuery
+
 import os
 import h5py
 
@@ -224,3 +227,30 @@ with h5py.File(data_name, 'r') as data:
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, 'soln4_magnorm_dist.png'))
     plt.close()
+
+
+    query = GCRQuery('healpix_pixel==9556')
+    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
+    qties = cat.get_quantities(['galaxy_id', 'redshift'],
+                               native_filters=[query])
+
+    np.testing.assert_array_equal(qties['galaxy_id'], data['galaxy_id'].value)
+
+    rng = np.random.RandomState(812)
+    with open(os.path.join(out_dir, 'example_sed_params.txt'), 'w') as out_file:
+        out_file.write('# name z Av Rv magNorms\n')
+        for range_val in np.arange(0.05,1.1, 0.25):
+            valid = np.where(np.logical_and(disk_mean<1000.0,
+                             np.logical_and(np.isfinite(disk_mag_spread),
+                             np.logical_and(disk_mag_spread>range_val-0.1,
+                                            disk_mag_spread<=range_val))))
+
+            dexes = rng.choice(valid[0], size=4, replace=False)
+            for dd in dexes:
+                out_file.write('%s ' % (data['disk_sed'].value[dd].decode('utf-8')))
+                out_file.write('%e ' % (qties['redshift'][dd]))
+                out_file.write('%e %e ' % (data['disk_av'].value[dd],
+                                           data['disk_rv'].value[dd]))
+                for ii in range(6):
+                    out_file.write('%e ' % (data['disk_magnorm'].value[ii][dd]))
+                out_file.write('\n')
