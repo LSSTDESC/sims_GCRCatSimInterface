@@ -254,3 +254,20 @@ with h5py.File(data_name, 'r') as data:
                 for ii in range(6):
                     out_file.write('%e ' % (data['disk_magnorm'].value[ii][dd]))
                 out_file.write('\n')
+
+    plt.figure(figsize=(20,20))
+    for i_bp, bp in enumerate('ugrizy'):
+        plt.subplot(3,2,i_bp+1)
+
+        dmag = data['fit_lsst'].value[i_bp,:]-data['cosmo_%s' % bp].value
+
+        counts, xbins, ybins = np.histogram2d(qties['redshift'], dmag, bins=50)
+        c_contours = plt.contour(counts.transpose(),
+                                 extent=[xbins.min(), xbins.max(), ybins.min(), ybins.max()],
+                                 colors='b')
+
+        plt.ylabel('$\Delta$ %s' % bp, fontsize=20)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir,'d_mag_v_z.png'))
+    plt.close()
