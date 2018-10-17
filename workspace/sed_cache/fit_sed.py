@@ -62,11 +62,6 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
             spec.redshiftSED(redshift[ii], dimming=True)
             ff = spec.calcFlux(lsst_bp_dict[bp])
             lsst_fit_fluxes[i_bp][ii] = ff
-        if ii%1000==0 and ii>0:
-            duration = (time.time()-t_start)/3600.0
-            prediction = len(sed_names)*duration/ii
-            print('%d of %d; pred %.2e left of %.2e' %
-            (ii,len(sed_names), prediction-duration, prediction))
 
     out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
 
