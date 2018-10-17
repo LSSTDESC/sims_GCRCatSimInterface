@@ -253,8 +253,5 @@ if __name__ == "__main__":
         out_file.create_dataset('disk_rv', data=disk_rv)
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
-        for bp in 'ugrizy':
-            out_file.create_dataset('cosmo_%s' % bp,
-                           data=control_qties['mag_true_%s_lsst' % bp])
 
     print('all done')
