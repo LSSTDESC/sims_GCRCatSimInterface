@@ -13,6 +13,7 @@ from desc.sims.GCRCatSimInterface import sed_from_galacticus_mags
 from lsst.sims.photUtils import BandpassDict, Sed
 from lsst.sims.photUtils import cache_LSST_seds, getImsimFluxNorm
 from lsst.utils import getPackageDir
+from lsst.sims.utils import htmModule as htm
 
 import argparse
 
@@ -214,7 +215,7 @@ if __name__ == "__main__":
     ############ get true values of magnitudes from extragalactic catalog;
     ############ adjust magNorm to demand agreement
 
-    q_list = ['galaxy_id']
+    q_list = ['galaxy_id', 'ra_true', 'dec_true']
     for bp in 'ugrizy':
         q_list.append('mag_true_%s_lsst' % bp)
 
@@ -236,8 +237,13 @@ if __name__ == "__main__":
 
     ############# save everything in an hdf5 file
 
+    htmid_6 = htm.findHtmid(control_qties['ra_true'],
+                            control_qties['dec_true'],
+                            max_level=6)
+
     with h5py.File(out_file_name, 'w') as out_file:
         out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
+        out_file.create_dataset('htmid_6', data=htmid_6)
         out_file.create_dataset('redshift', data=disk_redshift)
         out_file.create_dataset('disk_sed', data=[s.encode('utf-8') for s in disk_sed_name])
         out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
