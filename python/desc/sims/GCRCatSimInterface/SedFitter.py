@@ -103,12 +103,6 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
 
     t_start = time.time()
     for i_sed, sed_file_name in enumerate(sed_file_name_list):
-        if i_sed>0 and i_sed%10 ==0:
-            duration = (time.time()-t_start)/3600.0
-            pred = len(sed_file_name_list)*duration/i_sed
-            print('%d of %d; dur %.2e pred %.2e' %
-            (i_sed, len(sed_file_name_list), duration, pred))
-
         base_spec = Sed()
         base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
         ax, bx = base_spec.setupCCMab()
@@ -193,7 +187,6 @@ def _create_sed_library_mags(wav_min, wav_width):
     av_out_list = np.zeros(n_tot, dtype=float)
     rv_out_list = np.zeros(n_tot, dtype=float)
 
-    print('\n\ncreating library')
     p_list = []
     n_proc = 24
     mgr = multiprocessing.Manager()
@@ -218,7 +211,6 @@ def _create_sed_library_mags(wav_min, wav_width):
     for p in p_list:
         p.join()
 
-    print('done calculating')
     t_start = time.time()
     n_kk = len(list(out_dict.keys()))
     for i_kk, kk in enumerate(out_dict.keys()):
@@ -229,13 +221,7 @@ def _create_sed_library_mags(wav_min, wav_width):
         av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
         rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
         i_stored += n_out
-        if i_kk>0 and i_kk%10==0:
-            d = (time.time()-t_start)/3600.0
-            p = n_kk*d/i_kk
-            print('%d in %.2e; pred %.2e' % (i_kk, d, p))
 
-    print('made library')
-    print('%d' % (len(np.where(av_out_list<1.0e-10)[0])))
     assert len(np.where(av_out_list<1.0e-10)[0]) == len(list_of_files)*len(rv_grid)
 
     return (sed_names, sed_mag_list, sed_mag_norm,
@@ -305,19 +291,15 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
 
         sed_from_galacticus_mags._cosmo = CosmologyObject(H0=H0, Om0=Om0)
 
-    print("done initializing")
-
     galacticus_mags_t = np.asarray(galacticus_mags).T # N_star by N_mag
     assert galacticus_mags_t.shape == (len(redshift), sed_from_galacticus_mags._sed_mags.shape[1])
 
     with np.errstate(invalid='ignore', divide='ignore'):
         galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_star by (N_mag - 1)
 
-    print("querying")
     t_start = time.time()
     (sed_dist,
      sed_idx) = sed_from_galacticus_mags._color_tree.query(galacticus_colors, k=1)
-    print("querying took %e" % ((time.time()-t_start)/3600.0))
 
     # cKDTree returns an invalid index (==len(tree_data)) in cases
     # where the distance is not finite
