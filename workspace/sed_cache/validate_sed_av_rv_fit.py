@@ -171,7 +171,7 @@ if __name__ == "__main__":
                         help='The healpixel to fit')
     parser.add_argument('--out_dir', type=str, default=None,
                         help='The directory in which to write the output file')
-    parser.add_argument('--lim', type=int, default=180000000,
+    parser.add_argument('--lim', type=int, default=None,
                         help='The number of galaxies to fit (if you are just testing)')
     parser.add_argument('--out_name', type=str, default=None,
                         help='The name of the output file')
@@ -185,6 +185,10 @@ if __name__ == "__main__":
     sed_dir = getPackageDir('sims_sed_library')
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
+    h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
+    if args.lim is None:
+        gid = cat.get_quantities('galaxy_id', native_filters=[h_query])['galaxy_id']
+        args.lim = 2*len(gid)
 
     out_file_name = os.path.join(args.out_dir,args.out_name)
 
@@ -214,7 +218,6 @@ if __name__ == "__main__":
     for bp in 'ugrizy':
         q_list.append('mag_true_%s_lsst' % bp)
 
-    h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
     for kk in control_qties:
         control_qties[kk] = control_qties[kk][:args.lim]
