@@ -33,14 +33,13 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
      lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
 
     sed_dir = getPackageDir('sims_sed_library')
-    lsst_fit_mags = np.zeros((6,len(sed_names)), dtype=float)
+    lsst_fit_fluxes = np.zeros((6,len(sed_names)), dtype=float)
     t_start = time.time()
     ccm_w = None
     for ii in range(len(sed_names)):
         for i_bp, bp in enumerate('ugrizy'):
             m_norm = mag_norms[i_bp][ii]
             if m_norm>0.0 and not np.isfinite(m_norm):
-                lsst_fit_mags[i_bp][ii] = 1000000000.0
                 continue
 
             spec = Sed()
@@ -60,15 +59,15 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
             assert rv_arr[ii]>0.0
             assert np.isfinite(rv_arr[ii])
             spec.redshiftSED(redshift[ii], dimming=True)
-            mm = spec.calcMag(lsst_bp_dict[bp])
-            lsst_fit_mags[i_bp][ii] = mm
+            ff = spec.calcFlux(lsst_bp_dict[bp])
+            lsst_fit_fluxes[i_bp][ii] = ff
         if ii%1000==0 and ii>0:
             duration = (time.time()-t_start)/3600.0
             prediction = len(sed_names)*duration/ii
             print('%d of %d; pred %.2e left of %.2e' %
             (ii,len(sed_names), prediction-duration, prediction))
 
-    out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_mags)
+    out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
 
 
 def do_fitting(cat, component, healpix, lim):
@@ -151,7 +150,7 @@ def do_fitting(cat, component, healpix, lim):
     mag_norms = np.zeros((6,len(redshift)), dtype=float)
     av_arr = np.zeros(len(redshift), dtype=float)
     rv_arr = np.zeros(len(redshift), dtype=float)
-    lsst_mags = np.zeros((6,len(redshift)), dtype=float)
+    lsst_fluxes = np.zeros((6,len(redshift)), dtype=float)
 
     for i_start in out_dict.keys():
         s = slice(i_start, i_start+d_gal)
@@ -159,10 +158,10 @@ def do_fitting(cat, component, healpix, lim):
         mag_norms[:,s] = out_dict[i_start][1]
         av_arr[s] = out_dict[i_start][2]
         rv_arr[s] = out_dict[i_start][3]
-        lsst_mags[:,s] = out_dict[i_start][4]
+        lsst_fluxes[:,s] = out_dict[i_start][4]
 
     return (redshift, qties['galaxy_id'][:lim],
-            sed_names, mag_norms, av_arr, rv_arr, lsst_mags)
+            sed_names, mag_norms, av_arr, rv_arr, lsst_fluxes)
 
 
 if __name__ == "__main__":
@@ -191,28 +190,25 @@ if __name__ == "__main__":
 
     ########## actually fit SED, magNorm, and dust parameters to disks and bulges
 
-    (disk_redshift, disk_id, disk_sed_name, disk_mag,
-     disk_av, disk_rv, disk_lsst_mags) = do_fitting(cat, 'disk',
-                                                    args.healpix, args.lim)
+    (disk_redshift, disk_id, disk_sed_name, disk_magnorm,
+     disk_av, disk_rv, disk_lsst_fluxes) = do_fitting(cat, 'disk',
+                                                      args.healpix, args.lim)
 
     print("fit disks")
 
-    (bulge_redshift, bulge_id, bulge_sed_name, bulge_mag,
-     bulge_av, bulge_rv, bulge_lsst_mags) = do_fitting(cat, 'bulge',
-                                                       args.healpix, args.lim)
+    (bulge_redshift, bulge_id, bulge_sed_name, bulge_magnorm,
+     bulge_av, bulge_rv, bulge_lsst_fluxes) = do_fitting(cat, 'bulge',
+                                                         args.healpix, args.lim)
 
     print("fit bulges")
 
     np.testing.assert_array_equal(disk_id, bulge_id)
     np.testing.assert_array_equal(disk_redshift, bulge_redshift)
 
-    n04_ln10 = -0.4*np.log(10.0)
-    tot_lsst_fluxes = (np.exp(disk_lsst_mags*n04_ln10)
-                       + np.exp(bulge_lsst_mags*n04_ln10))
+    tot_lsst_fluxes = bulge_lsst_fluxes + disk_lsst_fluxes
 
-    tot_lsst_mags = -2.5*np.log10(tot_lsst_fluxes)
-
-    ############ get true values of magnitudes from extragalactic catalog
+    ############ get true values of magnitudes from extragalactic catalog;
+    ############ adjust magNorm to demand agreement
 
     q_list = ['galaxy_id']
     for bp in 'ugrizy':
@@ -227,19 +223,27 @@ if __name__ == "__main__":
 
     np.testing.assert_array_equal(control_qties['galaxy_id'], disk_id)
 
+    dummy_spec = Sed()
+    for i_bp, bp in enumerate('ugrizy'):
+        cosmodc2_flux = dummy_spec.fluxFromMag(control_qties['mag_true_%s_lsst' % bp])
+        flux_ratio = cosmodc2_flux/tot_lsst_fluxes[i_bp]
+        dmag = -2.5*np.log10(flux_ratio)
+        disk_magnorm[i_bp,:] += dmag
+        bulge_magnorm[i_bp,:] += dmag
+
     ############# save everything in an hdf5 file
 
     with h5py.File(out_file_name, 'w') as out_file:
         out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
+        out_file.create_dataset('redshift', data=disk_redshift)
         out_file.create_dataset('disk_sed', data=[s.encode('utf-8') for s in disk_sed_name])
         out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
-        out_file.create_dataset('bulge_magnorm', data=bulge_mag)
-        out_file.create_dataset('disk_magnorm', data=disk_mag)
+        out_file.create_dataset('bulge_magnorm', data=bulge_magnorm)
+        out_file.create_dataset('disk_magnorm', data=disk_magnorm)
         out_file.create_dataset('disk_av', data=disk_av)
         out_file.create_dataset('disk_rv', data=disk_rv)
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
-        out_file.create_dataset('fit_lsst', data=tot_lsst_mags)
         for bp in 'ugrizy':
             out_file.create_dataset('cosmo_%s' % bp,
                            data=control_qties['mag_true_%s_lsst' % bp])
