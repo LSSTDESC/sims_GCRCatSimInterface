@@ -256,3 +256,5 @@ if __name__ == "__main__":
         for bp in 'ugrizy':
             out_file.create_dataset('cosmo_%s' % bp,
                            data=control_qties['mag_true_%s_lsst' % bp])
+
+    print('all done')
