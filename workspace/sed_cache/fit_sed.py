@@ -71,7 +71,7 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
     out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
 
 
-def do_fitting(cat, component, healpix, lim):
+def do_fitting(cat, component, healpix, lim, n_threads):
     """
     Fit a set of components to SEDs, Av, Rv, magNorm using sed_from_galacticus_mags
 
@@ -132,7 +132,7 @@ def do_fitting(cat, component, healpix, lim):
 
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
-    d_gal = len(redshift)//20
+    d_gal = len(redshift)//n_threads
     p_list = []
     for i_start in range(0, len(redshift), d_gal):
         s = slice(i_start, i_start+d_gal)
@@ -174,6 +174,8 @@ if __name__ == "__main__":
                         help='The directory in which to write the output file')
     parser.add_argument('--lim', type=int, default=None,
                         help='The number of galaxies to fit (if you are just testing)')
+    parser.add_argument('--n_threads', type=int, default=60,
+                        help='The number of threads to use')
     parser.add_argument('--out_name', type=str, default=None,
                         help='The name of the output file')
     args = parser.parse_args()
@@ -197,13 +199,15 @@ if __name__ == "__main__":
 
     (disk_redshift, disk_id, disk_sed_name, disk_magnorm,
      disk_av, disk_rv, disk_lsst_fluxes) = do_fitting(cat, 'disk',
-                                                      args.healpix, args.lim)
+                                                      args.healpix, args.lim,
+                                                      args.n_threads)
 
     print("fit disks")
 
     (bulge_redshift, bulge_id, bulge_sed_name, bulge_magnorm,
      bulge_av, bulge_rv, bulge_lsst_fluxes) = do_fitting(cat, 'bulge',
-                                                         args.healpix, args.lim)
+                                                         args.healpix, args.lim,
+                                                         args.n_threads)
 
     print("fit bulges")
 
