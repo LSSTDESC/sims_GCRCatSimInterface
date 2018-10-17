@@ -188,7 +188,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     rv_out_list = np.zeros(n_tot, dtype=float)
 
     p_list = []
-    n_proc = 60
+    n_proc = 30
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
     i_stored = 0
