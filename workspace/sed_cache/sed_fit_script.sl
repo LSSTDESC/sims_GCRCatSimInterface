@@ -42,4 +42,4 @@ done
 #--suppress_warnings --job_log ${job_file} &
 
 
-wait
+#wait
