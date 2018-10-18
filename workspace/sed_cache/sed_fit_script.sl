@@ -14,6 +14,7 @@ source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
 setup -j -r $HOME/sims_GCRCatSimInterface_master
 setup -j -r $HOME/sims_catUtils
 setup -j -r $HOME/sims_photUtils
+setup -j -r $HOME/sims_utils
 
 export OMP_NUM_THREADS=6
 export NUMEXPR_NUM_THREADS=6
