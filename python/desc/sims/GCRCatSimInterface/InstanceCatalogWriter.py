@@ -17,7 +17,7 @@ from lsst.sims.photUtils import BandpassDict
 from lsst.sims.catalogs.definitions import parallelCatalogWriter
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import ParametrizedLightCurveMixin
-from lsst.sims.catUtils.baseCatalogModels import StarObj
+from desc.sims.GCRCatSimInterface import DC2StarObj
 from lsst.sims.catUtils.exampleCatalogDefinitions import \
     PhoSimCatalogPoint, DefaultPhoSimHeaderMap
 from lsst.sims.catUtils.mixins import VariabilityStars
@@ -170,9 +170,15 @@ class InstanceCatalogWriter(object):
         self.obs_gen = ObservationMetaDataGenerator(database=opsimdb,
                                                     driver='sqlite')
 
-        self.star_db = StarObj(database='LSSTCATSIM',
-                               host='fatboy.phys.washington.edu',
-                               port=1433, driver='mssql+pymssql')
+        star_db_name = os.path.join(os.environ['SCRATCH'],
+                                    'star_db',
+                                    'dc2_stellar_db.db')
+
+        assert os.path.isfile(star_db_name)
+
+        self.star_db = DC2StarObj(database=star_db_name,
+                                  driver='sqlite')
+
         self.sprinkler = sprinkler
 
         self._agn_threads = agn_threads

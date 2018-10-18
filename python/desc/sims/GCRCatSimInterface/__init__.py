@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from .StarModule import *
 from .CatalogClasses import *
 from .DatabaseEmulator import *
 from .ProtoDC2DatabaseEmulator import *
