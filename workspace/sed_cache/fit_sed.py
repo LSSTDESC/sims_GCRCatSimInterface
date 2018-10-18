@@ -55,8 +55,8 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
             spec.multiplyFluxNorm(fnorm)
             if ccm_w is None or not np.array_equal(ccm_w, spec.wavelen):
                 ccm_w = np.copy(spec.wavelen)
-                ax, bx = spec.setupCCMab()
-            spec.addCCMDust(ax, bx, A_v=av_arr[ii], R_v=rv_arr[ii])
+                ax, bx = spec.setupCCM_ab()
+            spec.addDust(ax, bx, A_v=av_arr[ii], R_v=rv_arr[ii])
             assert rv_arr[ii]>0.0
             assert np.isfinite(rv_arr[ii])
             spec.redshiftSED(redshift[ii], dimming=True)
