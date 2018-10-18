@@ -192,19 +192,22 @@ if __name__ == "__main__":
 
     ########## actually fit SED, magNorm, and dust parameters to disks and bulges
 
+    t0 = 1539899570.0
+    print('starting %d at %.2f' % (args.healpix, time.time()-t0))
+
     (disk_redshift, disk_id, disk_sed_name, disk_magnorm,
      disk_av, disk_rv, disk_lsst_fluxes) = do_fitting(cat, 'disk',
                                                       args.healpix, args.lim,
                                                       args.n_threads)
 
-    print("fit disks")
+    print("fit disks %d at %.2f" % (args.healpix, time.time()-t0))
 
     (bulge_redshift, bulge_id, bulge_sed_name, bulge_magnorm,
      bulge_av, bulge_rv, bulge_lsst_fluxes) = do_fitting(cat, 'bulge',
                                                          args.healpix, args.lim,
                                                          args.n_threads)
 
-    print("fit bulges")
+    print("fit bulges %d at %.2f" % (args.healpix, time.time()-t0))
 
     np.testing.assert_array_equal(disk_id, bulge_id)
     np.testing.assert_array_equal(disk_redshift, bulge_redshift)
@@ -222,7 +225,7 @@ if __name__ == "__main__":
     for kk in control_qties:
         control_qties[kk] = control_qties[kk][:args.lim]
 
-    print("got controls")
+    print("got controls %d at %.2f" % (args.healpix, time.time()-t0))
 
     np.testing.assert_array_equal(control_qties['galaxy_id'], disk_id)
 
@@ -253,4 +256,4 @@ if __name__ == "__main__":
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
 
-    print('all done %d' % args.healpix)
+    print('all done %d at %.2f' % (args.healpix, time.time()-t0))
