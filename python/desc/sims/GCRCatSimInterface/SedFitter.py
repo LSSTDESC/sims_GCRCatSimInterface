@@ -105,7 +105,7 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
     for i_sed, sed_file_name in enumerate(sed_file_name_list):
         base_spec = Sed()
         base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
-        ax, bx = base_spec.setupCCMab()
+        ax, bx = base_spec.setupCCM_ab()
 
         mag_norm = base_spec.calcMag(imsim_bp)
 
@@ -119,7 +119,7 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
         for av in av_grid:
             for rv in rv_grid:
                 spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
-                spec.addCCMDust(ax, bx, A_v=av, R_v=rv)
+                spec.addDust(ax, bx, A_v=av, R_v=rv)
                 av_out_list[i_obj] = av
                 rv_out_list[i_obj] = rv
                 sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
@@ -331,8 +331,8 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
         spec.readSED_flambda(os.path.join(sed_dir, output_names[i_obj]))
         if ccm_w is None or not np.array_equal(spec.wavelen, ccm_w):
             ccm_w = np.copy(spec.wavelen)
-            ax, bx = spec.setupCCMab()
-        spec.addCCMDust(ax, bx, A_v=av_arr[i_obj], R_v=rv_arr[i_obj])
+            ax, bx = spec.setupCCM_ab()
+        spec.addDust(ax, bx, A_v=av_arr[i_obj], R_v=rv_arr[i_obj])
         spec.redshiftSED(redshift[i_obj], dimming=True)
         lsst_mags = lsst_bp_dict.magListForSed(spec)
         d_mag = obs_lsst_mags[:,i_obj] - lsst_mags
