@@ -3,6 +3,7 @@ from sqlalchemy import text
 from lsst.sims.utils import htmModule as htm
 from lsst.sims.catalogs.db import CatalogDBObject
 from lsst.sims.catalogs.db import ChunkIterator
+from lsst.sims.utils import _angularSeparation
 
 __all__ = ["DC2StarObj"]
 
@@ -26,10 +27,25 @@ class DC2StarObj(CatalogDBObject):
                ('galacticAv', '3.1*ebv'),
                ('variabilityParameters', 'varParamStr', str, 256)]
 
+    def _final_pass(self, chunk):
+        """
+        Only keep objects that are inside the field of view
+        """
+        if len(chunk) == 0:
+            return chunk
+
+        dd = _angularSeparation(self._obs_metadata._pointingRA,
+                                self._obs_metadata._pointingDec,
+                                chunk['raJ2000'], chunk['decJ2000'])
+
+        valid = np.where(dd<=self._obs_metadata._boundLength)
+        return chunk[valid]
+
     def query_columns(self, colnames=None, chunk_size=None,
                       obs_metadata=None, constraint=None, limit=None):
 
         query = self._get_column_query(colnames)
+        self._obs_metadata = obs_metadata
 
         half_space = htm.halfSpaceFromRaDec(obs_metadata.pointingRA,
                                             obs_metadata.pointingDec,
@@ -48,7 +64,6 @@ class DC2StarObj(CatalogDBObject):
         htmid_clause += ')'
 
         query = query.filter(text(htmid_clause))
-        query = query.filter(text(obs_metadata.bounds.to_SQL('ra', 'decl')))
 
         return ChunkIterator(self, query, chunk_size)
 
