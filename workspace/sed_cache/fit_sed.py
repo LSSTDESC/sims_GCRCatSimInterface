@@ -253,4 +253,4 @@ if __name__ == "__main__":
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
 
-    print('all done')
+    print('all done %d' % args.healpix)
