@@ -1,11 +1,10 @@
 #!/bin/bash -l
-#SBATCH -N 2
-#SBATCH -t 0:30:00
-#SBATCH -q debug
+#SBATCH -N 11
+#SBATCH -t 3:00:00
+#SBATCH -q normal
 #SBATCH -C haswell
 #SBATCH -A m1727
-#SBATCH --tasks-per-node=2
-#SBATCH --cpus-per-task=1
+#SBATCH --tasks-per-node=1
 #SBATCH -o sed_fit_181017_output.txt
 #SBATCH -e sed_fit_181017_err.txt
 
@@ -29,16 +28,14 @@ fi
 
 date
 
-#for hp in 9940 10068 10069 10195 10196 10197 10323 10324 10325 10447 10448;
-for hp in 9940 10068 10069 10195;
+for hp in 9940 10068 10069 10195 10196 10197 10323 10324 10325 10447 10448;
 do
     srun -N 1 -n 1 \
     python -m cProfile -o profile_${hp}.sav \
     fit_sed.py --healpix ${hp} \
     --out_dir ${out_dir} \
-    --out_name test_${hp}.h5 \
-    --n_threads 30 \
-    --lim 10000 &
+    --out_name sed_fit_${hp}.h5 \
+    --n_threads 62 &
 done
 
 wait
