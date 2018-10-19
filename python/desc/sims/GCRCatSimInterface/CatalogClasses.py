@@ -1,6 +1,8 @@
 import os
 import re
 import numpy as np
+import healpy
+import h5py
 import copy
 from .SedFitter import sed_from_galacticus_mags
 from .SedFitter import sed_filter_names_from_catalog
@@ -243,81 +245,107 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, None)
         return output
 
-    @compound('internalAv_fitted', 'internalRv_fitted')
-    def get_internalDustParams(self):
-        lum_type = self.get_component_type()
+    def _cache_sed_lookup(self, healpix_list, component_type, bandpass):
+        """
+        Load the SED lookup table information for the healpixels specified
+        in healpix_list.
 
-        # temporarily suppress divide by zero warnings
-        with np.errstate(divide='ignore', invalid='ignore'):
-            av_name = 'A_v_%s' % lum_type
-            if av_name not in self._all_available_columns:
-                av_name = 'A_v'
-            av_list = copy.copy(self.column_by_name(av_name))
+        component_type is either 'disk' or 'bulge'
 
-            rv_name = 'R_v_%s' % lum_type
-            if rv_name not in self._all_available_columns:
-                rv_name = 'R_v'
-            rv_list = copy.copy(self.column_by_name(rv_name))
+        bandpass is one of 'ugrizy'
 
-            min_rv = 0.01
-            rv_list = np.where(np.abs(rv_list)>min_rv, rv_list, min_rv)
+        Return as a dict pointing to numpy arrays with
+        keys:
 
-        return np.array([av_list, rv_list])
+        galaxy_id
+        *_sed
+        *_magnorm
+        *_av
+        *_rv
 
+        where * stands for either 'disk' or 'bulge'
+        """
+        sed_lookup_dir = os.path.join('/global/projecta/projectdirs',
+                                      'lsst/groups/SSim/DC2/SEDLookup')
 
-    @compound('sedFilename_fitted', 'magNorm_fitted')
+        file_root = 'sed_cache'
+        bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4 'y':5}
+
+        out_dict = {}
+        n_obj = 0
+        for hp in healpix_list:
+            file_name = os.path.join(sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
+            with h5py.File(file_name, 'r') as data:
+                n_obj += len(data['galaxy_id'].value)
+
+        out_dict['galaxy_id'] = np.zeros(n_obj, dtype=int)
+        out_dict['%s_sed' % component_type] = np.empty(n_obj, dtype=(str, 100))
+        out_dict['%s_%s_magnorm' % (component_type, bandpass)] = np.NaN*np.ones(n_obj, dtype=float)
+        out_dict['%s_av' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
+        out_dict['%s_rv' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
+
+        ct_loaded = 0
+        for hp in healpix_list:
+            file_name = os.path.join(sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
+            with h5py.File(file_name, 'r') as data:
+                n_obj = len(data['galaxy_id'].value)
+                s = slice(ct_loaded, ct_loaded+n_obj)
+                ct_loaded += n_obj
+                out_dict['galaxy_id'][s] = data['galaxy_id'].value
+                out_dict['%s_sed' % component_type][s] = data['%s_sed' % component_type].value
+                out_dict['%s_%s_magnorm' % (compnent_type, bandpass)][s] = data['%s_magnorm' % component_type].value[bp_to_int[bandpass]]
+                out_dict['%s_av' % component_type][s] = data['%s_av' % component_type].value
+                out_dict['%s_rv' % component_type][s] = data['%s_rv' % component_type].value
+
+        # so that we can use numpy search sorted
+        sorted_dex = np.argsort(out_dict['galaxy_id'])
+        for k in out_dict.keys():
+            out_dict[k] = out_dict[k][sorted_dex]
+
+        return out_dict
+
+    @compound('sedFilename_fitted', 'magNorm_fitted',
+              'internalAv_fitted', 'internalRv_fitted')
     def get_fittedSedAndNorm(self):
 
-        if not hasattr(self, '_disk_flux_names'):
+        component_type = self.get_component_type()
 
-            f_params = sed_filter_names_from_catalog(self.db_obj._catalog)
+        galaxy_id = self.column_by_name('galaxy_id')
+        if len(galaxy_id) == 0:
+            return np.array([[],[], [], []])
 
-            np.testing.assert_array_almost_equal(f_params['disk']['wav_min'],
-                                                 f_params['bulge']['wav_min'],
-                                                 decimal=10)
+        ra_rad = self.obs_metadata._pointingRA
+        dec_rad = self.obs_metadata._pointingDec
+        vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                       np.cos(dec_rad)*np.sin(ra_rad),
+                       np.sin(dec_rad)])
+        radius_rad = self.obs_metadata._boundLength
+        healpix_list = np.sort(healpy.query_disc(32, vv, radius_rad,
+                                                 inclusive=True, nest=False))
 
-            np.testing.assert_array_almost_equal(f_params['disk']['wav_width'],
-                                                 f_params['bulge']['wav_width'],
-                                                 decimal=10)
+        if (not hasattr(self, '_sed_lookup_cache') or
+            not np.array_equal(healpix_list, self._sed_lookup_healpix) or
+            not component_type == self._sed_lookup_component_type or
+            not self.obs_metadata.bandpass == self._sed_lookup_bandpass):
 
-            self._disk_flux_names = f_params['disk']['filter_name']
-            self._bulge_flux_names = f_params['bulge']['filter_name']
-            self._sed_wav_min = f_params['disk']['wav_min']
-            self._sed_wav_width = f_params['disk']['wav_width']
+            self._sed_lookup_cache = self._cache_sed_lookup(healpix_list,
+                                                            component_type,
+                                                            self.obs_metadata_bandpass)
+            self._sed_lookup_healpix = np.copy(healpix_list)
+            self._sed_lookup_bandpass = self.obs_metadata.bandpass
+            self._sed_lookup_component_type = component_type
 
-        if 'hasBulge' in self._cannot_be_null and 'hasDisk' in self._cannot_be_null:
-            raise RuntimeError('\nUnsure whether this is a disk catalog or a bulge catalog.\n'
-                               'Both appear to be in self._cannot_be_null.\n'
-                               'self._cannot_be_null: %s' % self._cannot_be_null)
-        elif 'hasBulge' in self._cannot_be_null:
-            flux_names = self._bulge_flux_names
-        elif 'hasDisk' in self._cannot_be_null:
-            flux_names = self._disk_flux_names
-        else:
-            raise RuntimeError('\nUnsure whether this is a disk catalog or a bluge catalog.\n'
-                               'Neither appear to be in self._cannot_be_null.\n'
-                               'self._cannot_be_null: %s' % self._cannot_be_null)
+        idx = np.searchsorted(self._sed_lookup_cache['galaxy_id'],
+                              galaxy_id)
 
-        with np.errstate(divide='ignore', invalid='ignore'):
-            mag_array = np.array([-2.5*np.log10(self.column_by_name(name))
-                                  for name in flux_names])
+        np.testing.assert_array_equal(self._sed_lookup_cache['galaxy_id'][idx], galaxy_id)
 
-        redshift_array = self.column_by_name('true_redshift')
+        sed_names = self._sed_lookup_cache['%s_sed' % component_type][idx]
+        mag_norms = self._sed_lookup_cache['%s_%s_sed' % (component_type, self.obs_metadata.bandpass)][idx]
+        av = self._sed_lookup_cache['%s_av' % component_type][idx]
+        rv = self._sed_lookup_cache['%s_rv' % component_type][idx]
 
-        if len(redshift_array) == 0:
-            return np.array([[], []])
-
-        H0 = self.db_obj._catalog.cosmology.H0.value
-        Om0 = self.db_obj._catalog.cosmology.Om0
-
-        (sed_names,
-         mag_norms) = sed_from_galacticus_mags(mag_array,
-                                               redshift_array,
-                                               H0, Om0,
-                                               self._sed_wav_min,
-                                               self._sed_wav_width)
-
-        return np.array([sed_names, mag_norms])
+        return np.array([sed_names, mag_norms, av, rv])
 
     @cached
     def get_magNorm(self):
