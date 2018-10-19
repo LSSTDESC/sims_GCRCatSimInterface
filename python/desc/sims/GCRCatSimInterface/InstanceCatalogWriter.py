@@ -332,8 +332,6 @@ class InstanceCatalogWriter(object):
                     out_file.write('%d wrote star catalog after %.3e hrs\n' %
                                    (obsHistID, duration))
 
-            exit()
-
         if 'knots' in self.descqa_catalog and do_knots:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
             knots_db.field_ra = self.protoDC2_ra
