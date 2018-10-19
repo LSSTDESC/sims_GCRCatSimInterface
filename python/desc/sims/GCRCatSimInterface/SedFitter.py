@@ -116,8 +116,10 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
         sed_mag_list = []
 
         i_obj = 0
-        for av in av_grid:
-            for rv in rv_grid:
+        for i_av, av in enumerate(av_grid):
+            for i_rv, rv in enumerate(rv_grid):
+                if av<0.01 and i_rv>0:
+                    continue
                 spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
                 spec.addDust(ax, bx, A_v=av, R_v=rv)
                 av_out_list[i_obj] = av
