@@ -36,16 +36,36 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
     sed_dir = getPackageDir('sims_sed_library')
     lsst_fit_fluxes = np.zeros((6,len(sed_names)), dtype=float)
     t_start = time.time()
+
     ccm_w = None
+    restframe_seds = {}
+    imsim_bp = Bandpass()
+    imsim_bp.imsimBandpass()
+    n04_ln10 = -0.4*np.log(10)
+
     for ii in range(len(sed_names)):
+        av_val = av_arr[ii]
+        rv_val = rv_arr[ii]
+
+        sed_tag = '%s_%.3f_%.3f' % (sed_names[ii], av_val, rv_val)
+        if sed_tag not in restframe_seds:
+            rest_sed = Sed()
+            rest_sed.readSED_flambda(os.path.join(sed_dir, sed_names[ii]))
+            mag = rest_sed.calcMag(imsim_bp)
+            if ccm_w is None or not np.array_equal(rest_sed.wavelen, ccm_w):
+                ccm_w = np.coy(rest_sed.wavelen)
+                ax, bx = rest_sed.setupCCM_ab()
+            rest_sed.addDust(ax, bx, A_v=av_val, R_v=rv_val)
+            restframe_seds[sed_tag] = (rest_sed, mag)
+
         for i_bp, bp in enumerate('ugrizy'):
             m_norm = mag_norms[i_bp][ii]
             if m_norm>0.0 and not np.isfinite(m_norm):
                 continue
 
-            spec = Sed()
-            spec.readSED_flambda(os.path.join(sed_dir, sed_names[ii]))
-            fnorm = getImsimFluxNorm(spec, m_norm)
+            spec = Sed(wavelen=restframe_seds[sed_tag][0].wavelen,
+                       flambda=restframe_seds[sed_tag][0].flambda)
+            fnorm = np.exp(n04_ln10*(m_norm - restframe_seds[sed_tag][1]))
             try:
                 assert np.isfinite(fnorm)
                 assert fnorm>0.0
@@ -53,12 +73,6 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
                 print('\n\nmagnorm %e\n\n' % (m_norm))
                 raise
             spec.multiplyFluxNorm(fnorm)
-            if ccm_w is None or not np.array_equal(ccm_w, spec.wavelen):
-                ccm_w = np.copy(spec.wavelen)
-                ax, bx = spec.setupCCM_ab()
-            spec.addDust(ax, bx, A_v=av_arr[ii], R_v=rv_arr[ii])
-            assert rv_arr[ii]>0.0
-            assert np.isfinite(rv_arr[ii])
             spec.redshiftSED(redshift[ii], dimming=True)
             ff = spec.calcFlux(lsst_bp_dict[bp])
             lsst_fit_fluxes[i_bp][ii] = ff
