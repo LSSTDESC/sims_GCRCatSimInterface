@@ -5,6 +5,7 @@
 #SBATCH -C haswell
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=2
 #SBATCH -o sed_fit_181017_output.txt
 #SBATCH -e sed_fit_181017_err.txt
 
