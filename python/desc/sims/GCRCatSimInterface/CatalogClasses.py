@@ -206,6 +206,26 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         super(PhoSimDESCQA, self).__init__(*args, **kwargs)
 
+    def get_component_type(self):
+        """
+        returns 'disk' if this is a catalog disks;
+        returns 'bulge' if this is a catalog of bulges
+        """
+        if ('hasDisk' in self._cannot_be_null and
+            'hasBulge' in self._cannot_be_null):
+
+            raise RuntimeError('\nUnsure whether this is a disk catalog '
+                               'or a bulge catalog\n'
+                               'self._cannot_be_null %s' % self._cannot_be_null)
+        elif 'hasDisk' in self._cannot_be_null:
+            lum_type = 'disk'
+        elif 'hasBulge' in self._cannot_be_null:
+            lum_type = 'bulge'
+        else:
+             raise RuntimeError('\nUnsure whether this is a disk catalog '
+                               'or a bulge catalog\n'
+                               'self._cannot_be_null %s' % self._cannot_be_null)
+
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
@@ -225,20 +245,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @compound('internalAv_fitted', 'internalRv_fitted')
     def get_internalDustParams(self):
-        if ('hasDisk' in self._cannot_be_null and
-            'hasBulge' in self._cannot_be_null):
-
-            raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
-        elif 'hasDisk' in self._cannot_be_null:
-            lum_type = 'disk'
-        elif 'hasBulge' in self._cannot_be_null:
-            lum_type = 'bulge'
-        else:
-             raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
+        lum_type = self.get_component_type()
 
         # temporarily suppress divide by zero warnings
         with np.errstate(divide='ignore', invalid='ignore'):
