@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -N 11
 #SBATCH -t 3:00:00
-#SBATCH -q normal
+#SBATCH -q regular
 #SBATCH -C haswell
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
