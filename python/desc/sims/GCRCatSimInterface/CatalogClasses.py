@@ -269,7 +269,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                       'lsst/groups/SSim/DC2/SEDLookup')
 
         file_root = 'sed_cache'
-        bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4 'y':5}
+        bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
         out_dict = {}
         n_obj = 0
