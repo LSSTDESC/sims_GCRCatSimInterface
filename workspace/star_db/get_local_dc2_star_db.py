@@ -8,9 +8,11 @@ from lsst.sims.catUtils.baseCatalogModels import StarObj
 in_db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
                 port=1433, driver='mssql+pymssql')
 
+# full DC2 field of view
 dc2_obs = ObservationMetaData(pointingRA=55.064, pointingDec=-29.783,
                               boundType='circle', boundLength=23.0)
 
+# file to write
 out_db_name = 'dc2_stellar_db.db'
 
 with sqlite3.connect(out_db_name) as out_conn:
@@ -35,7 +37,10 @@ with sqlite3.connect(out_db_name) as out_conn:
                                     chunk_size=100000)
 
     for data_chunk in data_iter:
+
+        # spatial indexing to help with queries
         htmid = htm.findHtmid(data_chunk['ra'], data_chunk['decl'], 6)
+
         vals = ((int(d['simobjid']), int(hh),
                  d['ra'], d['decl'], d['gal_l'], d['gal_b'],
                  d['magNorm'], d['mura'], d['mudecl'], d['parallax'],
