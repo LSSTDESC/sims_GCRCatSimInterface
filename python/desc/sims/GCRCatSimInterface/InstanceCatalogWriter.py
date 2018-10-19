@@ -110,6 +110,7 @@ class InstanceCatalogWriter(object):
     def __init__(self, opsimdb, descqa_catalog, dither=True,
                  min_mag=10, minsource=100, proper_motion=False,
                  protoDC2_ra=0, protoDC2_dec=0,
+                 star_db_name = None,
                  agn_db_name=None, agn_threads=1, sn_db_name=None,
                  sprinkler=False, host_image_dir=None,
                  host_data_dir=None, config_dict=None):
@@ -132,6 +133,8 @@ class InstanceCatalogWriter(object):
             Desired RA (J2000 degrees) of protoDC2 center.
         protoDC2_dec: float [0]
             Desired Dec (J2000 degrees) of protoDC2 center.
+        star_db_name: str [None]
+            Filename of the database containing stellar sources
         agn_db_name: str [None]
             Filename of the agn parameter sqlite db file.
         agn_threads: int [1]
@@ -170,11 +173,12 @@ class InstanceCatalogWriter(object):
         self.obs_gen = ObservationMetaDataGenerator(database=opsimdb,
                                                     driver='sqlite')
 
-        star_db_name = os.path.join(os.environ['SCRATCH'],
-                                    'star_db',
-                                    'dc2_stellar_db.db')
+        if star_db_name is None:
+            raise IOError("Need to specify star_db_name")
 
-        assert os.path.isfile(star_db_name)
+        if not os.path.isfile(star_db_name):
+            raise IOError("%s is not a file\n" % star_db_name
+                          + "(This is what you specified for star_db_name")
 
         self.star_db = DC2StarObj(database=star_db_name,
                                   driver='sqlite')
