@@ -53,7 +53,7 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
             rest_sed.readSED_flambda(os.path.join(sed_dir, sed_names[ii]))
             mag = rest_sed.calcMag(imsim_bp)
             if ccm_w is None or not np.array_equal(rest_sed.wavelen, ccm_w):
-                ccm_w = np.coy(rest_sed.wavelen)
+                ccm_w = np.copy(rest_sed.wavelen)
                 ax, bx = rest_sed.setupCCM_ab()
             rest_sed.addDust(ax, bx, A_v=av_val, R_v=rv_val)
             restframe_seds[sed_tag] = (rest_sed, mag)
