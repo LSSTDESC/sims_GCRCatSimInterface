@@ -171,6 +171,13 @@ def _create_sed_library_mags(wav_min, wav_width):
     av_grid = np.arange(0.0, 3.0, 0.1)
     rv_grid = np.arange(2.0, 4.1, 0.1)
 
+    n_dust = 0
+    for i_av, av in enumerate(av_grid):
+        for i_rv, rv in enumerate(rv_grid):
+            if av<0.01 and i_rv>0:
+                continue
+            n_dust += 1
+
     wav_max = max((wav0+width
                   for wav0, width in zip(wav_min, wav_width)))
     wav_grid = np.arange(wav_min.min(), wav_max, 0.1)
@@ -185,7 +192,7 @@ def _create_sed_library_mags(wav_min, wav_width):
     bandpass_dict = BandpassDict(bp_list, bp_name_list)
 
     list_of_files = os.listdir(_galaxy_sed_dir)
-    n_tot = len(list_of_files)*len(av_grid)*len(rv_grid)
+    n_tot = len(list_of_files)*n_dust
     t_start = time.time()
 
     sed_names = np.empty(n_tot, dtype=(str, 200))
