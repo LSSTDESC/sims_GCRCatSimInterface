@@ -96,7 +96,12 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                             av_grid, rv_grid, bandpass_dict,
                             out_dict):
 
-    n_obj = len(av_grid)*len(rv_grid)
+    n_obj = 0
+    for i_av, av in enumerate(av_grid):
+        for i_rv, rv in enumerate(rv_grid):
+            if av<0.01 and i_rv>0:
+                continue
+            n_obj += 1
 
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
