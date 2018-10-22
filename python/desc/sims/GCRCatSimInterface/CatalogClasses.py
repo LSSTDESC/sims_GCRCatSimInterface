@@ -4,6 +4,7 @@ import numpy as np
 import healpy
 import h5py
 import copy
+import json
 from .SedFitter import sed_from_galacticus_mags
 from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
@@ -267,6 +268,14 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         where * stands for either 'disk' or 'bulge'
         """
+        if not hasattr(self, '_sed_lookup_dict'):
+            self._sed_lookup_file = 'sed_name_lookup.json'
+            with open(self._sed_lookup_file, 'r') as in_file:
+                inverse_lookup_dict = json.load(in_file)
+            self._sed_lookup_dict = {}
+            for k in inverse_lookup_dict:
+                self._sed_lookup_dict[inverse_lookup_dict[k]] = k
+
         if component_type != 'disk' and component_type != 'bulge':
             raise RuntimeError("Do not know what component this is: %s" % component_type)
 
@@ -277,7 +286,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         sed_lookup_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache_181017')
 
-        file_root = 'sed_fit'
+        file_root = 'sed_fit_idx'
         bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
         out_dict = {}
@@ -288,7 +297,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                 n_obj += len(data['galaxy_id'].value)
 
         out_dict['galaxy_id'] = np.zeros(n_obj, dtype=int)
-        out_dict['%s_sed' % component_type] = np.empty(n_obj, dtype=(bytes, 100))
+        out_dict['%s_sed_idx' % component_type] = np.empty(n_obj, dtype=int)
         out_dict['%s_%s_magnorm' % (component_type, bandpass)] = np.NaN*np.ones(n_obj, dtype=float)
         out_dict['%s_av' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
         out_dict['%s_rv' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
@@ -297,11 +306,12 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         for hp in healpix_list:
             file_name = os.path.join(sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
             with h5py.File(file_name, 'r') as data:
+                assert data['%s_sed' % component_type].attrs['sed_conversion_dict'] == self._sed_lookup_file
                 n_obj = len(data['galaxy_id'].value)
                 s = slice(ct_loaded, ct_loaded+n_obj)
                 ct_loaded += n_obj
                 out_dict['galaxy_id'][s] = data['galaxy_id'].value
-                out_dict['%s_sed' % component_type][s] = data['%s_sed' % component_type].value
+                out_dict['%s_sed_idx' % component_type][s] = data['%s_sed' % component_type].value
                 out_dict['%s_%s_magnorm' % (component_type, bandpass)][s] = data['%s_magnorm' % component_type].value[bp_to_int[bandpass]]
                 out_dict['%s_av' % component_type][s] = data['%s_av' % component_type].value
                 out_dict['%s_rv' % component_type][s] = data['%s_rv' % component_type].value
@@ -313,7 +323,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         return out_dict
 
-    @compound('sedFilename_fitted', 'magNorm_fitted',
+    @compound('sedFilename_idx', 'magNorm_fitted',
               'internalAv_fitted', 'internalRv_fitted')
     def get_fittedSedAndNorm(self):
 
@@ -349,12 +359,12 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         np.testing.assert_array_equal(self._sed_lookup_cache['galaxy_id'][idx], galaxy_id)
 
-        sed_names = self._sed_lookup_cache['%s_sed' % component_type][idx]
+        sed_idx = self._sed_lookup_cache['%s_sed_idx' % component_type][idx]
         mag_norms = self._sed_lookup_cache['%s_%s_magnorm' % (component_type, self.obs_metadata.bandpass)][idx]
         av = self._sed_lookup_cache['%s_av' % component_type][idx]
         rv = self._sed_lookup_cache['%s_rv' % component_type][idx]
 
-        return np.array([sed_names.astype(str), mag_norms, av, rv])
+        return np.array([sed_idx, mag_norms, av, rv], dtype=object)
 
     @cached
     def get_magNorm(self):
@@ -366,10 +376,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_sedFilepath(self):
-        raw_filename = self.column_by_name('sedFilename_dc2')
-        fitted_filename = self.column_by_name('sedFilename_fitted')
-        return np.where(np.char.find(raw_filename.astype('str'), 'None')==0,
-                        fitted_filename, raw_filename)
+        sed_idx = self.column_by_name('sedFilename_idx')
+        if len(sed_idx)==0:
+            return np.array([])
+        return np.array([self._sed_lookup_dict[ii] for ii in sed_idx])
 
     @cached
     def get_internalRv(self):
