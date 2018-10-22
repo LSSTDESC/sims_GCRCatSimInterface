@@ -288,7 +288,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                 n_obj += len(data['galaxy_id'].value)
 
         out_dict['galaxy_id'] = np.zeros(n_obj, dtype=int)
-        out_dict['%s_sed' % component_type] = np.empty(n_obj, dtype=(str, 100))
+        out_dict['%s_sed' % component_type] = np.empty(n_obj, dtype=(bytes, 100))
         out_dict['%s_%s_magnorm' % (component_type, bandpass)] = np.NaN*np.ones(n_obj, dtype=float)
         out_dict['%s_av' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
         out_dict['%s_rv' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
@@ -354,7 +354,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         av = self._sed_lookup_cache['%s_av' % component_type][idx]
         rv = self._sed_lookup_cache['%s_rv' % component_type][idx]
 
-        return np.array([sed_names, mag_norms, av, rv])
+        return np.array([sed_names.astype(str), mag_norms, av, rv])
 
     @cached
     def get_magNorm(self):
