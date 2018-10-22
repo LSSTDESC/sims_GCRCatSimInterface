@@ -170,14 +170,15 @@ def _create_sed_library_mags(wav_min, wav_width):
     av_grid = np.zeros(n_dust, dtype=float)
     rv_grid = np.zeros(n_dust, dtype=float)
     i_dust = 0
-    for av in av_grid:
-        for i_rv, rv, in enumerate(rv_grid):
+    for av in _av_grid:
+        for i_rv, rv, in enumerate(_rv_grid):
             if av<0.01 and i_rv>0:
                 continue
             av_grid[i_dust] = av
             rv_grid[i_dust] = rv
             i_dust += 1
 
+    assert rv_grid.min()>1.0
     assert i_dust == n_dust
 
     wav_max = max((wav0+width
