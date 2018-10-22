@@ -257,12 +257,28 @@ if __name__ == "__main__":
     #                        control_qties['dec_true'],
     #                        max_level=6)
 
+    sed_dir = os.path.join(os.environ['SIMS_SED_LIBRARY_DIR'], 'galaxySED')
+    list_of_seds = os.listdir(sed_dir)
+    list_of_seds.sort()
+    sed_names = np.empty(len(list_of_seds), dtype=(bytes, 100))
+    sed_idx = np.empty(len(list_of_seds), dtype=int)
+    name_to_int = {}
+    for ii, name in enumerate(list_of_seds):
+        full_name = os.path.join('galaxySED', name)
+        name_to_int[full_name] = ii
+        sed_idx[ii] = ii
+        sed_names[ii] = full_name
+
+    disk_sed_idx = np.array([name_to_int[nn] for nn in disk_sed_name])
+    bulge_sed_idx = np.array([name_to_int[nn] for nn in bulge_sed_name])
+
     with h5py.File(out_file_name, 'w') as out_file:
         out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
         #out_file.create_dataset('htmid_6', data=htmid_6)
         #out_file.create_dataset('redshift', data=disk_redshift)
-        out_file.create_dataset('disk_sed', data=[s.encode('utf-8') for s in disk_sed_name])
-        out_file.create_dataset('bulge_sed', data=[s.encode('utf-8') for s in bulge_sed_name])
+        out_file.create_dataset('sed_names', data=sed_names)
+        out_file.create_dataset('disk_sed', data=disk_sed_idx)
+        out_file.create_dataset('bulge_sed', data=bulge_sed_idx)
         out_file.create_dataset('bulge_magnorm', data=bulge_magnorm)
         out_file.create_dataset('disk_magnorm', data=disk_magnorm)
         out_file.create_dataset('disk_av', data=disk_av)
