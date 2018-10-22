@@ -4,7 +4,6 @@ import numpy as np
 import healpy
 import h5py
 import copy
-import json
 from .SedFitter import sed_from_galacticus_mags
 from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
@@ -268,13 +267,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         where * stands for either 'disk' or 'bulge'
         """
-        if not hasattr(self, '_sed_lookup_dict'):
-            self._sed_lookup_file = 'sed_name_lookup.json'
-            with open(self._sed_lookup_file, 'r') as in_file:
-                inverse_lookup_dict = json.load(in_file)
-            self._sed_lookup_dict = {}
-            for k in inverse_lookup_dict:
-                self._sed_lookup_dict[inverse_lookup_dict[k]] = k
 
         if component_type != 'disk' and component_type != 'bulge':
             raise RuntimeError("Do not know what component this is: %s" % component_type)
@@ -306,7 +298,11 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         for hp in healpix_list:
             file_name = os.path.join(sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
             with h5py.File(file_name, 'r') as data:
-                assert data['%s_sed' % component_type].attrs['sed_conversion_dict'] == self._sed_lookup_file
+                if not hasattr(self, '_sed_lookup_names'):
+                    self._sed_lookup_names = np.copy(data['sed_names'])
+                else:
+                    np.testing.assert_array_equal(data['sed_names'], self._sed_lookup_names)
+
                 n_obj = len(data['galaxy_id'].value)
                 s = slice(ct_loaded, ct_loaded+n_obj)
                 ct_loaded += n_obj
@@ -320,6 +316,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         sorted_dex = np.argsort(out_dict['galaxy_id'])
         for k in out_dict.keys():
             out_dict[k] = out_dict[k][sorted_dex]
+
+        self._sed_lookup_names = self._sed_lookup_names.astype(str)
 
         return out_dict
 
@@ -379,7 +377,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         sed_idx = self.column_by_name('sedFilename_idx')
         if len(sed_idx)==0:
             return np.array([])
-        return np.array([self._sed_lookup_dict[ii] for ii in sed_idx])
+        return np.array([self._sed_lookup_names[ii] for ii in sed_idx])
 
     @cached
     def get_internalRv(self):
