@@ -10,15 +10,21 @@ import argparse
 
 if __name__ == "__main__":
 
-    h_query = GCRQuery('healpix_pixel==9556')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--healpix', type=int, default=10068)
+    parser.add_argument('--nsample', type=int, default=10000)
+    parser.add_argument('--seed', type=int, default=9166)
+
+    args = parser.parse_args()
+    rng = np.random.RandomState(args.seed)
+
+    h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
-    in_dir = os.path.join(os.environ['SCRATCH'], 'sed_181019')
-    #in_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache_181017')
+    in_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache_181017')
 
     assert os.path.isdir(in_dir)
-    in_file = os.path.join(in_dir, 'sed_cache_clever.h5')
-    #in_file = os.path.join(in_dir, 'test_10k.h5')
+    in_file = os.path.join(in_dir, 'sed_fit_%d.h5' % args.healpix)
     assert os.path.isfile(in_file)
 
     qty_names = ['galaxy_id', 'redshift_true']
@@ -29,25 +35,32 @@ if __name__ == "__main__":
     (tot_dict,
      hw_dict) = BandpassDict.loadBandpassesFromFiles()
 
-    f = h5py.File(in_file, 'r')
+    with h5py.File(in_file, 'r') as f:
+        subset = {}
+        chosen_dexes = rng.choice(np.arange(len(f['galaxy_id'].value),dtype=int), size=args.nsample, replace=False)
+        for k in f.keys():
+            if 'magnorm' not in k:
+                subset[k] = f[k].value[chosen_dexes]
+            else:
+                subset[k] = f[k].value[:,chosen_dexes]
 
-    n_obj = len(f['galaxy_id'].value)
-    sorted_dexes = np.argsort(f['galaxy_id'].value)
+    n_obj = len(subset['galaxy_id'])
+    sorted_dexes = np.argsort(subset['galaxy_id'])
 
-    galaxy_id = f['galaxy_id'].value[sorted_dexes]
-    disk_sedname = f['disk_sed'].value[sorted_dexes]
-    bulge_sedname = f['bulge_sed'].value[sorted_dexes]
+    galaxy_id = subset['galaxy_id'][sorted_dexes]
+    disk_sedname = subset['disk_sed'][sorted_dexes]
+    bulge_sedname = subset['bulge_sed'][sorted_dexes]
 
-    bulge_av = f['bulge_av'].value[sorted_dexes]
-    bulge_rv = f['bulge_rv'].value[sorted_dexes]
-    disk_av = f['disk_av'].value[sorted_dexes]
-    disk_rv = f['disk_rv'].value[sorted_dexes]
+    bulge_av = subset['bulge_av'][sorted_dexes]
+    bulge_rv = subset['bulge_rv'][sorted_dexes]
+    disk_av = subset['disk_av'][sorted_dexes]
+    disk_rv = subset['disk_rv'][sorted_dexes]
 
     disk_magnorm = {}
     bulge_magnorm = {}
     for ibp, bp in enumerate('ugrizy'):
-        disk_magnorm[bp] = f['disk_magnorm'].value[ibp][sorted_dexes]
-        bulge_magnorm[bp] = f['bulge_magnorm'].value[ibp][sorted_dexes]
+        disk_magnorm[bp] = subset['disk_magnorm'][ibp][sorted_dexes]
+        bulge_magnorm[bp] = subset['bulge_magnorm'][ibp][sorted_dexes]
 
     in_the_set = np.in1d(qties['galaxy_id'], galaxy_id)
     for k in qties.keys():
@@ -60,7 +73,7 @@ if __name__ == "__main__":
         qties[k] = qties[k][idx]
 
     #for bp in 'ugrizy':
-    #    np.testing.assert_array_equal(f['cosmo_%s'%bp].value[sorted_dexes],
+    #    np.testing.assert_array_equal(subset['cosmo_%s'%bp][sorted_dexes],
     #                                  qties['mag_true_%s_lsst' % bp])
 
 
