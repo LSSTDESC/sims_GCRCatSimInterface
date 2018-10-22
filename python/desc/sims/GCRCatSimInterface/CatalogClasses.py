@@ -270,6 +270,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if component_type != 'disk' and component_type != 'bulge':
             raise RuntimeError("Do not know what component this is: %s" % component_type)
 
+        print('caching ',healpix_list, component_type, bandpass)
+
         sed_lookup_dir = os.path.join('/global/projecta/projectdirs',
                                       'lsst/groups/SSim/DC2/SEDLookup')
 
