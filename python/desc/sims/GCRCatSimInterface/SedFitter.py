@@ -92,49 +92,38 @@ def sed_filter_names_from_catalog(catalog):
                      'wav_width': bulge_wav_width,
                      'lsst_fluxes': np.array(bulge_lsst_names)}}
 
-def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
-                            av_grid, rv_grid, bandpass_dict,
+def _create_library_one_sed(_galaxy_sed_dir,
+                            av_grid, rv_grid,
+                            i_start, i_end, bandpass_dict,
                             out_dict):
 
-    n_obj = 0
-    for i_av, av in enumerate(av_grid):
-        for i_rv, rv in enumerate(rv_grid):
-            if av<0.01 and i_rv>0:
-                continue
-            n_obj += 1
+    n_dust = len(av_grid)
+    sed_name_list = os.listdir(_galaxy_sed_dir)
+    sed_name_list.sort()
 
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
     t_start = time.time()
-    for i_sed, sed_file_name in enumerate(sed_file_name_list):
+    for i_sed in range(i_start, i_end, 1):
+        sed_file_name = sed_name_list[i_sed]
         base_spec = Sed()
         base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
         ax, bx = base_spec.setupCCM_ab()
 
         mag_norm = base_spec.calcMag(imsim_bp)
 
-        sed_names = np.array([defaultSpecMap[sed_file_name]]*n_obj)
-        rv_out_list = np.zeros(n_obj, dtype=float)
-        av_out_list = np.zeros(n_obj, dtype=float)
-        sed_mag_norm = mag_norm*np.ones(n_obj, dtype=float)
-        sed_mag_list = []
-
-        i_obj = 0
-        for i_av, av in enumerate(av_grid):
-            for i_rv, rv in enumerate(rv_grid):
-                if av<0.01 and i_rv>0:
-                    continue
-                spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
-                spec.addDust(ax, bx, A_v=av, R_v=rv)
-                av_out_list[i_obj] = av
-                rv_out_list[i_obj] = rv
-                sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
-                i_obj += 1
-
-        out_dict[sed_file_name] = (sed_names, sed_mag_norm, sed_mag_list,
-                                   av_out_list, rv_out_list)
-
+        for i_dust, (av, rv) in enumerate(zip(av_grid, rv_grid)):
+            spec = Sed(wavelen=base_spec.wavelen, flambda=base_spec.flambda)
+            spec.addDust(ax, bx, A_v=av, R_v=rv)
+            sed_mag_list = bandpass_dict.magListForSed(spec)
+            i_out = i_sed*n_dust + i_dust
+            out_dict['sed_names'][i_out] = i_sed
+            out_dict['sed_magnorms'][i_out] = mag_norm
+            out_dict['av'][i_out] = av
+            out_dict['rv'][i_out] = rv
+            for i_bp, bp in enumerate('ugrizy'):
+                out_dict['lsst_%s' %bp][i_out] = sed_mag_list[i_bp]
 
 def _create_sed_library_mags(wav_min, wav_width):
     """
@@ -168,15 +157,28 @@ def _create_sed_library_mags(wav_min, wav_width):
     rv_out_list is a 1d float array of Rv
     """
 
-    av_grid = np.arange(0.0, 3.0, 0.1)
-    rv_grid = np.arange(2.0, 4.1, 0.1)
+    _av_grid = np.arange(0.0, 3.0, 0.1)
+    _rv_grid = np.arange(2.0, 4.1, 0.1)
 
     n_dust = 0
-    for i_av, av in enumerate(av_grid):
-        for i_rv, rv in enumerate(rv_grid):
+    for av in _av_grid:
+        for i_rv, rv in enumerate(_rv_grid):
             if av<0.01 and i_rv>0:
                 continue
             n_dust += 1
+
+    av_grid = np.zeros(n_dust, dtype=float)
+    rv_grid = np.zeros(n_dust, dtype=float)
+    i_dust = 0
+    for av in av_grid:
+        for i_rv, rv, in enumerate(rv_grid):
+            if av<0.01 and i_rv>0:
+                continue
+            av_grid[i_dust] = av
+            rv_grid[i_dust] = rv
+            i_dust += 1
+
+    assert i_dust == n_dust
 
     wav_max = max((wav0+width
                   for wav0, width in zip(wav_min, wav_width)))
@@ -195,16 +197,18 @@ def _create_sed_library_mags(wav_min, wav_width):
     n_tot = len(list_of_files)*n_dust
     t_start = time.time()
 
-    sed_names = np.empty(n_tot, dtype=(str, 200))
-    sed_mag_list = np.zeros((n_tot, len(bp_list)), dtype=float)
-    sed_mag_norm = np.zeros(n_tot, dtype=float)
-    av_out_list = np.zeros(n_tot, dtype=float)
-    rv_out_list = np.zeros(n_tot, dtype=float)
-
     p_list = []
     n_proc = 30
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
+
+    out_dict['sed_names'] = mgr.Array('l', np.ones(n_tot, dtype=int))
+    out_dict['sed_magnorms'] = mgr.Array('f', np.ones(n_tot, dtype=float))
+    out_dict['av'] = mgr.Array('f', np.ones(n_tot, dtype=float))
+    out_dict['rv'] = mgr.Array('f', np.ones(n_tot, dtype=float))
+    for bp in 'ugrizy':
+        out_dict['lsst_%s' % bp] = mgr.Array('f', np.ones(n_tot, dtype=float))
+
     i_stored = 0
     d_start = len(list_of_files)//n_proc
     i_start_list = range(0, len(list_of_files), d_start)
@@ -215,8 +219,8 @@ def _create_sed_library_mags(wav_min, wav_width):
 
         p = multiprocessing.Process(target=_create_library_one_sed,
                                     args=(_galaxy_sed_dir,
-                                          list_of_files[i_start:i_end],
                                           av_grid, rv_grid,
+                                          i_start, i_end,
                                           bandpass_dict, out_dict))
 
         p.start()
@@ -225,16 +229,14 @@ def _create_sed_library_mags(wav_min, wav_width):
     for p in p_list:
         p.join()
 
-    t_start = time.time()
-    n_kk = len(list(out_dict.keys()))
-    for i_kk, kk in enumerate(out_dict.keys()):
-        n_out = len(out_dict[kk][1])
-        sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
-        sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
-        sed_mag_list[i_stored:i_stored+n_out][:] = out_dict[kk][2]
-        av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
-        rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
-        i_stored += n_out
+    sed_names = np.array(out_dict['sed_names'])
+    sed_mag_norm = np.array(out_dict['sed_magnorms'])
+    av_out_list = np.array(out_dict['av'])
+    rv_out_list = np.array(out_dict['rv'])
+
+    sed_mag_list = np.zeros((6, n_tot), dtype=float)
+    for i_bp, bp in enumerate('ugrizy'):
+        sed_mag_list[i_bp] = np.array(out_dict['lsst_%s' % bp])
 
     return (sed_names, sed_mag_list, sed_mag_norm,
             av_out_list, rv_out_list)
