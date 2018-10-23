@@ -12,6 +12,7 @@ from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSN
+from lsst.sims.utils import angularSeparation
 from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
@@ -285,11 +286,18 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
         out_dict = {}
+        dexes_to_keep = {}
         n_obj = 0
         for hp in healpix_list:
             file_name = os.path.join(sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
             with h5py.File(file_name, 'r') as data:
-                n_obj += len(data['galaxy_id'].value)
+                dd = angularSeparation(self.obs_metadata.pointingRA,
+                                       self.obs_metadata.pointingDec,
+                                       data['ra'].value, data['dec'].value)
+                to_keep = np.where(dd<self.obs_metadata.boundLength+0.1)
+                dexes_to_keep[file_name] = to_keep
+                print('keeping %d of %d' % (len(to_keep[0]), len(data['galaxy_id'].value)))
+                n_obj += len(to_keep[0])
 
         out_dict['galaxy_id'] = np.zeros(n_obj, dtype=int)
         out_dict['%s_sed_idx' % component_type] = np.empty(n_obj, dtype=int)
@@ -306,14 +314,14 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                 else:
                     np.testing.assert_array_equal(data['sed_names'], self._sed_lookup_names)
 
-                n_obj = len(data['galaxy_id'].value)
+                n_obj = len(dexes_to_keep[file_name][0])
                 s = slice(ct_loaded, ct_loaded+n_obj)
                 ct_loaded += n_obj
-                out_dict['galaxy_id'][s] = data['galaxy_id'].value
-                out_dict['%s_sed_idx' % component_type][s] = data['%s_sed' % component_type].value
-                out_dict['%s_%s_magnorm' % (component_type, bandpass)][s] = data['%s_magnorm' % component_type].value[bp_to_int[bandpass]]
-                out_dict['%s_av' % component_type][s] = data['%s_av' % component_type].value
-                out_dict['%s_rv' % component_type][s] = data['%s_rv' % component_type].value
+                out_dict['galaxy_id'][s] = data['galaxy_id'].value[dexes_to_keep[file_name]]
+                out_dict['%s_sed_idx' % component_type][s] = data['%s_sed' % component_type].value[dexes_to_keep[file_name]]
+                out_dict['%s_%s_magnorm' % (component_type, bandpass)][s] = data['%s_magnorm' % component_type].value[bp_to_int[bandpass]][dexes_to_keep[file_name]]
+                out_dict['%s_av' % component_type][s] = data['%s_av' % component_type].value[dexes_to_keep[file_name]]
+                out_dict['%s_rv' % component_type][s] = data['%s_rv' % component_type].value[dexes_to_keep[file_name]]
 
         # so that we can use numpy search sorted
         sorted_dex = np.argsort(out_dict['galaxy_id'])
