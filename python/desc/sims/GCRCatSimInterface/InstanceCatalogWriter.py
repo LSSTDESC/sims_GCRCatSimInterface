@@ -539,11 +539,15 @@ class InstanceCatalogWriter(object):
             os.unlink(full_name)
 
         # gzip the object files.
+        gzip_process_list = []
         for orig_name in written_catalog_names:
             full_name = os.path.join(out_dir, orig_name)
             if not os.path.exists(full_name):
                 continue
-            subprocess.call(['gzip', full_name])
+            p = subprocess.Popen(args=['gzip', full_name])
+            gzip_process_list.append(p)
+        for p in gzip_process_list:
+            p.wait()
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
