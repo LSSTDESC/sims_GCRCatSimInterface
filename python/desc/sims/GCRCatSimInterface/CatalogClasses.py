@@ -1,4 +1,5 @@
 import os
+import psutil
 import re
 import numpy as np
 import healpy
@@ -266,6 +267,9 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         where * stands for either 'disk' or 'bulge'
         """
 
+        process = psutil.Process(os.getpid())
+        print('starting cache; %.1e Gb' % (process.memory_info().rss/(1024**3)))
+
         if component_type != 'disk' and component_type != 'bulge':
             raise RuntimeError("Do not know what component this is: %s" % component_type)
 
@@ -326,6 +330,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             out_dict[k] = out_dict[k][sorted_dex]
 
         self._sed_lookup_names = self._sed_lookup_names.astype(str)
+
+        print('ending cache; %.1e Gb' % (process.memory_info().rss/(1024**3)))
+
+        exit()
 
         return out_dict
 
