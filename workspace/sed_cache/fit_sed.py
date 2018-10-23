@@ -231,7 +231,7 @@ if __name__ == "__main__":
     ############ get true values of magnitudes from extragalactic catalog;
     ############ adjust magNorm to demand agreement
 
-    q_list = ['galaxy_id', 'ra_true', 'dec_true']
+    q_list = ['galaxy_id', 'ra', 'dec']
     for bp in 'ugrizy':
         q_list.append('mag_true_%s_lsst' % bp)
 
@@ -253,10 +253,6 @@ if __name__ == "__main__":
 
     ############# save everything in an hdf5 file
 
-    #htmid_6 = htm.findHtmid(control_qties['ra_true'],
-    #                        control_qties['dec_true'],
-    #                        max_level=6)
-
     sed_dir = os.path.join(os.environ['SIMS_SED_LIBRARY_DIR'], 'galaxySED')
     list_of_seds = os.listdir(sed_dir)
     list_of_seds.sort()
@@ -274,8 +270,8 @@ if __name__ == "__main__":
 
     with h5py.File(out_file_name, 'w') as out_file:
         out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
-        #out_file.create_dataset('htmid_6', data=htmid_6)
-        #out_file.create_dataset('redshift', data=disk_redshift)
+        out_file.create_dataset('ra', data=control_qties['ra'])
+        out_file.create_dataset('dec', data=control_qties['dec')
         out_file.create_dataset('sed_names', data=sed_names)
         out_file.create_dataset('disk_sed', data=disk_sed_idx)
         out_file.create_dataset('bulge_sed', data=bulge_sed_idx)
