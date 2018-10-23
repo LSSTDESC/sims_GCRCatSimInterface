@@ -4,8 +4,6 @@ import numpy as np
 import healpy
 import h5py
 import copy
-from .SedFitter import sed_from_galacticus_mags
-from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached
