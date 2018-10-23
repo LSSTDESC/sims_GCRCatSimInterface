@@ -89,8 +89,7 @@ class DESCQAChunkIterator(object):
         self._colnames = colnames
         self._default_values = default_values
         self._chunk_size = int(chunk_size) if chunk_size else None
-        self._native_filters = None
-        self._data_indices = None
+        self._data_indices = None  # this will be a list of tuples (native_filter, indices_to_keep)
         self._loaded_qties = None
 
     def __iter__(self):
@@ -110,17 +109,34 @@ class DESCQAChunkIterator(object):
                              if descqa_catalog.has_quantity(self._column_map[name][0])]
 
             self._loaded_qties = {}
-            for name in qty_name_list:
-                print('loading %s' % name)
-                raw_qties = descqa_catalog.get_quantities(name,
-                                                          native_filters=self._native_filters)
-                self._loaded_qties[name] = raw_qties[name][self._data_indices]
+            ct_loaded = 0
+            for filter_dex_pair in self._data_indices:
+                if len(filter_dex_pair) == 1:
+                    native_filters = [None]
+                    valid_indices = filter_dex_pair[0]
+                else:
+                    native_filters = [filter_dex_pair[0]]
+                    valid_indices = filter_dex_pair[1]
+
+                current_slice = slice(ct_loaded, ct_loaded+len(valid_indices))
+                ct_loaded += len(valid_indices)
+
+                for name in qty_name_list:
+                    print('loading %s' % name)
+                    raw_qties = descqa_catalog.get_quantities(name,
+                                                              native_filters=native_filters)
+
+                    if name not in self._loaded_qties:
+                        self._loaded_qties[name] = np.empty(self._total_objects,
+                                                            dtype=raw_qties[name].dtype)
+
+                    self._loaded_qties[name][current_slice] = raw_qties[name][valid_indices]
 
             # since we are only keeping the objects that will ultimately go into
             # the catalog, we now change self._data_indices to range from 0
             # to the length of the final catalog; the indices relative to the
             # extragalactic catalog have been forgotten
-            self._data_indices = np.arange(0, len(self._data_indices), dtype=int)
+            self._data_indices = np.arange(0, self._total_objects, dtype=int)
 
         data_indices_this = self._data_indices[:self._chunk_size]
 
@@ -172,19 +188,24 @@ class DESCQAChunkIterator(object):
         Do the spatial filtering of extragalactic catalog data.
         """
 
-        self._native_filters = None
+        self._total_objects = 0  # integer indicating number of galaxies that will be loaded
+        indices_per_hp = {}
+
         descqa_catalog = self._descqa_obj._catalog
 
         if self._obs_metadata is None or self._obs_metadata._boundLength is None:
-            self._data_indices = np.arange(self._descqa_obj._catalog['raJ2000'].size)
+            self._total_objects = self._descqa_obj._catalog['raJ2000'].size
+            self._data_indices = [(np.arange(self._total_objects),)]
 
         else:
+            self._data_indices = []
             try:
                 radius_rad = max(self._obs_metadata._boundLength[0],
                                  self._obs_metadata._boundLength[1])
             except (TypeError, IndexError):
                 radius_rad = self._obs_metadata._boundLength
 
+            healpix_filter_list = []
             if 'healpix_pixel' in descqa_catalog._native_filter_quantities:
                 ra_rad = self._obs_metadata._pointingRA
                 dec_rad = self._obs_metadata._pointingDec
@@ -195,47 +216,46 @@ class DESCQAChunkIterator(object):
                                                  inclusive=True,
                                                  nest=False)
 
-                healpix_filter = None
-                for hh in healpix_list:
-                    local_filter = GCRQuery('healpix_pixel==%d' % hh)
-                    if healpix_filter is None:
-                        healpix_filter = local_filter
-                    else:
-                        healpix_filter |= local_filter
-
-                if healpix_filter is not None:
-                    if self._native_filters is None:
-                        self._native_filters = [healpix_filter]
-                    else:
-                        self._native_filters.append(healpix_filter)
-
-            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000', 'galaxy_id'],
-                                                   native_filters=self._native_filters)
-
-            ra = ra_dec['raJ2000']
-            dec = ra_dec['decJ2000']
-            gid = ra_dec['galaxy_id']
-
-            # Optionally apply a method that returns a list of galaxy_ids that are
-            # actually valid objects for the DESCQAObject being queried.
-            # This is especially useful for AGN simulations, as it allows us to only
-            # keep galaxies that actually contain AGN.
-            if (hasattr(self._descqa_obj, '_prefilter_galaxy_id')
-                and self._descqa_obj._do_prefiltering):
-
-                prefilter_gid = self._descqa_obj._prefilter_galaxy_id(self._obs_metadata)
-                prefilter_indices = np.in1d(gid, prefilter_gid)
+                for hp in healpix_list:
+                    hp_filter = GCRQuery('healpix_pixel==%d' % hp)
+                    healpix_filter_list.append(hp_filter)
             else:
-                prefilter_indices = np.array([True]*len(ra))
+                healpix_filter_list.append(None)
 
-            ang_sep = _angularSeparation(ra, dec,
-                                         self._obs_metadata._pointingRA,
-                                         self._obs_metadata._pointingDec)
+            for hp_filter in healpix_filter_list:
 
-            self._data_indices = np.where(np.logical_and(prefilter_indices, ang_sep < radius_rad))[0]
+                ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000', 'galaxy_id'],
+                                                       native_filters=[hp_filter])
+
+                ra = ra_dec['raJ2000']
+                dec = ra_dec['decJ2000']
+                gid = ra_dec['galaxy_id']
+
+                # Optionally apply a method that returns a list of galaxy_ids that are
+                # actually valid objects for the DESCQAObject being queried.
+                # This is especially useful for AGN simulations, as it allows us to only
+                # keep galaxies that actually contain AGN.
+                if (hasattr(self._descqa_obj, '_prefilter_galaxy_id')
+                    and self._descqa_obj._do_prefiltering):
+
+                    prefilter_gid = self._descqa_obj._prefilter_galaxy_id(self._obs_metadata)
+                    prefilter_indices = np.in1d(gid, prefilter_gid)
+                else:
+                    prefilter_indices = np.array([True]*len(ra))
+
+                ang_sep = _angularSeparation(ra, dec,
+                                             self._obs_metadata._pointingRA,
+                                             self._obs_metadata._pointingDec)
+
+                valid = np.where(np.logical_and(prefilter_indices,
+                                                 ang_sep < radius_rad))[0]
+
+                self._total_objects += len(valid)
+                filter_dex_pair = (hp_filter, valid)
+                self._data_indices.append(filter_dex_pair)
 
         if self._chunk_size is None:
-            self._chunk_size = self._data_indices.size
+            self._chunk_size = self._total_objects
 
 
 class DESCQAObject(object):
