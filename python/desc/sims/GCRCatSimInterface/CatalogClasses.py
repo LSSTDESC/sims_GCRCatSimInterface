@@ -276,7 +276,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         sed_lookup_dir = os.path.join('/global/projecta/projectdirs',
                                       'lsst/groups/SSim/DC2/SEDLookup')
 
-        sed_lookup_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache_181017')
+        sed_lookup_dir = os.path.join('/global/cscratch1/sd/danielsf',
+                                      'sed_cache_181017')
+
+        assert os.path.isdir(sed_lookup_dir)
 
         file_root = 'sed_fit_idx'
         bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
