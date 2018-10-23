@@ -333,8 +333,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         print('ending cache; %.1e Gb' % (process.memory_info().rss/(1024**3)))
 
-        exit()
-
         return out_dict
 
     @compound('sedFilename_idx', 'magNorm_fitted',
