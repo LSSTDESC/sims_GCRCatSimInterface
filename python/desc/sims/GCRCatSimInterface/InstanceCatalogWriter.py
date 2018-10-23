@@ -345,6 +345,8 @@ class InstanceCatalogWriter(object):
             cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
                               write_header=False)
             written_catalog_names.append(knots_name)
+            del cat
+            del knots_db
             if has_status_file:
                 with open(status_file, 'a') as out_file:
                     duration = (time.time()-t_start)/3600.0
