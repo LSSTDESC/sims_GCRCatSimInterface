@@ -372,6 +372,8 @@ class InstanceCatalogWriter(object):
                 cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
+                del cat
+                del bulge_db
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
@@ -391,6 +393,8 @@ class InstanceCatalogWriter(object):
                 cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
+                del cat
+                del disk_db
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
@@ -412,6 +416,8 @@ class InstanceCatalogWriter(object):
                 cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
+                del cat
+                del agn_db
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
