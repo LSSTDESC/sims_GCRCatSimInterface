@@ -12,19 +12,21 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--healpix', type=int, default=10068)
+    parser.add_argument('--in_file', type=str, default=None)
     parser.add_argument('--nsample', type=int, default=10000)
     parser.add_argument('--seed', type=int, default=9166)
+    parser.add_argument('--in_dir', type=str, default=None)
 
     args = parser.parse_args()
     rng = np.random.RandomState(args.seed)
 
+    assert args.in_file is not None
+
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
 
-    in_dir = os.path.join(os.environ['SCRATCH'], 'sed_cache_181017')
-
-    assert os.path.isdir(in_dir)
-    in_file = os.path.join(in_dir, 'sed_fit_%d.h5' % args.healpix)
+    assert os.path.isdir(args.in_dir)
+    in_file = os.path.join(args.in_dir, args.in_file)
     assert os.path.isfile(in_file)
 
     qty_names = ['galaxy_id', 'redshift_true']
@@ -36,9 +38,14 @@ if __name__ == "__main__":
      hw_dict) = BandpassDict.loadBandpassesFromFiles()
 
     with h5py.File(in_file, 'r') as f:
+
+        sed_name_lookup = f['sed_names'].value.astype(str)
+
         subset = {}
         chosen_dexes = rng.choice(np.arange(len(f['galaxy_id'].value),dtype=int), size=args.nsample, replace=False)
         for k in f.keys():
+            if k == 'sed_names':
+                continue
             if 'magnorm' not in k:
                 subset[k] = f[k].value[chosen_dexes]
             else:
@@ -87,7 +94,7 @@ if __name__ == "__main__":
         for i_band, bp in enumerate('ugrizy'):
             disk_sed = Sed()
             disk_sed.readSED_flambda(os.path.join(sed_dir,
-                                     disk_sedname[i_obj].decode('utf-8')))
+                                     sed_name_lookup[disk_sedname[i_obj]]))
             fnorm = getImsimFluxNorm(disk_sed,
                                      disk_magnorm[bp][i_obj])
 
@@ -102,7 +109,7 @@ if __name__ == "__main__":
 
             bulge_sed = Sed()
             bulge_sed.readSED_flambda(os.path.join(sed_dir,
-                                      bulge_sedname[i_obj].decode('utf-8')))
+                                      sed_name_lookup[bulge_sedname[i_obj]]))
             fnorm = getImsimFluxNorm(bulge_sed,
                                      bulge_magnorm[bp][i_obj])
 
