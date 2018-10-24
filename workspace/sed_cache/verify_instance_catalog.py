@@ -180,7 +180,6 @@ for g, mag_true, (index, row) in zip(gid, mags, galaxy_df.iterrows()):
                      row['rest_rv_knots'])
         knots_mag = ss.calcMag(bandpass)
         knots_flux = np.power(10.0,-0.4*knots_mag)
-        knots_flux = 0.0
 
     tot_mag = -2.5*np.log10(disk_flux+bulge_flux+knots_flux)
     d_mag = np.abs(tot_mag-mag_true)

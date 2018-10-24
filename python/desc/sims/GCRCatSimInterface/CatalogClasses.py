@@ -220,7 +220,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                'or a bulge catalog\n'
                                'self._cannot_be_null %s' % self._cannot_be_null)
         elif 'hasDisk' in self._cannot_be_null:
-            lum_type = 'disk'
+            if 'hasKnots' in self._cannot_be_null:
+                lum_type = 'knots'
+            else:
+                lum_type = 'disk'
         elif 'hasBulge' in self._cannot_be_null:
             lum_type = 'bulge'
         else:
@@ -339,7 +342,23 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
               'internalAv_fitted', 'internalRv_fitted')
     def get_fittedSedAndNorm(self):
 
+        _knots_cutoff_i_mag = 27.0
+
         component_type = self.get_component_type()
+
+        if not hasattr(self, '_knots_available'):
+            self._knots_available = False
+            if 'knots_flux_ratio' in self.db_obj._catalog.list_all_quantities(include_native=True):
+                self._knots_available = True
+
+        if self._knots_available:
+            lsst_i_mag = self.column_by_name('mag_true_i_lsst')
+            knots_ratio = self.column_by_name('knots_flux_ratio')
+
+        if component_type == 'knots' and not self._knots_available:
+            raise RuntimeError("You are trying to simulate knots "
+                               "but there are no knots in your "
+                               "extragalactic catalog")
 
         galaxy_id = self.column_by_name('galaxy_id')
         if len(galaxy_id) == 0:
@@ -354,13 +373,18 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         healpix_list = np.sort(healpy.query_disc(32, vv, radius_rad,
                                                  inclusive=True, nest=False))
 
+        if component_type == 'knots':
+            cache_component_type = 'disk'
+        else:
+            cache_component_type = component_type
+
         if (not hasattr(self, '_sed_lookup_cache') or
             not np.array_equal(healpix_list, self._sed_lookup_healpix) or
             not component_type == self._sed_lookup_component_type or
             not self.obs_metadata.bandpass == self._sed_lookup_bandpass):
 
             self._sed_lookup_cache = self._cache_sed_lookup(healpix_list,
-                                                            component_type,
+                                                            cache_component_type,
                                                             self.obs_metadata.bandpass)
             self._sed_lookup_healpix = np.copy(healpix_list)
             self._sed_lookup_bandpass = self.obs_metadata.bandpass
@@ -371,10 +395,22 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         np.testing.assert_array_equal(self._sed_lookup_cache['galaxy_id'][idx], galaxy_id)
 
-        sed_idx = self._sed_lookup_cache['%s_sed_idx' % component_type][idx]
-        mag_norms = self._sed_lookup_cache['%s_%s_magnorm' % (component_type, self.obs_metadata.bandpass)][idx]
-        av = self._sed_lookup_cache['%s_av' % component_type][idx]
-        rv = self._sed_lookup_cache['%s_rv' % component_type][idx]
+        sed_idx = self._sed_lookup_cache['%s_sed_idx' % cache_component_type][idx]
+        mag_norms = self._sed_lookup_cache['%s_%s_magnorm' % (cache_component_type, self.obs_metadata.bandpass)][idx]
+        av = self._sed_lookup_cache['%s_av' % cache_component_type][idx]
+        rv = self._sed_lookup_cache['%s_rv' % cache_component_type][idx]
+
+        if component_type != 'bulge' and self._knots_available:
+            if component_type == 'disk':
+                d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
+                                 -2.5*np.log10(1.0-knots_ratio), 0.0)
+            elif component_type == 'knots':
+                d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
+                                 -2.5*np.log10(knots_ratio), np.NaN)
+            else:
+                raise RuntimeError("Not sure how to handle d_mag for component %s" % component_type)
+
+            mag_norms += d_mag
 
         return np.array([sed_idx, mag_norms, av, rv], dtype=object)
 
