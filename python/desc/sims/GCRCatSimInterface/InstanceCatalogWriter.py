@@ -243,7 +243,7 @@ class InstanceCatalogWriter(object):
         """
         t_start = time.time()
 
-        do_stars = False
+        do_stars = True
         do_knots = True
         do_bulges = True
         do_disks = True
