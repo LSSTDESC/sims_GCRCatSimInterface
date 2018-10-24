@@ -1,6 +1,12 @@
 import os
 import numpy as np
 import pandas as pd
+import healpy
+
+import GCRCatalogs
+from GCR import GCRQuery
+
+from lsst.sims.utils import angularSeparation
 
 colnames = ['obj', 'uniqueID', 'ra', 'dec', 'magnorm', 'sed', 'redshift', 'g1', 'g2',
             'kappa', 'dra', 'ddec', 'src_type', 'major', 'minor',
@@ -44,10 +50,41 @@ knots_df = knots_df.set_index('galaxy_id')
 
 
 #galaxy_df = disk_df.join(bulge_df, how='outer', lsuffix='_disk', rsuffix='_bulge')
-wanted_col = ['sed', 'magnorm', 'redshift', 'rest_av', 'rest_rv']
+wanted_col = ['sed', 'magnorm', 'redshift', 'rest_av', 'rest_rv', 'ra', 'dec']
 galaxy_df = disk_df[wanted_col].join(bulge_df[wanted_col], how='outer', lsuffix='_disk', rsuffix='_bulge')
 for ii in range(len(wanted_col)):
     wanted_col[ii] = wanted_col[ii]+'_knots'
 galaxy_df = galaxy_df.join(knots_df[wanted_col], how='outer', rsuffix='_knots')
-print(galaxy_df)
+
+galaxy_df = galaxy_df.sort_index()
+
+ra_center = np.nanmedian(galaxy_df['ra_disk'].values)
+dec_center = np.nanmedian(galaxy_df['dec_disk'].values)
+
+dd = angularSeparation(ra_center, dec_center, galaxy_df['ra_disk'].values, galaxy_df['dec_disk'].values)
+radius_deg = np.nanmax(dd)
+ra_rad = np.radians(ra_center)
+dec_rad = np.radians(dec_center)
+vv = np.array([np.cos(ra_rad)*np.cos(dec_rad),
+               np.sin(ra_rad)*np.cos(dec_rad),
+               np.sin(dec_rad)])
+
+healpix_list = healpy.query_disc(32, vv, np.radians(radius_deg),
+                                 nest=False, inclusive=True)
+
+print('healpix list')
+print(healpix_list)
+print(ra_center, dec_center)
+
+hp_query = GCRQuery()
+for hp in healpix_list:
+    hp_query |= GCRQuery('healpix_pixel==%d' % hp)
+
+print('built final df')
+cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
+gid = cat.get_quantities('galaxy_id', native_filters=[hp_query])['galaxy_id']
+print('loaded galaxy_id')
+valid_dexes = np.where(np.in1d(gid, galaxy_df.index.values))
+print('got valid_dexes')
+print(len(valid_dexes[0]))
 print(len(galaxy_df))
