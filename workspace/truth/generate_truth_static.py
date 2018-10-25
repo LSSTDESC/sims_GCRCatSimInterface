@@ -37,8 +37,16 @@ if __name__ == "__main__":
         cmd = '''CREATE TABLE truth
               (healpix_2048 int, object_id int, star int,
                agn int, sprinkled int, ra float, dec float,
-               redshift float, u float, g float, r float, i float,
-               z float, y float)'''
+               redshift float,
+               u_nodust float, g_nodust float,
+               r_nodust float, i_nodust float,
+               z_nodust float, y_nodust float,
+               u_hostdust float, g_hostdust float,
+               r_hostdust float, i_hostdust float,
+               z_hostdust float, y_hostdust float,
+               u_alldust float, g_alldust float,
+               r_alldust float, i_alldust float,
+               z_alldust float, y_alldust float)'''
 
         cursor.execute(cmd)
         conn.commit()
@@ -55,12 +63,25 @@ if __name__ == "__main__":
                   ('ra', 'in degrees'),
                   ('dec', 'in degrees'),
                   ('redshift', 'cosmological only'),
-                  ('u', 'observed lsst u magnitude; no dust extinction at all'),
-                  ('g', 'observed lsst g magnitude; no dust extinction at all'),
-                  ('r', 'observed lsst r magnitude; no dust extinction at all'),
-                  ('i', 'observed lsst i magnitude; no dust extinction at all'),
-                  ('z', 'observed lsst z magnitude; no dust extinction at all'),
-                  ('y', 'observed lsst y magnitude; no dust extinction at all'))
+                  ('u_nodust', 'observed lsst u magnitude; no dust extinction at all'),
+                  ('g_nodust', 'observed lsst g magnitude; no dust extinction at all'),
+                  ('r_nodust', 'observed lsst r magnitude; no dust extinction at all'),
+                  ('i_nodust', 'observed lsst i magnitude; no dust extinction at all'),
+                  ('z_nodust', 'observed lsst z magnitude; no dust extinction at all'),
+                  ('y_nodust', 'observed lsst y magnitude; no dust extinction at all'),
+                  ('u_hostdust', 'observed lsst u magnitude; only internal dust extinction; no Milky Way dust'),
+                  ('g_hostdust', 'observed lsst g magnitude; only internal dust extinction; no Milky Way dust'),
+                  ('r_hostdust', 'observed lsst r magnitude; only internal dust extinction; no Milky Way dust'),
+                  ('i_hostdust', 'observed lsst i magnitude; only internal dust extinction; no Milky Way dust'),
+                  ('z_hostdust', 'observed lsst z magnitude; only internal dust extinction; no Milky Way dust'),
+                  ('y_hostdust', 'observed lsst y magnitude; only internal dust extinction; no Milky Way dust')
+                  ('u_alldust', 'observed lsst u magnitude; internal and Milky Way dust extinction applied'),
+                  ('g_alldust', 'observed lsst g magnitude; internal and Milky Way dust extinction applied'),
+                  ('r_alldust', 'observed lsst r magnitude; internal and Milky Way dust extinction applied'),
+                  ('i_alldust', 'observed lsst i magnitude; internal and Milky Way dust extinction applied'),
+                  ('z_alldust', 'observed lsst z magnitude; internal and Milky Way dust extinction applied'),
+                  ('y_alldust', 'observed lsst y magnitude; internal and Milky Way dust extinction applied')
+                  )
 
         cursor.executemany('INSERT INTO column_descriptions VALUES (?,?)',values)
         conn.commit()

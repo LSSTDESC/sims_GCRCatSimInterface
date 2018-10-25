@@ -15,7 +15,8 @@ from lsst.sims.utils import defaultSpecMap
 __all__ = ["write_galaxies_to_truth"]
 
 
-def _fluxes(sed_name, mag_norm, redshift):
+def _fluxes(sed_name, mag_norm, redshift,
+            host_av, host_rv, mw_av, mw_rv):
     """
     Find the fluxes for a galaxy component
 
@@ -29,7 +30,10 @@ def _fluxes(sed_name, mag_norm, redshift):
 
     Returns
     -------
-    array of fluxes in ugrizy order
+    three arrays of fluxes in ugrizy order:
+    - no dust
+    - host dust
+    - host + MW dust
     """
     if not hasattr(_fluxes, '_bp_dict'):
         bp_dir = getPackageDir('throughputs')
@@ -37,6 +41,7 @@ def _fluxes(sed_name, mag_norm, redshift):
         _fluxes._bp_dict =  BandpassDict.loadTotalBandpassesFromFiles(bandpassDir=bp_dir)
 
         _fluxes._sed_dir = getPackageDir('sims_sed_library')
+        _fluxes._ccm_w = None
 
     spec = Sed()
     full_sed_name = os.path.join(_fluxes._sed_dir, sed_name)
@@ -45,8 +50,31 @@ def _fluxes(sed_name, mag_norm, redshift):
     spec.readSED_flambda(full_sed_name)
     fnorm = getImsimFluxNorm(spec, mag_norm)
     spec.multiplyFluxNorm(fnorm)
+
+    # apply host dust extinction
+    host_dust_spec = Sed(wavelen=spec.wavelen, flambda=spec.flambda)
+    if _fluxes._ccm_w is None or not np.array_equal(_fluxes._ccm_w, spec.wavelen):
+        _fluxes._ccm_w = np.copy(spec.wavelen)
+        _fluxes._ax, _fluxes._bx = host_dust_spec.setupCCM_ab()
+    host_dust_spec.addDust(_fluxes._ax, _fluxes._bx, A_v=host_av, R_v=host_rv)
+
     spec.redshiftSED(redshift, dimming=True)
-    return _fluxes._bp_dict.fluxListForSed(spec)
+    host_dust_spec.redshiftSED(redshift, dimming=True)
+
+    all_dust_spec = Sed(wavelen=host_dust_spec.wavelen,
+                        flambda=host_dust_spec.flambda)
+
+    # resample to common wavelength grid so we only have to
+    # initialize the Milky Way ax, bx arrays one
+    all_dust_spec.resampleSED(wavelen_match=_fluxes._bp_dict.wavelenMatch)
+    if not hasattr(_fluxes, '_mw_ax'):
+        _fluxes._mw_ax, _fluxes._mw_bx = all_dust_spec.setupCCM_ab()
+    all_dust_spec.addDust(_fluxes._mw_ax, _fluxes._mw_bx,
+                          A_v=mw_av, R_v=mw_rv)
+
+    return (_fluxes._bp_dict.fluxListForSed(spec),
+            _fluxes._bp_dict.fluxListForSed(host_dust_spec),
+            _fluxes._bp_dict.fluxListForSed(all_dust_spec))
 
 
 def write_results(conn, cursor, mag_dict, position_dict):
@@ -81,7 +109,9 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
     row_ct = 0
     for k in mag_dict.keys():
-        mm = mag_dict[k]
+        mm = mag_dict[k][0]
+        mm_host_dust = mag_dict[k][1]
+        mm_all_dust = mag_dict[k][2]
         pp = position_dict[k]
         row_ct += len(pp['ra'])
         assert len(mm) == len(pp['ra'])
@@ -94,12 +124,18 @@ def write_results(conn, cursor, mag_dict, position_dict):
                    pp['ra'][i_obj], pp['dec'][i_obj],
                    pp['redshift'][i_obj],
                    mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
-                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5])
+                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5],
+                   mm_host_dust[i_obj][0], mm_host_dust[i_obj][1], mm_host_dust[i_obj][2],
+                   mm_host_dust[i_obj][3], mm_host_dust[i_obj][4], mm_host_dust[i_obj][5],
+                   mm_all_dust[i_obj][0], mm_all_dust[i_obj][1], mm_all_dust[i_obj][2],
+                   mm_all_dust[i_obj][3], mm_all_dust[i_obj][4], mm_all_dust[i_obj][5],
+                   )
                   for i_obj in range(len(pp['ra']))
                   if not np.isnan(mm[i_obj][0]))
 
         cursor.executemany('''INSERT INTO truth
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                                   ?,?,?,?,?,?,?,?,?,?,?,?)''', values)
         conn.commit()
 
     return row_ct
@@ -122,6 +158,11 @@ def calculate_mags(galaxy_list, out_dict):
 
     bulge_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     disk_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
+    bulge_fluxes_host_dust = np.zeros((len(galaxy_list), 6), dtype=float)
+    disk_fluxes_host_dust = np.zeros((len(galaxy_list), 6), dtype=float)
+    bulge_fluxes_all_dust = np.zeros((len(galaxy_list), 6), dtype=float)
+    disk_fluxes_all_dust = np.zeros((len(galaxy_list), 6), dtype=float)
+
 
     magnification = np.array([1.0/((1.0-g[14])**2-g[12]**2-g[13]**2)
                               for g in galaxy_list])
@@ -131,22 +172,46 @@ def calculate_mags(galaxy_list, out_dict):
 
     for i_gal, galaxy in enumerate(galaxy_list):
         if galaxy[0] is not None and galaxy[1] is not None:
-            bulge_fluxes[i_gal] = _fluxes(galaxy[0], galaxy[1], galaxy[6])
+            (bulge_fluxes[i_gal],
+             bulge_fluxes_host_dust[i_gal],
+             bulge_fluxes_all_dust[i_gal]) = _fluxes(galaxy[0], galaxy[1], galaxy[6],
+                                                     galaxy[15], galaxy[16],
+                                                     galaxy[19], galaxy[20])
 
         if galaxy[2] is not None and galaxy[3] is not None:
-            disk_fluxes[i_gal] = _fluxes(galaxy[2], galaxy[3], galaxy[6])
+            (disk_fluxes[i_gal],
+             disk_fluxes_host_dust[i_gal],
+             disk_fluxes_all_dust[i_gal]) = _fluxes(galaxy[2], galaxy[3], galaxy[6],
+                                                    galaxy[17], galaxy[18],
+                                                    galaxy[19], galaxy[20])
 
     tot_fluxes = bulge_fluxes + disk_fluxes
+    tot_fluxes_host_dust = bulge_fluxes_host_dust + disk_fluxes_host_dust
+    tot_fluxes_all_dust = bulge_fluxes_all_dust + disk_fluxes_all_dust
 
     for i_filter in range(6):
         tot_fluxes[:,i_filter] *= magnification
+        tot_fluxes_host_dust[:,i_filter] *= magnification
+        tot_fluxes_all_dust[:,i_filter] *= magnification
 
     dummy_sed = Sed()
+
     valid = np.where(tot_fluxes>0.0)
     valid_mags = dummy_sed.magFromFlux(tot_fluxes[valid])
     out_mags = np.NaN*np.ones((len(galaxy_list), 6), dtype=float)
     out_mags[valid] = valid_mags
-    out_dict[i_process] = out_mags
+
+    valid = np.where(tot_fluxes_host_dust>0.0)
+    valid_mags = dummy_sed.magFromFlux(tot_fluxes_host_dust[valid])
+    out_mags_host_dust = np.NaN*np.ones((len(galaxy_list), 6), dtype=float)
+    out_mags_host_dust[valid] = valid_mags
+
+    valid = np.where(tot_fluxes_all_dust>0.0)
+    valid_mags = dummy_sed.magFromFlux(tot_fluxes_all_dust[valid])
+    out_mags_all_dust = np.NaN*np.ones((len(galaxy_list), 6), dtype=float)
+    out_mags_all_dust[valid] = valid_mags
+
+    out_dict[i_process] = (out_mags, out_mags_host_dust, out_mags_all_dust)
 
 
 def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
@@ -191,13 +256,17 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
     if not os.path.isfile(input_db):
         raise RuntimeError("%s does not exist" % input_db)
 
-    query = 'SELECT b.sedFile, b.magNorm, '
+    query = 'SELECT '
+    query += 'b.sedFile, b.magNorm, '
     query += 'd.sedFile, d.magNorm, '
     query += 'a.sedFilepath, a.magNorm, '
     query += 'b.redshift, b.galaxy_id, '
     query += 'b.raJ2000, b.decJ2000, '
     query += 'b.is_sprinkled, a.is_agn, '
-    query += 'b.shear1, b.shear2, b.kappa '
+    query += 'b.shear1, b.shear2, b.kappa, '
+    query += 'b.internalAv, b.internalRv, '
+    query += 'd.internalAv, d.internalRv, '
+    query += 'b.galacticAv, b.galacticRv '
 
     query += 'FROM bulge as b '
     query += 'LEFT JOIN disk as d ON b.galaxy_id=d.galaxy_id '
@@ -206,13 +275,17 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
 
     query += 'UNION ALL '
 
-    query += 'SELECT b.sedFile, b.magNorm, '
+    query += 'SELECT '
+    query += 'b.sedFile, b.magNorm, '
     query += 'd.sedFile, d.magNorm, '
     query += 'a.sedFilepath, a.magNorm, '
     query += 'd.redshift, d.galaxy_id, '
     query += 'd.raJ2000, d.decJ2000, '
     query += 'd.is_sprinkled, a.is_agn, '
-    query += 'd.shear1, d.shear2, d.kappa '
+    query += 'd.shear1, d.shear2, d.kappa, '
+    query += 'b.internalAv, b.internalRv, '
+    query += 'd.internalAv, d.internalRv, '
+    query += 'd.galacticAv, d.galacticRv '
 
     query += 'FROM disk as d '
     query += 'LEFT JOIN bulge as b ON d.galaxy_id=b.galaxy_id '
