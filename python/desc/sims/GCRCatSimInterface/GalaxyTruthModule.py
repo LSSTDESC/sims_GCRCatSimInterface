@@ -105,7 +105,8 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
     Just writes to the database
     """
-    assert len(mag_dict) == len(position_dict)
+    for ii in range(3):
+        assert len(mag_dict[ii]) == len(position_dict)
 
     row_ct = 0
     for k in mag_dict.keys():
