@@ -52,29 +52,29 @@ def _fluxes(sed_name, mag_norm, redshift,
     spec.multiplyFluxNorm(fnorm)
 
     # apply host dust extinction
-    host_dust_spec = Sed(wavelen=spec.wavelen, flambda=spec.flambda)
+    dust_spec = Sed(wavelen=spec.wavelen, flambda=spec.flambda)
     if _fluxes._ccm_w is None or not np.array_equal(_fluxes._ccm_w, spec.wavelen):
         _fluxes._ccm_w = np.copy(spec.wavelen)
         _fluxes._ax, _fluxes._bx = host_dust_spec.setupCCM_ab()
-    host_dust_spec.addDust(_fluxes._ax, _fluxes._bx, A_v=host_av, R_v=host_rv)
-
+    dust_spec.addDust(_fluxes._ax, _fluxes._bx, A_v=host_av, R_v=host_rv)
     spec.redshiftSED(redshift, dimming=True)
-    host_dust_spec.redshiftSED(redshift, dimming=True)
-
-    all_dust_spec = Sed(wavelen=host_dust_spec.wavelen,
-                        flambda=host_dust_spec.flambda)
+    dust_spec.redshiftSED(redshift, dimming=True)
+    fluxes_no_dust = _fluxes._bp_dict.fluxListForSed(spec)
+    fluxes_host_dust = _fluxes._bp_dict.fluxListForSed(dust_spec)
 
     # resample to common wavelength grid so we only have to
     # initialize the Milky Way ax, bx arrays one
-    all_dust_spec.resampleSED(wavelen_match=_fluxes._bp_dict.wavelenMatch)
+    dust_spec.resampleSED(wavelen_match=_fluxes._bp_dict.wavelenMatch)
     if not hasattr(_fluxes, '_mw_ax'):
         _fluxes._mw_ax, _fluxes._mw_bx = all_dust_spec.setupCCM_ab()
-    all_dust_spec.addDust(_fluxes._mw_ax, _fluxes._mw_bx,
-                          A_v=mw_av, R_v=mw_rv)
+    dust_spec.addDust(_fluxes._mw_ax, _fluxes._mw_bx,
+                      A_v=mw_av, R_v=mw_rv)
 
-    return (_fluxes._bp_dict.fluxListForSed(spec),
-            _fluxes._bp_dict.fluxListForSed(host_dust_spec),
-            _fluxes._bp_dict.fluxListForSed(all_dust_spec))
+    fluxes_all_dust = _fluxes._bp_dict.fluxListForSed(dust_spec)
+
+    return (fluxes_no_dust,
+            fluxes_host_dust,
+            fluxes_all_dust)
 
 
 def write_results(conn, cursor, mag_dict, position_dict):
