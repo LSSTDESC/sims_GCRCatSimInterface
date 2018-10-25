@@ -9,6 +9,8 @@ from GCR import GCRQuery
 from lsst.sims.utils import angularSeparation
 from lsst.sims.photUtils import BandpassDict, Sed, Bandpass
 
+import argparse
+
 def get_sed(name, magnorm, redshift, av, rv):
     if not hasattr(get_sed, '_rest_dict'):
         get_sed._rest_dict = {}
@@ -39,6 +41,13 @@ def get_sed(name, magnorm, redshift, av, rv):
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--obs', type=int, default=None)
+    parser.add_argument('--nrows', type=int, default=100000)
+    parser.add_argument('--seed', type=int, default=9812)
+
+    args = parser.parse_args()
+
     colnames = ['obj', 'uniqueID', 'ra', 'dec', 'magnorm', 'sed', 'redshift', 'g1', 'g2',
                 'kappa', 'dra', 'ddec', 'src_type', 'major', 'minor',
                 'positionAngle', 'sindex', 'dust_rest', 'rest_av', 'rest_rv',
@@ -48,10 +57,10 @@ if __name__ == "__main__":
                  'rest_av': float, 'rest_rv': float,
                  'sed': bytes, 'uniqueID': int}
 
-    data_dir = os.path.join(os.environ['SCRATCH'], 'instcat_181024_verify', '00277065')
+    data_dir = os.path.join(os.environ['SCRATCH'], 'instcat_181024_verify', '%.8d' % args.obs)
     assert os.path.isdir(data_dir)
 
-    phosim_file = os.path.join(data_dir, 'phosim_cat_277065.txt')
+    phosim_file = os.path.join(data_dir, 'phosim_cat_%d.txt' % args.obs)
     assert os.path.isfile(phosim_file)
     bandpass_name = None
     bandpass_name_list = 'ugrizy'
@@ -67,15 +76,14 @@ if __name__ == "__main__":
      hw_dict) = BandpassDict.loadBandpassesFromFiles()
 
     bandpass = hw_dict[bandpass_name]
-    nrows = 10000
 
-    disk_file = os.path.join(data_dir, 'disk_gal_cat_277065.txt.gz')
+    disk_file = os.path.join(data_dir, 'disk_gal_cat_%d.txt.gz' % args.obs)
     assert os.path.isfile(disk_file)
 
-    bulge_file = os.path.join(data_dir, 'bulge_gal_cat_277065.txt.gz')
+    bulge_file = os.path.join(data_dir, 'bulge_gal_cat_%d.txt.gz' % args.obs)
     assert os.path.isfile(bulge_file)
 
-    knots_file = os.path.join(data_dir, 'knots_cat_277065.txt.gz')
+    knots_file = os.path.join(data_dir, 'knots_cat_%d.txt.gz' % args.obs)
     assert os.path.isfile(knots_file)
 
     disk_df = pd.read_csv(disk_file, delimiter=' ',
@@ -104,8 +112,8 @@ if __name__ == "__main__":
         wanted_col[ii] = wanted_col[ii]+'_knots'
     galaxy_df = galaxy_df.join(knots_df[wanted_col], how='outer', rsuffix='_knots')
 
-    rng = np.random.RandomState(9999)
-    dexes = rng.choice(galaxy_df.index.values, size=nrows, replace=False)
+    rng = np.random.RandomState(args.seed)
+    dexes = rng.choice(galaxy_df.index.values, size=args.nrows, replace=False)
 
     galaxy_df = galaxy_df.loc[dexes]
 
