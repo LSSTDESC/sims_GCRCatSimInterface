@@ -93,7 +93,7 @@ def calculate_mags(sed_name, mag_norm, out_dict, av_arr, rv_arr):
     if not hasattr(calculate_mags, '_sed_cache'):
         calculate_mags._sed_cache = {}
         calculate_mags._imsim_bp = Bandpass()
-        calcuate_mags._imsim_bp.imsimBandpass()
+        calculate_mags._imsim_bp.imsimBandpass()
 
         bp_dir = getPackageDir('throughputs')
         bp_dir = os.path.join(bp_dir, 'imsim', 'goal')
