@@ -192,7 +192,7 @@ def write_stars_to_truth(output=None,
 
         data_iter = db.query_columns(colnames=['simobjid', 'sedFilename',
                                                'magNorm', 'ra', 'decl',
-                                               'galacticAv', 'galacticRv'],
+                                               'galacticAv'],
                                      obs_metadata=obs,
                                      chunk_size = 10000)
 
@@ -202,7 +202,7 @@ def write_stars_to_truth(output=None,
                               args=(star_chunk['sedFilename'],
                                     star_chunk['magNorm'],
                                     star_chunk['galacticAv'],
-                                    star_chunk['galacticRv'],
+                                    [3.1]*len(star_chunk),
                                     mag_dict))
             proc.start()
             p_list.append(proc)
