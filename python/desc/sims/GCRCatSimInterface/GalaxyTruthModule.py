@@ -55,7 +55,7 @@ def _fluxes(sed_name, mag_norm, redshift,
     dust_spec = Sed(wavelen=spec.wavelen, flambda=spec.flambda)
     if _fluxes._ccm_w is None or not np.array_equal(_fluxes._ccm_w, spec.wavelen):
         _fluxes._ccm_w = np.copy(spec.wavelen)
-        _fluxes._ax, _fluxes._bx = host_dust_spec.setupCCM_ab()
+        _fluxes._ax, _fluxes._bx = dust_spec.setupCCM_ab()
     dust_spec.addDust(_fluxes._ax, _fluxes._bx, A_v=host_av, R_v=host_rv)
     spec.redshiftSED(redshift, dimming=True)
     dust_spec.redshiftSED(redshift, dimming=True)
