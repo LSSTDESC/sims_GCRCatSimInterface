@@ -9,7 +9,7 @@ import time
 from lsst.utils import getPackageDir
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.utils import defaultSpecMap
-from lsst.sims.photUtils import BandpassDict
+from lsst.sims.photUtils import BandpassDict, Bandpass
 from lsst.sims.photUtils import Sed, getImsimFluxNorm
 from lsst.sims.catUtils.baseCatalogModels import StarObj
 
@@ -49,7 +49,8 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
     row_ct = 0
     for k in mag_dict.keys():
-        mm = mag_dict[k]
+        mm = mag_dict[k][0]
+        mm_dust = mag_dict[k][1]
         pp = position_dict[k]
         row_ct += len(pp['ra'])
         if len(mm) != len(pp['ra']):
@@ -59,17 +60,22 @@ def write_results(conn, cursor, mag_dict, position_dict):
                    int(pp['id'][i_obj]), 1, 0, 0,
                    pp['ra'][i_obj], pp['dec'][i_obj], 0.0,
                    mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
-                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5])
+                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5],
+                   mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
+                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5],
+                   mm_dust[i_obj][0], mm_dust[i_obj][1], mm_dust[i_obj][2],
+                   mm_dust[i_obj][3], mm_dust[i_obj][4], mm_dust[i_obj][5])
                   for i_obj in range(len(pp['ra'])))
 
         cursor.executemany('''INSERT INTO truth
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+                           ?,?,?,?,?,?,?,?,?,?,?,?)''', values)
         conn.commit()
 
     return row_ct
 
 
-def calculate_mags(sed_name, mag_norm, out_dict):
+def calculate_mags(sed_name, mag_norm, out_dict, av_arr, rv_arr):
     """
     Parameters
     ----------
@@ -77,27 +83,54 @@ def calculate_mags(sed_name, mag_norm, out_dict):
 
     mag_norm is a numpy array of magNorms
 
+    av_arr is an array of Av values
+
+    rv_arr is an array of Rv values
+
     out_dict is a multiprocessing.Manager.dict() that will
     store the magnitudes calculated by this process.
     """
-    i_process = mp.current_process().pid
+    if not hasattr(calculate_mags, '_sed_cache'):
+        calculate_mags._sed_cache = {}
+        calculate_mags._imsim_bp = Bandpass()
+        calcuate_mags._imsim_bp.imsimBandpass()
 
-    bp_dir = getPackageDir('throughputs')
-    bp_dir = os.path.join(bp_dir, 'imsim', 'goal')
-    bp_dict =  BandpassDict.loadTotalBandpassesFromFiles(bandpassDir=bp_dir)
+        bp_dir = getPackageDir('throughputs')
+        bp_dir = os.path.join(bp_dir, 'imsim', 'goal')
+        calculate_mags._bp_dict =  BandpassDict.loadTotalBandpassesFromFiles(bandpassDir=bp_dir)
 
     sed_dir = getPackageDir('sims_sed_library')
 
-    out_mags = np.zeros((len(sed_name), 6), dtype=float)
-    for i_star, (s_name, m_norm) in enumerate(zip(sed_name, mag_norm)):
-        spec = Sed()
-        spec.readSED_flambda(os.path.join(sed_dir, defaultSpecMap[s_name]))
-        fnorm = getImsimFluxNorm(spec, m_norm)
-        spec.multiplyFluxNorm(fnorm)
-        mags = bp_dict.magListForSed(spec)
-        out_mags[i_star] = mags
+    i_process = mp.current_process().pid
 
-    out_dict[i_process] = out_mags
+    n04_ln10 = -0.4*np.log(10.0)
+    out_mags = np.zeros((len(sed_name), 6), dtype=float)
+    out_mags_dust = np.zeros((len(sed_name), 6), dtype=float)
+
+    for i_star, (s_name, m_norm, av, rv) in enumerate(zip(sed_name, mag_norm, av_arr, rv_arr)):
+        if s_name not in calculate_mags._sed_cache:
+            base_spec = Sed()
+            base_spec.readSED_flambda(os.path.join(sed_dir, defaultSpecMap[s_name]))
+            mn = base_spec.calcMag(calculate_mags._imsim_bp)
+            base_spec.resampleSED(wavelen_match=calculate_mags._bp_dict.wavelenMatch)
+            calculate_mags._sed_cache[s_name] = (base_spec, mn)
+
+        spec = Sed(wavelen=calculate_mags._sed_cache[s_name][0].wavelen,
+                   flambda=calculate_mags._sed_cache[s_name][0].flambda)
+
+        fnorm = np.exp(n04_ln10*(m_norm-calculate_mags._sed_cache[s_name][1]))
+        spec.multiplyFluxNorm(fnorm)
+
+        out_mags[i_star] = calculate_mags._bp_dict._magListForSed(spec)
+
+        if not hasattr(calculate_mags, '_ax'):
+            (calculate_mags._ax,
+             calculate_mags._bx) = spec.setupCCM_ab()
+
+        spec.addDust(calculate_mags._ax, calculate_mags._bx, A_v=av, R_v=rv)
+        out_mags_dust[i_star] = calculate_mags._bp_dict._magListForSed(spec)
+
+    out_dict[i_process] = (out_mags, out_mags_dust)
 
 
 def write_stars_to_truth(output=None,
@@ -158,7 +191,8 @@ def write_stars_to_truth(output=None,
         out_cursor = out_conn.cursor()
 
         data_iter = db.query_columns(colnames=['simobjid', 'sedFilename',
-                                               'magNorm', 'ra', 'decl'],
+                                               'magNorm', 'ra', 'decl',
+                                               'galacticAv', 'galacticRv'],
                                      obs_metadata=obs,
                                      chunk_size = 10000)
 
@@ -167,6 +201,8 @@ def write_stars_to_truth(output=None,
             proc = mp.Process(target=calculate_mags,
                               args=(star_chunk['sedFilename'],
                                     star_chunk['magNorm'],
+                                    star_chunk['galacticAv'],
+                                    star_chunk['galacticRv'],
                                     mag_dict))
             proc.start()
             p_list.append(proc)
