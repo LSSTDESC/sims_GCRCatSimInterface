@@ -271,7 +271,7 @@ if __name__ == "__main__":
     with h5py.File(out_file_name, 'w') as out_file:
         out_file.create_dataset('galaxy_id', data=control_qties['galaxy_id'])
         out_file.create_dataset('ra', data=control_qties['ra'])
-        out_file.create_dataset('dec', data=control_qties['dec')
+        out_file.create_dataset('dec', data=control_qties['dec'])
         out_file.create_dataset('sed_names', data=sed_names)
         out_file.create_dataset('disk_sed', data=disk_sed_idx)
         out_file.create_dataset('bulge_sed', data=bulge_sed_idx)
