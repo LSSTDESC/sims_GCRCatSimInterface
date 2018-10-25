@@ -119,6 +119,9 @@ if __name__ == "__main__":
 
     galaxy_df = galaxy_df.sort_index()
 
+    invalid_knots = np.where(np.logical_not(np.isfinite(galaxy_df['magnorm_knots'].values)))
+    print('no knots %e' % len(invalid_knots[0]))
+
     ra_center = np.nanmedian(galaxy_df['ra_disk'].values)
     dec_center = np.nanmedian(galaxy_df['dec_disk'].values)
 
@@ -139,28 +142,47 @@ if __name__ == "__main__":
     print(healpix_list)
     print(ra_center, dec_center)
 
-    hp_query = GCRQuery()
+    hp_query = None
     for hp in healpix_list:
-        hp_query |= GCRQuery('healpix_pixel==%d' % hp)
+        print(hp)
+        if hp_query is None:
+            hp_query = GCRQuery('healpix_pixel==%d' % hp)
+        else:
+            hp_query |= GCRQuery('healpix_pixel==%d' % hp)
 
     print('len(galaxy_df) ',len(galaxy_df))
     print('built final df')
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
-    gid = cat.get_quantities('galaxy_id', native_filters=[hp_query])['galaxy_id']
-    print('loaded galaxy_id')
-    valid_dexes = np.where(np.in1d(gid, galaxy_df.index.values,assume_unique=True))
+    cat_qties = cat.get_quantities(['galaxy_id', 'ra_true', 'dec_true'], native_filters=[hp_query])
+    print('loaded galaxy_id %e' % len(cat_qties['galaxy_id']))
+    cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
+
+    dd = angularSeparation(ra_center, dec_center,
+                           cat_qties['ra_true'], cat_qties['dec_true'])
+
+    dd_cut = np.where(dd<(radius_deg+0.05))
+    gid = cat_qties['galaxy_id'][dd_cut]
+    cat_dexes = cat_dexes[dd_cut]
+    print('did spatial cut %d of %d' % (len(cat_dexes), len(cat_qties['ra_true'])))
+
+    in1d_valid_dexes = np.where(np.in1d(gid, galaxy_df.index.values,assume_unique=True))
+    valid_dexes = cat_dexes[in1d_valid_dexes]
+    gid = gid[in1d_valid_dexes]
+
     print('got valid_dexes')
-    print(len(valid_dexes[0]))
+    print(len(valid_dexes))
     print(len(galaxy_df))
 
-    sorted_dex = np.argsort(gid[valid_dexes])
-    valid_dexes = valid_dexes[0][sorted_dex]
-    gid = gid[valid_dexes]
+    sorted_dex = np.argsort(gid)
+    valid_dexes = valid_dexes[sorted_dex]
 
-    np.testing.assert_array_equal(gid, galaxy_df.index.values)
+    assert len(gid) == len(galaxy_df.index.values)
+    np.testing.assert_array_equal(gid[sorted_dex], galaxy_df.index.values)
 
     mag_name = 'mag_true_%s_lsst' % bandpass_name
-    mags = cat.get_quantities(mag_name, native_filters=[hp_query])[mag_name][valid_dexes]
+    qties = cat.get_quantities(['galaxy_id', mag_name], native_filters=[hp_query])
+    mags = qties[mag_name][valid_dexes]
+    gid = qties['galaxy_id'][valid_dexes]
 
     d_mag_max = -1.0
 
@@ -198,5 +220,5 @@ if __name__ == "__main__":
         d_mag = np.abs(tot_mag-mag_true)
         if d_mag>d_mag_max:
             d_mag_max = d_mag
-            print('d_mag_max %e -- InstanceCatalgo %e truth %e' % (d_mag_max, tot_mag, mag_true))
+            print('d_mag_max %e -- InstanceCatalog %e truth %e' % (d_mag_max, tot_mag, mag_true))
             #print(row)
