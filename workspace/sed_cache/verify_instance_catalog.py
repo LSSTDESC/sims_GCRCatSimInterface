@@ -153,17 +153,17 @@ if __name__ == "__main__":
     print('len(galaxy_df) ',len(galaxy_df))
     print('built final df')
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
-    cat_qties = cat.get_quantities(['galaxy_id', 'ra_true', 'dec_true'], native_filters=[hp_query])
+    cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'], native_filters=[hp_query])
     print('loaded galaxy_id %e' % len(cat_qties['galaxy_id']))
     cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
 
     dd = angularSeparation(ra_center, dec_center,
-                           cat_qties['ra_true'], cat_qties['dec_true'])
+                           cat_qties['ra'], cat_qties['dec'])
 
     dd_cut = np.where(dd<(radius_deg+0.05))
     gid = cat_qties['galaxy_id'][dd_cut]
     cat_dexes = cat_dexes[dd_cut]
-    print('did spatial cut %d of %d' % (len(cat_dexes), len(cat_qties['ra_true'])))
+    print('did spatial cut %d of %d' % (len(cat_dexes), len(cat_qties['ra'])))
 
     in1d_valid_dexes = np.where(np.in1d(gid, galaxy_df.index.values,assume_unique=True))
     valid_dexes = cat_dexes[in1d_valid_dexes]
