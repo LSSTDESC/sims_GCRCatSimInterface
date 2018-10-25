@@ -75,7 +75,7 @@ def write_results(conn, cursor, mag_dict, position_dict):
     return row_ct
 
 
-def calculate_mags(sed_name, mag_norm, out_dict, av_arr, rv_arr):
+def calculate_mags(sed_name, mag_norm, av_arr, rv_arr, out_dict):
     """
     Parameters
     ----------
