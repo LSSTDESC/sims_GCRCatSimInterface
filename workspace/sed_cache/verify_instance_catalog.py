@@ -222,3 +222,5 @@ if __name__ == "__main__":
             d_mag_max = d_mag
             print('d_mag_max %e -- InstanceCatalog %e truth %e' % (d_mag_max, tot_mag, mag_true))
             #print(row)
+
+    print('all done %d' % args.obs)
