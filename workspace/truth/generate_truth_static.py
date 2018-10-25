@@ -74,7 +74,7 @@ if __name__ == "__main__":
                   ('r_hostdust', 'observed lsst r magnitude; only internal dust extinction; no Milky Way dust'),
                   ('i_hostdust', 'observed lsst i magnitude; only internal dust extinction; no Milky Way dust'),
                   ('z_hostdust', 'observed lsst z magnitude; only internal dust extinction; no Milky Way dust'),
-                  ('y_hostdust', 'observed lsst y magnitude; only internal dust extinction; no Milky Way dust')
+                  ('y_hostdust', 'observed lsst y magnitude; only internal dust extinction; no Milky Way dust'),
                   ('u_alldust', 'observed lsst u magnitude; internal and Milky Way dust extinction applied'),
                   ('g_alldust', 'observed lsst g magnitude; internal and Milky Way dust extinction applied'),
                   ('r_alldust', 'observed lsst r magnitude; internal and Milky Way dust extinction applied'),
