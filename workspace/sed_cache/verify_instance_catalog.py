@@ -45,6 +45,7 @@ if __name__ == "__main__":
     parser.add_argument('--obs', type=int, default=None)
     parser.add_argument('--nrows', type=int, default=100000)
     parser.add_argument('--seed', type=int, default=9812)
+    parser.add_argument('--cat_dir', type=str, default=None)
 
     args = parser.parse_args()
 
@@ -57,7 +58,8 @@ if __name__ == "__main__":
                  'rest_av': float, 'rest_rv': float,
                  'sed': bytes, 'uniqueID': int}
 
-    data_dir = os.path.join(os.environ['SCRATCH'], 'instcat_181024_verify', '%.8d' % args.obs)
+    assert os.path.isdir(args.cat_dir)
+    data_dir = os.path.join(args.cat_dir,'%.8d' % args.obs)
     assert os.path.isdir(data_dir)
 
     phosim_file = os.path.join(data_dir, 'phosim_cat_%d.txt' % args.obs)
