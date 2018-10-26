@@ -117,7 +117,7 @@ class InstanceCatalogWriter(object):
         """
         Parameters
         ----------
-        obsimdb: str
+        opsimdb: str
             OpSim db filename.
         descqa_catalog: str
             Name of the DESCQA galaxy catalog.
