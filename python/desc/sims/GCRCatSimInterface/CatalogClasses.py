@@ -186,6 +186,9 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
 
 class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
+    # directory where the SED lookup tables reside
+    sed_lookup_dir = None
+
     # default values used if the database does not provide information
     default_columns = [('raOffset', 0.0, float), ('decOffset', 0.0, float),
                        ('internalExtinctionModel', 'CCM', str, 3),
@@ -278,22 +281,16 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         print('caching ',healpix_list, component_type, bandpass)
 
-        sed_lookup_dir = os.path.join('/global/projecta/projectdirs',
-                                      'lsst/groups/SSim/DC2/SEDLookup')
+        assert os.path.isdir(self.sed_lookup_dir)
 
-        sed_lookup_dir = os.path.join('/global/cscratch1/sd/danielsf',
-                                      'sed_cache_181017')
-
-        assert os.path.isdir(sed_lookup_dir)
-
-        file_root = 'sed_fit_idx'
+        file_root = 'sed_fit'
         bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
         out_dict = {}
         dexes_to_keep = {}
         n_obj = 0
         for hp in healpix_list:
-            file_name = os.path.join(sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
+            file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
             with h5py.File(file_name, 'r') as data:
                 dd = angularSeparation(self.obs_metadata.pointingRA,
                                        self.obs_metadata.pointingDec,
@@ -311,7 +308,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         ct_loaded = 0
         for hp in healpix_list:
-            file_name = os.path.join(sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
+            file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
             with h5py.File(file_name, 'r') as data:
                 if not hasattr(self, '_sed_lookup_names'):
                     self._sed_lookup_names = np.copy(data['sed_names'])

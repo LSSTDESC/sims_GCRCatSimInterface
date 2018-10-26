@@ -111,6 +111,7 @@ class InstanceCatalogWriter(object):
                  min_mag=10, minsource=100, proper_motion=False,
                  protoDC2_ra=0, protoDC2_dec=0,
                  star_db_name = None,
+                 sed_lookup_dir=None,
                  agn_db_name=None, agn_threads=1, sn_db_name=None,
                  sprinkler=False, host_image_dir=None,
                  host_data_dir=None, config_dict=None):
@@ -135,6 +136,8 @@ class InstanceCatalogWriter(object):
             Desired Dec (J2000 degrees) of protoDC2 center.
         star_db_name: str [None]
             Filename of the database containing stellar sources
+        sed_lookup_dir: str [None]
+            Directory where the SED lookup tables reside.
         agn_db_name: str [None]
             Filename of the agn parameter sqlite db file.
         agn_threads: int [1]
@@ -184,6 +187,10 @@ class InstanceCatalogWriter(object):
                                   driver='sqlite')
 
         self.sprinkler = sprinkler
+
+        if not os.path.isdir(sed_lookup_dir):
+            raise IOError("\n%s\nis not a dir" % sed_lookup_dir)
+        self.sed_lookup_dir = sed_lookup_dir
 
         self._agn_threads = agn_threads
         if agn_db_name is None:
@@ -340,6 +347,7 @@ class InstanceCatalogWriter(object):
             knots_db.field_dec = self.protoDC2_dec
             cat = self.instcats.DESCQACat(knots_db, obs_metadata=obs_md,
                                           cannot_be_null=['hasKnots'])
+            cat.sed_lookup_dir = self.sed_lookup_dir
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
             cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=100000,
@@ -367,6 +375,7 @@ class InstanceCatalogWriter(object):
                 cat = self.instcats.DESCQACat(bulge_db, obs_metadata=obs_md,
                                               cannot_be_null=['hasBulge', 'magNorm'])
                 cat_name = 'bulge_'+gal_name
+                cat.sed_lookup_dir = self.sed_lookup_dir
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
                 cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
@@ -388,6 +397,7 @@ class InstanceCatalogWriter(object):
                 cat = self.instcats.DESCQACat(disk_db, obs_metadata=obs_md,
                                               cannot_be_null=['hasDisk', 'magNorm'])
                 cat_name = 'disk_'+gal_name
+                cat.sed_lookup_dir = self.sed_lookup_dir
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
                 cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=100000,
@@ -470,6 +480,7 @@ class InstanceCatalogWriter(object):
                                                        field_dec=self.protoDC2_dec,
                                                        agn_params_db=self.agn_db_name)
 
+                gal_cat.sed_lookup_dir = self.sed_lookup_dir
                 gal_cat.use_spec_map = twinkles_spec_map
                 gal_cat.sed_dir = glsn_spectra_dir
                 gal_cat.photParams = self.phot_params
