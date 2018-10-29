@@ -137,7 +137,7 @@ class DESCQAChunkIterator(object):
                                          for name in self._colnames
                                          if descqa_catalog.has_quantity(self._column_map[name][0])})
 
-        return self._append_defaults(chunk):
+        return self._append_defaults(chunk)
 
     def _append_defaults(self, chunk):
         descqa_catalog = self._descqa_obj._catalog
@@ -240,6 +240,118 @@ class DESCQAChunkIterator(object):
 
         if self._chunk_size is None:
             self._chunk_size = self._data_indices.size
+
+
+class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
+    """
+    A DESCQAChunkIterator class specifically designed to work on catalogs that can
+    be subdivided by healpix_pixels.  It will only load one healpixel at a time and
+    process that in chunks before moving on to the next healpixel.
+    """
+    def __init__(self, *args, **kwargs):
+        self._healpix_to_indices_map = None
+        self._healpix_loaded = -1
+        super(DESCQAChunkIterator_healpix, self).__init__(*args, **kwargs)
+
+
+    def _init_data_indices(self):
+        """
+        Do the spatial filtering of extragalactic catalog data.
+        """
+        self._healpix_to_indices_map = {}
+        descqa_catalog = self._descqa_obj._catalog
+
+        try:
+            radius_rad = max(self._obs_metadata._boundLength[0],
+                             self._obs_metadata._boundLength[1])
+        except (TypeError, IndexError):
+            radius_rad = self._obs_metadata._boundLength
+
+        if 'healpix_pixel' not in descqa_catalog._native_filter_quantities:
+            raise RuntimeError("Somehow DESCQAChunkIterator_healppix got called "
+                               "for a catalog that does not have healpixel divisions")
+
+        ra_rad = self._obs_metadata._pointingRA
+        dec_rad = self._obs_metadata._pointingDec
+        vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                       np.cos(dec_rad)*np.sin(ra_rad),
+                       np.sin(dec_rad)])
+        healpix_list = healpy.query_disc(32, vv, radius_rad,
+                                         inclusive=True,
+                                         nest=False)
+
+        for hp in healpix_list:
+            healpix_filter = GCRQuery('healpix_pixel==%d' % hp)
+
+            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000', 'galaxy_id'],
+                                                   native_filters=[healpix_filter])
+
+            ra = ra_dec['raJ2000']
+            dec = ra_dec['decJ2000']
+            gid = ra_dec['galaxy_id']
+
+            # Optionally apply a method that returns a list of galaxy_ids that are
+            # actually valid objects for the DESCQAObject being queried.
+            # This is especially useful for AGN simulations, as it allows us to only
+            # keep galaxies that actually contain AGN.
+            if (hasattr(self._descqa_obj, '_prefilter_galaxy_id')
+                and self._descqa_obj._do_prefiltering):
+
+                prefilter_gid = self._descqa_obj._prefilter_galaxy_id(self._obs_metadata)
+                prefilter_indices = np.in1d(gid, prefilter_gid)
+            else:
+                prefilter_indices = np.array([True]*len(ra))
+
+            ang_sep = _angularSeparation(ra, dec,
+                                         self._obs_metadata._pointingRA,
+                                         self._obs_metadata._pointingDec)
+
+            valid_indices = np.where(np.logical_and(prefilter_indices, ang_sep < radius_rad))[0]
+            if len(valid_indices)>0:
+                self._healpix_to_indices_map[hp] = (healpix_filter, valid_indices)
+
+    def __next__(self):
+
+        descqa_catalog = self._descqa_obj._catalog
+
+        if self._healpix_to_indices_map is None:
+            self._init_data_indices()
+            self._qty_name_list = [self._column_map[name][0]
+                                   for name in self._colnames
+                                   if descqa_catalog.has_quantity(self._column_map[name][0])]
+
+        if self._loaded_qties is None or len(self._data_indices)==0:
+            try:
+                hp, (healpix_filter, valid_indices) = self._healpix_to_indices_map.popitem()
+            except KeyError:
+                self._healpix_to_indices_map = None
+                self._loaded_qties = None
+                self._healpix_loaded = -1
+                self._data_indices = None
+                self._qty_name_list = None
+                raise StopIteration
+
+            print('loading healpix %d' % hp)
+            self._loaded_qties = {}
+            for name in self._qty_name_list:
+                raw_qties = descqa_catalog.get_quantities(name, native_filters=[healpix_filter])
+                self._loaded_qties[name] = raw_qties[name][valid_indices]
+            self._healpix_loaded = hp
+            self._data_indices = np.arange(len(valid_indices), dtype=int)
+
+        if self._chunk_size is None:
+            data_indices_this = self._data_indices
+        else:
+            data_indices_this = self._data_indices[:self._chunk_size]
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            chunk = dict_to_numpy_array({name: self._loaded_qties[self._column_map[name][0]][data_indices_this]
+                                         for name in self._colnames
+                                         if descqa_catalog.has_quantity(self._column_map[name][0])})
+
+        self._data_indices = self._data_indices[len(data_indices_this):]
+        print('    returning a chunk')
+        return self._append_defaults(chunk)
 
 
 class DESCQAObject(object):
@@ -492,10 +604,16 @@ class DESCQAObject(object):
 
         limit is ignored, but needs to be here to preserve the API
         """
-        return DESCQAChunkIterator(self, self.columnMap, obs_metadata,
-                                   colnames or list(self.columnMap),
-                                   self._descqaDefaultValues,
-                                   chunk_size)
+        if 'healpix_pixel' in self._catalog._native_filter_quantities:
+            print('Using the DESCQAChunkIterator_healpix class')
+            chunk_class = DESCQAChunkIterator_healpix
+        else:
+            chunk_class = DESCQAChunkIterator
+
+        return chunk_class(self, self.columnMap, obs_metadata,
+                           colnames or list(self.columnMap),
+                           self._descqaDefaultValues,
+                           chunk_size)
 
 
 class bulgeDESCQAObject(DESCQAObject):
