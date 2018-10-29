@@ -137,7 +137,7 @@ if __name__ == "__main__":
     if use_direct_eddington:
         print('using native Eddington ratio')
         qty_names.append('blackHoleEddingtonRatio')
-        filters.append((lambda x:x>0.0, 'blackHoleEddingtonRatio')
+        filters.append((lambda x:x>0.0, 'blackHoleEddingtonRatio'))
 
     else:
         qty_names.append('blackHoleAccretionRate')
