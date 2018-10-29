@@ -137,6 +137,10 @@ class DESCQAChunkIterator(object):
                                          for name in self._colnames
                                          if descqa_catalog.has_quantity(self._column_map[name][0])})
 
+        return self._append_defaults(chunk):
+
+    def _append_defaults(self, chunk):
+        descqa_catalog = self._descqa_obj._catalog
         need_to_append_defaults = False
         for name in self._colnames:
             if not descqa_catalog.has_quantity(self._column_map[name][0]):
