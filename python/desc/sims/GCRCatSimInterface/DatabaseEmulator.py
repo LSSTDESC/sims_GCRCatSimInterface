@@ -122,7 +122,6 @@ class DESCQAChunkIterator(object):
                 ct_loaded += len(valid_indices)
 
                 for name in qty_name_list:
-                    print('loading %s' % name)
                     raw_qties = descqa_catalog.get_quantities(name,
                                                               native_filters=native_filters)
 
