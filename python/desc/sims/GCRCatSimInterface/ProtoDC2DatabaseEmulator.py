@@ -284,7 +284,7 @@ class AGN_postprocessing_mixin(object):
 
 
         self._cached_half_space = half_space
-        trixel_bounds = half_space.findAllTrixels(6)
+        trixel_bounds = half_space.findAllTrixels(8)
 
         query = 'SELECT galaxy_id, magNorm, varParamStr '
         query += 'FROM agn_params '
@@ -293,9 +293,9 @@ class AGN_postprocessing_mixin(object):
             if i_bound>0:
                 query += 'OR '
             if bound[0]==bound[1]:
-                query += 'htmid_6 == %d ' % bound[0]
+                query += 'htmid_8 == %d ' % bound[0]
             else:
-                query += '(htmid_6 >= %d AND htmid_6 <= %d) ' % (bound[0], bound[1])
+                query += '(htmid_8 >= %d AND htmid_8 <= %d) ' % (bound[0], bound[1])
         query += 'ORDER BY galaxy_id'
 
         self._agn_query_results = self._agn_dbo.execute_arbitrary(query,

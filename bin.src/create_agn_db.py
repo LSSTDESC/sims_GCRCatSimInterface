@@ -196,7 +196,7 @@ if __name__ == "__main__":
         m_i_grid[i_z] = ss.calcMag(bp_dict['i'])
         mag_norm_grid[i_z] = ss.calcMag(imsimband)
 
-    htmid_level = 6
+    htmid_level = 8
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
@@ -301,7 +301,7 @@ if __name__ == "__main__":
         assert ct_simulated == full_size
 
         print('creating index')
-        cursor.execute('CREATE INDEX htmid ON agn_params (htmid_6)')
+        cursor.execute('CREATE INDEX htmid ON agn_params (htmid_8)')
         connection.commit()
 
     print('all done')
