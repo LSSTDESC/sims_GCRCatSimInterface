@@ -217,7 +217,7 @@ if __name__ == "__main__":
             print("    %d through %d -- took %.2e hrs; predict %.2e" %
             (i_start,i_end,duration,predicted))
 
-            selection = slice(i_start:i_end)
+            selection = slice(i_start, i_end)
             galaxy_id = galaxy_id_full[selection]
             ra = ra_full[selection]
             dec = dec_full[selection]
