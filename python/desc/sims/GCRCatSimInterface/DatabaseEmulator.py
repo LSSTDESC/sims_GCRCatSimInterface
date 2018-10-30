@@ -252,7 +252,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
         self._healpix_and_indices_list = None
         self._healpix_loaded = -1
         super(DESCQAChunkIterator_healpix, self).__init__(*args, **kwargs)
-
+        self._descqa_obj._loaded_healpixel = -1
 
     def _init_data_indices(self):
         """
@@ -329,8 +329,10 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                 self._healpix_loaded = -1
                 self._data_indices = None
                 self._qty_name_list = None
+                self._descqa_obj._loaded_healpixel = -1
                 raise StopIteration
 
+            self._descqa_obj._loaded_healpixel = hp
             print('loading healpix %d' % hp)
             self._loaded_qties = {}
             for name in self._qty_name_list:
