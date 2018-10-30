@@ -352,7 +352,6 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                                          if descqa_catalog.has_quantity(self._column_map[name][0])})
 
         self._data_indices = self._data_indices[len(data_indices_this):]
-        print('    returning a chunk')
         return self._append_defaults(chunk)
 
 
