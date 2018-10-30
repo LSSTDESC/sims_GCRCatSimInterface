@@ -249,7 +249,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
     process that in chunks before moving on to the next healpixel.
     """
     def __init__(self, *args, **kwargs):
-        self._healpix_to_indices_map = None
+        self._healpix_and_indices_list = None
         self._healpix_loaded = -1
         super(DESCQAChunkIterator_healpix, self).__init__(*args, **kwargs)
 
@@ -258,7 +258,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
         """
         Do the spatial filtering of extragalactic catalog data.
         """
-        self._healpix_to_indices_map = {}
+        self._healpix_and_indices_list = []
         descqa_catalog = self._descqa_obj._catalog
 
         try:
@@ -308,13 +308,13 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
 
             valid_indices = np.where(np.logical_and(prefilter_indices, ang_sep < radius_rad))[0]
             if len(valid_indices)>0:
-                self._healpix_to_indices_map[hp] = (healpix_filter, valid_indices)
+                self._healpix_and_indices_list.append((hp, healpix_filter, valid_indices))
 
     def __next__(self):
 
         descqa_catalog = self._descqa_obj._catalog
 
-        if self._healpix_to_indices_map is None:
+        if self._healpix_and_indices_list is None:
             self._init_data_indices()
             self._qty_name_list = [self._column_map[name][0]
                                    for name in self._colnames
@@ -322,9 +322,9 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
 
         if self._loaded_qties is None or len(self._data_indices)==0:
             try:
-                hp, (healpix_filter, valid_indices) = self._healpix_to_indices_map.popitem()
-            except KeyError:
-                self._healpix_to_indices_map = None
+                (hp, healpix_filter, valid_indices) = self._healpix_and_indices_list.pop()
+            except IndexError:
+                self._healpix_and_indices_list = None
                 self._loaded_qties = None
                 self._healpix_loaded = -1
                 self._data_indices = None
