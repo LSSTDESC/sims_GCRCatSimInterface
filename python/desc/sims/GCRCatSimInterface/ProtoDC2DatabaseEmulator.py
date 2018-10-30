@@ -3,6 +3,7 @@ This script will define classes that enable CatSim to interface with GCR
 """
 import numpy as np
 import os
+import sqlite3
 
 from desc.sims.GCRCatSimInterface import DESCQAObject
 from desc.sims.GCRCatSimInterface import deg2rad_double, arcsec2rad
@@ -273,34 +274,45 @@ class AGN_postprocessing_mixin(object):
         if not os.path.exists(self.agn_params_db):
             raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
 
-        if not hasattr(self, '_agn_dbo'):
-            self._agn_dbo = DBObject(database=self.agn_params_db,
-                                     driver='sqlite')
-
-            self._agn_dtype = np.dtype([('galaxy_id', int),
-                                        ('magNorm', float),
-                                        ('varParamStr', str, 500)])
-
-
-
+        self._agn_query_results = {}
         self._cached_half_space = half_space
         trixel_bounds = half_space.findAllTrixels(8)
 
-        query = 'SELECT galaxy_id, magNorm, varParamStr '
-        query += 'FROM agn_params '
-        query += 'WHERE '
+        where_clause = 'WHERE '
         for i_bound, bound in enumerate(trixel_bounds):
             if i_bound>0:
-                query += 'OR '
+                where_clause += 'OR '
             if bound[0]==bound[1]:
-                query += 'htmid_8 == %d ' % bound[0]
+                where_clause += 'htmid_8 == %d ' % bound[0]
             else:
-                query += '(htmid_8 >= %d AND htmid_8 <= %d) ' % (bound[0], bound[1])
-        query += 'ORDER BY galaxy_id'
+                where_clause += '(htmid_8 >= %d AND htmid_8 <= %d) ' % (bound[0], bound[1])
 
-        self._agn_query_results = self._agn_dbo.execute_arbitrary(query,
-                                                                  dtype=self._agn_dtype)
+        with sqlite3.connect(self.agn_params_db) as conn:
+            cursor = conn.cursor()
 
+            query = 'SELECT COUNT(galaxy_id) FROM agn_params '
+            query += where_clause
+            n_agn = cursor.execute(query).fetchall()[0][0]
+            self._agn_query_results['galaxy_id'] = np.zeros(n_agn, dtype=int)
+            self._agn_query_results['magNorm'] = np.NaN*np.ones(n_agn, dtype=float)
+            self._agn_query_results['varParamStr'] = np.empty(n_agn, dtype=(str,256))
+
+            where_clause += 'ORDER BY galaxy_id'
+            query = 'SELECT galaxy_id, magNorm, varParamStr '
+            query += 'FROM agn_params '
+            query += where_clause
+
+            result_iterator = cursor.execute(query)
+            d_agn = 100000
+            cursor.arraysize = d_agn
+            print('n_agn %d' % n_agn)
+            for ii in range(0, n_agn, d_agn):
+                s = slice(ii, ii+d_agn)
+                raw_results = np.array(result_iterator.fetchmany()).transpose()
+                print('    chunk ',raw_results.shape,raw_results[0][0],raw_results[0][-1])
+                self._agn_query_results['galaxy_id'][s] = raw_results[0].astype(int)
+                self._agn_query_results['magNorm'][s] = raw_results[1].astype(float)
+                self._agn_query_results['varParamStr'][s] = raw_results[2].astype(str)
 
     def _prefilter_galaxy_id(self, obs_metadata):
         """
@@ -358,7 +370,9 @@ class AGN_postprocessing_mixin(object):
         valid_agn_dex = np.where(np.logical_and(self._agn_query_results['galaxy_id']>=gid_arr.min(),
                                                 self._agn_query_results['galaxy_id']<=gid_arr.max()))
 
-        valid_agn = self._agn_query_results[valid_agn_dex]
+        valid_agn = {}
+        for k in self._agn_query_results:
+            valid_agn[k] = self._agn_query_results[k][valid_agn_dex]
 
         # find the indices of the elements in master_chunk
         # that correspond to elements in agn_chunk
