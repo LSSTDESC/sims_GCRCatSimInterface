@@ -311,9 +311,11 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
             with h5py.File(file_name, 'r') as data:
                 if not hasattr(self, '_sed_lookup_names'):
-                    self._sed_lookup_names = np.copy(data['sed_names'])
+                    self._sed_lookup_names = np.copy(data['sed_names']).astype(str)
+                    self._sed_lookup_names_bytes = np.copy(data['sed_names'])
                 else:
-                    np.testing.assert_array_equal(data['sed_names'], self._sed_lookup_names)
+                    np.testing.assert_array_equal(data['sed_names'],
+                                                  self._sed_lookup_names_bytes)
 
                 n_obj = len(dexes_to_keep[file_name][0])
                 s = slice(ct_loaded, ct_loaded+n_obj)
@@ -328,8 +330,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         sorted_dex = np.argsort(out_dict['galaxy_id'])
         for k in out_dict.keys():
             out_dict[k] = out_dict[k][sorted_dex]
-
-        self._sed_lookup_names = self._sed_lookup_names.astype(str)
 
         print('ending cache; %.1e Gb' % (process.memory_info().rss/(1024**3)))
 
@@ -361,14 +361,17 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if len(galaxy_id) == 0:
             return np.array([[],[], [], []])
 
-        ra_rad = self.obs_metadata._pointingRA
-        dec_rad = self.obs_metadata._pointingDec
-        vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
-                       np.cos(dec_rad)*np.sin(ra_rad),
-                       np.sin(dec_rad)])
-        radius_rad = self.obs_metadata._boundLength
-        healpix_list = np.sort(healpy.query_disc(32, vv, radius_rad,
-                                                 inclusive=True, nest=False))
+        if hasattr(self.db_obj, '_loaded_healpixel'):
+            healpix_list = np.array([self.db_obj._loaded_healpixel])
+        else:
+            ra_rad = self.obs_metadata._pointingRA
+            dec_rad = self.obs_metadata._pointingDec
+            vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                           np.cos(dec_rad)*np.sin(ra_rad),
+                           np.sin(dec_rad)])
+            radius_rad = self.obs_metadata._boundLength
+            healpix_list = np.sort(healpy.query_disc(32, vv, radius_rad,
+                                                     inclusive=True, nest=False))
 
         if component_type == 'knots':
             cache_component_type = 'disk'
@@ -379,6 +382,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             not np.array_equal(healpix_list, self._sed_lookup_healpix) or
             not component_type == self._sed_lookup_component_type or
             not self.obs_metadata.bandpass == self._sed_lookup_bandpass):
+
+            # discard any existing cache
+            if hasattr(self, '_sed_lookup_cache'):
+                del self._sed_lookup_cache
 
             self._sed_lookup_cache = self._cache_sed_lookup(healpix_list,
                                                             cache_component_type,
