@@ -31,15 +31,15 @@ def load_in_data_agn():
     ahd_purged: Data array for galaxy disks.  Includes prefix, uniqueId, raPhoSim, decPhoSim, phosimMagNorm
 
     """
-    agn_host_bulge = pd.read_csv(os.path.join(data_dir,'agn_host_bulge.csv.gz'))
-    agn_host_disk = pd.read_csv(os.path.join(data_dir, 'agn_host_disk.csv.gz'))
+    agn_host_bulge = pd.read_csv(os.path.join(data_dir,'cosmoDC2_v1.0_bulge_agn_host.csv'))
+    agn_host_disk = pd.read_csv(os.path.join(data_dir, 'cosmoDC2_v1.0_bulge_agn_host.csv'))
 
     idx = agn_host_bulge['image_number'] == 0
     ahb_purged = agn_host_bulge[:][idx]
     ahd_purged = agn_host_disk[:][idx]
 
     lens_list = pyfits.open(os.path.join(twinkles_data_dir,
-                                         'twinkles_lenses_v2.fits'))
+                                         'cosmoDC2_v1.0_matched_AGN.fits'))
 
     return lens_list, ahb_purged, ahd_purged
 

@@ -26,12 +26,12 @@ The data read in by these programs are located in the top level data directory.
 
 They are the files:
 
-"data/agn_host_bulge.csv.gz"
-"data/agn_host_disk.csv.gz"
-"data/sne_host_bulge.csv.gz"
-"data/sne_host_disk.csv.gz"
+"data/cosmoDC2_v1.0_bulge_agn_host.csv"
+"data/cosmoDC2_v1.0_disk_agn_host.csv"
+"data/cosmoDC2_v1.0_bulge_sne_host.csv" 
+"data/cosmoDC2_v1.0_disk_sne_host.csv"
 
-These files contain the host galaxy components for the latest set of cached DC2 
+These files contain the host galaxy components for the latest set of cached cosmoDC2 
 sprinkled galaxy ids.
 NOTE: If not running Twinkles repo tagged version DC2-Run1.2-v2 then these may b
 e out of date.

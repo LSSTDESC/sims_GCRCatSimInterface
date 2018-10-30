@@ -105,6 +105,7 @@ class hostImage(object):
                 line_idx = np.where(image_ids == line_uID)[0]
                 if len(line_idx) > 1:
                     raise ValueError('Multiple images have same unique lens id')
-                line_name = image_list[line_idx[0]]
-                f.write(self.format_catalog(df_line[1], line_name, image_dir))
-                unique_id_list.append(line_uID)
+                if len(line_idx) > 0:
+                    line_name = image_list[line_idx[0]]
+                    f.write(self.format_catalog(df_line[1], line_name, image_dir))
+                    unique_id_list.append(line_uID)
