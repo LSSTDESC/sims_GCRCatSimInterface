@@ -392,10 +392,19 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         np.testing.assert_array_equal(self._sed_lookup_cache['galaxy_id'][idx], galaxy_id)
 
-        sed_idx = self._sed_lookup_cache['%s_sed_idx' % cache_component_type][idx]
-        mag_norms = self._sed_lookup_cache['%s_%s_magnorm' % (cache_component_type, self.obs_metadata.bandpass)][idx]
-        av = self._sed_lookup_cache['%s_av' % cache_component_type][idx]
-        rv = self._sed_lookup_cache['%s_rv' % cache_component_type][idx]
+        n_gal = len(galaxy_id)
+        sed_idx = -1*np.ones(n_gal, dtype=int)
+        mag_norms = np.NaN*np.ones(n_gal, dtype=float)
+        av = np.NaN*np.ones(n_gal, dtype=float)
+        rv = np.NaN*np.ones(n_gal, dtype=float)
+
+        valid_gal = np.where(idx<len(self._sed_lookup_cache['galaxy_id']))
+        idx = idx[valid_gal]
+
+        sed_idx[valid_gal] = self._sed_lookup_cache['%s_sed_idx' % cache_component_type][idx]
+        mag_norms[valid_gal] = self._sed_lookup_cache['%s_%s_magnorm' % (cache_component_type, self.obs_metadata.bandpass)][idx]
+        av[valid_gal] = self._sed_lookup_cache['%s_av' % cache_component_type][idx]
+        rv[valid_gal] = self._sed_lookup_cache['%s_rv' % cache_component_type][idx]
 
         if component_type != 'bulge' and self._knots_available:
             if component_type == 'disk':
@@ -421,10 +430,17 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_sedFilepath(self):
+        raw_filename = self.column_by_name('sedFilename_dc2')
         sed_idx = self.column_by_name('sedFilename_idx')
         if len(sed_idx)==0:
             return np.array([])
-        return np.array([self._sed_lookup_names[ii] for ii in sed_idx])
+
+        fitted_filename = np.array([self._sed_lookup_names[ii]
+                                    if ii>=0 else 'None'
+                                    for ii in sed_idx])
+
+        return np.where(np.char.find(raw_filename.astype('str'), 'None')==0,
+                        fitted_filename, raw_filename)
 
     @cached
     def get_internalRv(self):
