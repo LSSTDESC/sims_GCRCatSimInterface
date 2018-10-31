@@ -16,9 +16,14 @@ _twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_defs
 
 _agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_agn_cache.csv')
 _sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_sne_cache.csv')
+_sne_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_sne_cat.csv')
+_om10_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
+                              'twinkles_lenses_cosmoDC2_v1.0.fits')
 
-assert os.path.exists(_agn_cache_file)
-assert os.path.exists(_sne_cache_file)
+assert os.path.isfile(_agn_cache_file)
+assert os.path.isfile(_sne_cache_file)
+assert os.path.isfile(_sne_cat_file)
+assert os.path.isfile(_om10_cat_file)
 
 __all__ = ["TwinklesCompoundInstanceCatalog_DC2",
            "sprinklerCompound_DC2",
@@ -33,7 +38,9 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     cached_sprinkling = True
     agn_cache_file = _agn_cache_file
     sne_cache_file = _sne_cache_file
+    sne_cat_file = _sne_cat_file
     defs_file = _twinkles_defs_file
+    om10_cat = _om10_cat_file
     _write_sn_sed = True
     sed_dir = 'Dynamic'
 
@@ -50,7 +57,9 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
                        cached_sprinkling=self.cached_sprinkling,
                        agn_cache_file=self.agn_cache_file,
                        sne_cache_file=self.sne_cache_file,
+                       sne_cat=self.sne_cat_file,
                        defs_file=self.defs_file,
+                       om10_cat=self.om10_cat,
                        write_sn_sed=self._write_sn_sed)
         results = sp.sprinkle()
 
