@@ -458,14 +458,9 @@ class InstanceCatalogWriter(object):
 
                 self.compoundGalICList = [SprinkledBulgeCat,
                                           SprinkledDiskCat,
-                                          SprinkledAgnCat,
-                                          SprinklerTruthBulgeCat,
-                                          SprinklerTruthDiskCat,
-                                          SprinklerTruthAgnCat]
+                                          SprinkledAgnCat]
+
                 self.compoundGalDBList = [bulgeDESCQAObject,
-                                          diskDESCQAObject,
-                                          agnDESCQAObject,
-                                          bulgeDESCQAObject,
                                           diskDESCQAObject,
                                           agnDESCQAObject]
 
@@ -663,28 +658,6 @@ class DESCQACat_Disk(PhoSimDESCQA):
 
     cannot_be_null=['hasDisk', 'magNorm']
 
-class SprinklerTruthSersicCat(TruthPhoSimDESCQA):
-
-    def get_isPoint(self):
-        unq = self.column_by_name('uniqueId')
-        return np.zeros(len(unq), dtype=int)
-
-class SprinklerTruthBulgeCat(SprinklerTruthSersicCat):
-    cannot_be_null=['hasBulge', 'magNorm', 'sprinkling_switch']
-    subcat_prefix = 'truth_bulge_'
-
-class SprinklerTruthDiskCat(SprinklerTruthSersicCat):
-    cannot_be_null=['hasDisk', 'magNorm', 'sprinkling_switch']
-    subcat_prefix = 'truth_disk_'
-
-class SprinklerTruthAgnCat(SprinklerTruthCatMixin, DESCQACat_Twinkles):
-    cannot_be_null = ['sprinkling_switch', 'magNorm']
-
-    subcat_prefix = 'truth_agn_'
-
-    def get_isPoint(self):
-        unq = self.column_by_name('uniqueId')
-        return np.ones(len(unq), dtype=int)
 
 class MaskedPhoSimCatalogPoint(VariabilityStars, PhoSimCatalogPoint):
     disable_proper_motion = False
