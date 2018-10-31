@@ -481,6 +481,7 @@ class InstanceCatalogWriter(object):
                                                        agn_params_db=self.agn_db_name)
 
                 gal_cat.sed_lookup_dir = self.sed_lookup_dir
+                gal_cat.filter_on_healpix = True
                 gal_cat.use_spec_map = twinkles_spec_map
                 gal_cat.sed_dir = glsn_spectra_dir
                 gal_cat.photParams = self.phot_params
