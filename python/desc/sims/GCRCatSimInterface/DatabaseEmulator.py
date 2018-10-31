@@ -333,7 +333,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                 raise StopIteration
 
             self._descqa_obj._loaded_healpixel = hp
-            print('loading healpix %d' % hp)
+            print('\nloading healpix %d' % hp)
             self._loaded_qties = {}
             for name in self._qty_name_list:
                 raw_qties = descqa_catalog.get_quantities(name, native_filters=[healpix_filter])
