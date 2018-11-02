@@ -18,7 +18,7 @@ _agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.
 _sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_sne_cache.csv')
 _sne_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_sne_cat.csv')
 _om10_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
-                              'twinkles_lenses_cosmoDC2_v1.0.fits')
+                              'cosmoDC2_v1.0_matched_AGN.fits')
 
 assert os.path.isfile(_agn_cache_file)
 assert os.path.isfile(_sne_cache_file)
