@@ -252,10 +252,10 @@ class InstanceCatalogWriter(object):
 
         do_stars = False
         do_knots = False
-        do_bulges = False
-        do_disks = False
+        do_bulges = True
+        do_disks = True
         do_agn = True
-        do_sprinkled = False
+        do_sprinkled = True
         do_hosts = False
         do_sne = False
         if pickup_file is not None and os.path.isfile(pickup_file):
