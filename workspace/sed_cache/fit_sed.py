@@ -8,8 +8,8 @@ import time
 import GCRCatalogs
 from GCR import GCRQuery
 
-from desc.sims.GCRCatSimInterface import sed_filter_names_from_catalog
-from desc.sims.GCRCatSimInterface import sed_from_galacticus_mags
+from SedFitter import sed_filter_names_from_catalog
+from SedFitter import sed_from_galacticus_mags
 from lsst.sims.photUtils import BandpassDict, Sed, Bandpass
 from lsst.sims.photUtils import cache_LSST_seds, getImsimFluxNorm
 from lsst.utils import getPackageDir

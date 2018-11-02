@@ -6,10 +6,10 @@ __all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQA
 
 import numpy as np
 import healpy
+import re
 from sqlalchemy import text
 from lsst.sims.catalogs.db import CatalogDBObject, ChunkIterator
 from lsst.sims.utils import htmModule as htm
-from .SedFitter import disk_re
 
 _GCR_IS_AVAILABLE = True
 try:
@@ -515,6 +515,7 @@ class DESCQAObject(object):
         # Apply flux correction for the random walk
         add_postfix = []
 
+        disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
         for name in gc.list_all_quantities():
             disk_match = disk_re.match(name)
             if disk_match is not None:
