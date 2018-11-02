@@ -545,6 +545,7 @@ class InstanceCatalogWriter(object):
                                        (len(gal_lines), full_name))
             os.unlink(full_name)
 
+        exit()
         # gzip the object files.
         gzip_process_list = []
         for orig_name in written_catalog_names:
