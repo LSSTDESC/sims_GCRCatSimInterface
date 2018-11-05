@@ -127,10 +127,10 @@ if __name__ == "__main__":
 
             tot_mag = disk_sed.magFromFlux(disk_flux+bulge_flux)
             lsst_mags[i_band,i_obj] = tot_mag
-            #d_mag = np.abs(tot_mag-qties['mag_true_%s_lsst' % bp][i_obj])
-            #if d_mag>d_maxes[i_band]:
-            #    d_maxes[i_band] = d_mag
-            #print(d_maxes)
+            d_mag = np.abs(tot_mag-qties['mag_true_%s_lsst' % bp][i_obj])
+            if d_mag>d_maxes[i_band]:
+                d_maxes[i_band] = d_mag
+                print(d_maxes)
 
     for i_band, bp in enumerate('ugrizy'):
         dmag = np.abs(lsst_mags[i_band,:]-qties['mag_true_%s_lsst' %bp])
