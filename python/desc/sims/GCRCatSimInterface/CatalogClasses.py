@@ -410,16 +410,24 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         idx = np.searchsorted(self._sed_lookup_cache['galaxy_id'],
                               galaxy_id)
 
-        np.testing.assert_array_equal(self._sed_lookup_cache['galaxy_id'][idx], galaxy_id)
+        # The sprinkler will add some galaxy_id that do not map to the SED
+        # lookup cache (the sprinkler will add SEDs for these galaxies, so
+        # we do not need to worry about fitting an SED to them).  These
+        # galaxies can be identified because their galaxy_id values will
+        # be larger than any galaxy in the extragalactic catalog, thus,
+        # the idx values assigned by np.searchsorted will == len(_sed_lookup_cache).
+        # We now remove those galaxies from the fitting.
+        valid_gal = np.where(idx<len(self._sed_lookup_cache['galaxy_id']))
+        idx = idx[valid_gal]
+
+        np.testing.assert_array_equal(self._sed_lookup_cache['galaxy_id'][idx],
+                                      galaxy_id[valid_gal])
 
         n_gal = len(galaxy_id)
         sed_idx = -1*np.ones(n_gal, dtype=int)
         mag_norms = np.NaN*np.ones(n_gal, dtype=float)
         av = np.NaN*np.ones(n_gal, dtype=float)
         rv = np.NaN*np.ones(n_gal, dtype=float)
-
-        valid_gal = np.where(idx<len(self._sed_lookup_cache['galaxy_id']))
-        idx = idx[valid_gal]
 
         sed_idx[valid_gal] = self._sed_lookup_cache['%s_sed_idx' % cache_component_type][idx]
         mag_norms[valid_gal] = self._sed_lookup_cache['%s_%s_magnorm' % (cache_component_type, self.obs_metadata.bandpass)][idx]
