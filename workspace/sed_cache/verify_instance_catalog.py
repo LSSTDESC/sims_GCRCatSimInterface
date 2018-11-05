@@ -49,6 +49,23 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    agn_dtype = np.dtype([('galaxy_id', int), ('twinkles_id', int)])
+    agn_cache = np.genfromtxt(os.path.join(os.environ['TWINKLES_DIR'], 'data',
+                                           'cosmoDC2_v1.0_agn_cache.csv'),
+                              dtype=agn_dtype,
+                              delimiter=',',
+                              skip_header=1)
+
+    sne_cache = np.genfromtxt(os.path.join(os.environ['TWINKLES_DIR'], 'data',
+                                           'cosmoDC2_v1.0_sne_cache.csv'),
+                              dtype=agn_dtype,
+                              delimiter=',',
+                              skip_header=1)
+
+    sprinkled_gid = np.append(agn_cache['galaxy_id'], sne_cache['galaxy_id'])
+
+
+
     colnames = ['obj', 'uniqueID', 'ra', 'dec', 'magnorm', 'sed', 'redshift', 'g1', 'g2',
                 'kappa', 'dra', 'ddec', 'src_type', 'major', 'minor',
                 'positionAngle', 'sindex', 'dust_rest', 'rest_av', 'rest_rv',
@@ -73,6 +90,7 @@ if __name__ == "__main__":
                 bandpass_name = bandpass_name_list[int(params[1])]
 
     assert bandpass_name is not None
+    print('bandpass is ',bandpass_name)
 
     (tot_dict,
      hw_dict) = BandpassDict.loadBandpassesFromFiles()
@@ -93,11 +111,13 @@ if __name__ == "__main__":
 
     disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024, index=disk_df.index)
     disk_df = disk_df.set_index('galaxy_id')
+    print('read disks')
 
     bulge_df = pd.read_csv(bulge_file, delimiter=' ',
                            compression='gzip', names=colnames, dtype=col_types, nrows=None)
     bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024, index=bulge_df.index)
     bulge_df = bulge_df.set_index('galaxy_id')
+    print('read bulges')
 
     for ii in range(len(colnames)):
         colnames[ii] = colnames[ii]+'_knots'
@@ -113,16 +133,13 @@ if __name__ == "__main__":
     for ii in range(len(wanted_col)):
         wanted_col[ii] = wanted_col[ii]+'_knots'
     galaxy_df = galaxy_df.join(knots_df[wanted_col], how='outer', rsuffix='_knots')
+    print('read knots')
 
-    rng = np.random.RandomState(args.seed)
-    dexes = rng.choice(galaxy_df.index.values, size=args.nrows, replace=False)
+    valid_galaxies = np.where(np.logical_not(np.in1d(galaxy_df.index,
+                                                     sprinkled_gid)))
 
-    galaxy_df = galaxy_df.loc[dexes]
-
-    galaxy_df = galaxy_df.sort_index()
-
-    invalid_knots = np.where(np.logical_not(np.isfinite(galaxy_df['magnorm_knots'].values)))
-    print('no knots %e' % len(invalid_knots[0]))
+    galaxy_df = galaxy_df.iloc[valid_galaxies]
+    print('threw out sprinkled systems; left with %e' % len(galaxy_df))
 
     ra_center = np.nanmedian(galaxy_df['ra_disk'].values)
     dec_center = np.nanmedian(galaxy_df['dec_disk'].values)
@@ -158,6 +175,22 @@ if __name__ == "__main__":
     cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'], native_filters=[hp_query])
     print('loaded galaxy_id %e' % len(cat_qties['galaxy_id']))
     cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
+
+    gid_max = cat_qties['galaxy_id'].max()
+
+    valid_galaxies = np.where(galaxy_df.index.values<=gid_max)
+    galaxy_df = galaxy_df.iloc[valid_galaxies]
+    print('cut on gid_max')
+
+    rng = np.random.RandomState(args.seed)
+    dexes = rng.choice(galaxy_df.index.values, size=args.nrows, replace=False)
+
+    galaxy_df = galaxy_df.loc[dexes]
+
+    galaxy_df = galaxy_df.sort_index()
+    invalid_knots = np.where(np.logical_not(np.isfinite(galaxy_df['magnorm_knots'].values.astype(np.float))))
+
+    print('no knots %e' % len(invalid_knots[0]))
 
     dd = angularSeparation(ra_center, dec_center,
                            cat_qties['ra'], cat_qties['dec'])
@@ -222,7 +255,8 @@ if __name__ == "__main__":
         d_mag = np.abs(tot_mag-mag_true)
         if d_mag>d_mag_max:
             d_mag_max = d_mag
-            print('d_mag_max %e -- InstanceCatalog %e truth %e' % (d_mag_max, tot_mag, mag_true))
+            print('d_mag_max %e -- InstanceCatalog %e truth %e -- %d' %
+                  (d_mag_max, tot_mag, mag_true,index))
             #print(row)
 
     print('all done %d' % args.obs)
