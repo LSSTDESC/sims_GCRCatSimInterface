@@ -434,15 +434,16 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         av[valid_gal] = self._sed_lookup_cache['%s_av' % cache_component_type][idx]
         rv[valid_gal] = self._sed_lookup_cache['%s_rv' % cache_component_type][idx]
 
-        if component_type != 'bulge' and self._knots_available:
-            if component_type == 'disk':
-                d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
-                                 -2.5*np.log10(1.0-knots_ratio), 0.0)
-            elif component_type == 'knots':
-                d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
-                                 -2.5*np.log10(knots_ratio), np.NaN)
-            else:
-                raise RuntimeError("Not sure how to handle d_mag for component %s" % component_type)
+        with np.errstate(invalid='ignore', divide='ignore'):
+            if component_type != 'bulge' and self._knots_available:
+                if component_type == 'disk':
+                    d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
+                                     -2.5*np.log10(1.0-knots_ratio), 0.0)
+                elif component_type == 'knots':
+                    d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
+                                     -2.5*np.log10(knots_ratio), np.NaN)
+                else:
+                    raise RuntimeError("Not sure how to handle d_mag for component %s" % component_type)
 
             mag_norms += d_mag
 
