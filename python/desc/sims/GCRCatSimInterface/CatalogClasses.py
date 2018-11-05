@@ -364,24 +364,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if len(galaxy_id) == 0:
             return np.array([[],[], [], []])
 
-        print('%.6f %.6f' % (self.obs_metadata.pointingRA,
-                             self.obs_metadata.pointingDec))
-        print('galaxy_id %d -- %d' % (len(galaxy_id), galaxy_id[0]))
-        print(1318934270 in galaxy_id)
-        print('mag_i %d' % len(lsst_i_mag))
-        print('knots %d' % len(knots_ratio))
-
-        if not hasattr(self, '_sed_lookup_names'):
-            g_dir = os.path.join(os.environ['SIMS_SED_LIBRARY_DIR'], 'galaxySED')
-            self._sed_lookup_names = np.array(os.listdir(g_dir)).astype(str)
-            self._galaxy_rng = np.random.RandomState(88123)
-
-        return np.array([self._galaxy_rng.randint(0,high=len(self._sed_lookup_names),
-                                     size=len(galaxy_id)),
-                         self._galaxy_rng.random_sample(len(galaxy_id))+25.0,
-                         self._galaxy_rng.random_sample(len(galaxy_id)),
-                         self._galaxy_rng.random_sample(len(galaxy_id))], dtype=object)
-
         if hasattr(self.db_obj, '_loaded_healpixel'):
             healpix_list = np.array([self.db_obj._loaded_healpixel])
         elif hasattr(self, 'filter_on_healpix') and self.filter_on_healpix is True:
