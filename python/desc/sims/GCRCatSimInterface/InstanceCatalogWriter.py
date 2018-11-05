@@ -256,7 +256,7 @@ class InstanceCatalogWriter(object):
         do_disks = True
         do_agn = True
         do_sprinkled = True
-        do_hosts = False
+        do_hosts = True
         do_sne = False
         if pickup_file is not None and os.path.isfile(pickup_file):
             with open(pickup_file, 'r') as in_file:
