@@ -52,16 +52,19 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
 
     def _final_pass(self, results):
         #Use Sprinkler now
-        sp = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
-                       density_param=1.0,
-                       cached_sprinkling=self.cached_sprinkling,
-                       agn_cache_file=self.agn_cache_file,
-                       sne_cache_file=self.sne_cache_file,
-                       sne_cat=self.sne_cat_file,
-                       defs_file=self.defs_file,
-                       om10_cat=self.om10_cat,
-                       write_sn_sed=self._write_sn_sed)
-        results = sp.sprinkle()
+        if not hasattr(self, '_sprinkler'):
+            self._sprinkler = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
+                                        density_param=1.0,
+                                        cached_sprinkling=self.cached_sprinkling,
+                                        agn_cache_file=self.agn_cache_file,
+                                        sne_cache_file=self.sne_cache_file,
+                                        sne_cat=self.sne_cat_file,
+                                        defs_file=self.defs_file,
+                                        om10_cat=self.om10_cat,
+                                        write_sn_sed=self._write_sn_sed)
+
+        self._sprinkler.visit_mjd = self.mjd
+        results = self._sprinkler.sprinkle(results)
 
         return results
 
