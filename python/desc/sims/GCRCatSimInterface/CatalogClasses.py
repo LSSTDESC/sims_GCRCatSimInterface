@@ -367,7 +367,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         if hasattr(self.db_obj, '_loaded_healpixel'):
             healpix_list = np.array([self.db_obj._loaded_healpixel])
-        elif hasattr(self, 'filter_on_healpix') and self.filter_on_healpix is True:
+        elif (hasattr(self, 'filter_on_healpix') and
+              self.filter_on_healpix is True and
+              'loaded_healpixel' in _DESCQAObject_metadata):
+
             print('reading healpix list from metadata dict')
             healpix_list = np.array([_DESCQAObject_metadata['loaded_healpixel']])
         else:
