@@ -6,6 +6,7 @@ import healpy
 import h5py
 import copy
 from lsst.utils import getPackageDir
+from desc.sims.GCRCatSimInterface import _DESCQAObject_metadata
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
@@ -367,15 +368,8 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if hasattr(self.db_obj, '_loaded_healpixel'):
             healpix_list = np.array([self.db_obj._loaded_healpixel])
         elif hasattr(self, 'filter_on_healpix') and self.filter_on_healpix is True:
-            ra_deg = np.degrees(self.column_by_name('raJ2000'))
-            dec_deg = np.degrees(self.column_by_name('decJ2000'))
-            (pix_list,
-             pix_counts) = np.unique(healpy.ang2pix(32, ra_deg, dec_deg,
-                                                    nest=False, lonlat=True),
-                                     return_counts=True)
-
-            max_dex = np.argmax(pix_counts)
-            healpix_list = np.array([pix_list[max_dex]])
+            print('reading healpix list from metadata dict')
+            healpix_list = np.array([_DESCQAObject_metadata['loaded_healpixel']])
         else:
             ra_rad = self.obs_metadata._pointingRA
             dec_rad = self.obs_metadata._pointingDec

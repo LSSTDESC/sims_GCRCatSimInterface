@@ -3,7 +3,8 @@ This script will define classes that enable CatSim to interface with GCR
 """
 __all__ = ["DESCQAObject", "bulgeDESCQAObject",
            "diskDESCQAObject", "knotsDESCQAObject",
-           "deg2rad_double", "arcsec2rad", "SNeDBObject"]
+           "deg2rad_double", "arcsec2rad", "SNeDBObject",
+           "_DESCQAObject_metadata"]
 
 import numpy as np
 import healpy
@@ -28,6 +29,8 @@ except ImportError:
     from astropy.coordinates import SkyCoord
     def _angularSeparation(ra1, dec1, ra2, dec2):
         return SkyCoord(ra1, dec1, unit="radian").separation(SkyCoord(ra2, dec2, unit="radian")).radian
+
+_DESCQAObject_metadata = {}
 
 def deg2rad_double(x):
     return np.deg2rad(x).astype(np.float64)
@@ -334,6 +337,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                 raise StopIteration
 
             self._descqa_obj._loaded_healpixel = hp
+            _DESCQAObject_metadata['loaded_healpixel'] = hp
             print('\nloading healpix %d' % hp)
             self._loaded_qties = {}
             for name in self._qty_name_list:
