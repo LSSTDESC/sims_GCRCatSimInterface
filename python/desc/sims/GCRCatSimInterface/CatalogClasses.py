@@ -445,7 +445,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                 else:
                     raise RuntimeError("Not sure how to handle d_mag for component %s" % component_type)
 
-            mag_norms += d_mag
+                mag_norms += d_mag
 
         return np.array([sed_idx, mag_norms, av, rv], dtype=object)
 
