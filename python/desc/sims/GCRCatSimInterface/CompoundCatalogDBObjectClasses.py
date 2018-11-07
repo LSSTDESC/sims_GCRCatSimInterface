@@ -1,6 +1,7 @@
 from builtins import zip
 from builtins import str
 from builtins import range
+from collections import OrderedDict
 from lsst.sims.catalogs.db import _CompoundCatalogDBObject_mixin
 from desc.sims.GCRCatSimInterface import DESCQAObject
 from desc.sims.GCRCatSimInterface import AGN_postprocessing_mixin
