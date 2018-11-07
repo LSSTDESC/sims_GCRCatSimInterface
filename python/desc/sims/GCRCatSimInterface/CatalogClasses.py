@@ -211,8 +211,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             if 'hasKnots' in kwargs['cannot_be_null']:
                 self.catalog_type = 'phoSim_catalog_KNOTS'
                 self.spatialModel = 'knots'
-                if 'hasDisk' not in kwargs['cannot_be_null']:
-                    kwargs['cannot_be_null'].append('hasDisk')
 
         super(PhoSimDESCQA, self).__init__(*args, **kwargs)
 
