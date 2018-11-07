@@ -62,7 +62,6 @@ class CompoundDESCQAObject(_CompoundCatalogDBObject_mixin, DESCQAObject):
                                 # self._dbObjectClassList will actually
                                 # be used at runtime
 
-        self.columnMap = dict()
         self._descqaDefaultValues = dict()
         for dbc in self._dbObjectClassList:
             sub_cat_name = dbc.objid
