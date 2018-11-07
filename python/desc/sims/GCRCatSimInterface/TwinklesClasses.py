@@ -166,7 +166,10 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
                     try:
                         compound_dbo = self._compoundDBclass(dbObjClassList)
                     except:
-                        compound_dbo = default_compound_dbo(dbObjClassList)
+                        if default_compound_dbo is not CompoundCatalogDBObject:
+                            compound_dbo = default_compound_dbo(dbObjClassList)
+                        else:
+                            raise
                 else:
                     compound_dbo = None
                     for candidate in self._compoundDBclass:
