@@ -578,6 +578,7 @@ class DESCQAObject(object):
         if hasattr(self, 'descqaDefaultValues'):
             for col_name in self.descqaDefaultValues:
                 self.columnMap[col_name] = (col_name,)
+                self.columns.append((col_name, col_name))
 
     def _postprocess_results(self, chunk, obs_metadata):
         """
