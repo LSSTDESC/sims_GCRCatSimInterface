@@ -250,8 +250,8 @@ class InstanceCatalogWriter(object):
         """
         t_start = time.time()
 
-        do_stars = True
-        do_knots = True
+        do_stars = False
+        do_knots = False
         do_bulges = True
         do_disks = True
         do_agn = True
