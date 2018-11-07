@@ -140,6 +140,10 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
     by leaving out the parts of the directory name. Also fix name changes from
     gamma to shear.
     """
+    def get_reasonableMagNorm(self):
+        mn = self.column_by_name('phoSimMagNorm')
+        return np.where(mn<500.0, mn, np.NaN)
+
     def get_uniqueId(self):
         return self.column_by_name(self.refIdCol)
 
@@ -175,7 +179,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                       'spatialmodel', 'internalExtinctionModel',
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
 
-    cannot_be_null = ['x0', 't0', 'z', 'shorterFileNames']
+    cannot_be_null = ['x0', 't0', 'z', 'reasonableMagNorm']
 
     default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float),
@@ -241,7 +245,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
     @cached
     def get_hasDisk(self):
         output = np.where(self.column_by_name('stellar_mass_disk')>0.0,
-                          1.0, None)
+                          1.0, np.NaN)
         return output
 
     @cached
@@ -250,7 +254,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_hasBulge(self):
-        output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, None)
+        output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, np.NaN)
         return output
 
     def _cache_sed_lookup(self, healpix_list, component_type, bandpass):
@@ -501,7 +505,7 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
 
 
-    cannot_be_null = ['sedFilepath', 'magNormFiltered']
+    cannot_be_null = ['magNormFiltered']
 
     @cached
     def get_magNormFiltered(self):

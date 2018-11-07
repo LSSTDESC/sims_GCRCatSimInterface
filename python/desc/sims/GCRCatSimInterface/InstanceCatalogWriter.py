@@ -729,4 +729,4 @@ class BrightStarCatalog(PhoSimCatalogPoint):
     @cached
     def get_isBright(self):
         raw_norm = self.column_by_name('phoSimMagNorm')
-        return np.where(raw_norm < self.min_mag, raw_norm, None)
+        return np.where(raw_norm < self.min_mag, raw_norm, np.NaN)
