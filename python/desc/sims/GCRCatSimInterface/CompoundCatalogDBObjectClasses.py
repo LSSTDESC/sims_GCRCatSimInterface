@@ -70,8 +70,8 @@ class CompoundDESCQAObject(_CompoundCatalogDBObject_mixin, DESCQAObject):
 
             for col_name in dbo.descqaDefaultValues:
                 prefix_name = '%s_%s'% (sub_cat_name, col_name)
-                query_name = self.name_map(prefix_name)
-                self._descqaDefaultValues[query_name] = dbo.descqaDefaultValues[col_name]
+                self._compound_dbo_name_map[prefix_name] = prefix_name
+                self._descqaDefaultValues[prefix_name] = dbo.descqaDefaultValues[col_name]
 
         dbo = self._dbObjectClassList[0]()
         # need to instantiate the first one because sometimes
