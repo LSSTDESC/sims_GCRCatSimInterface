@@ -510,8 +510,7 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
     @cached
     def get_magNormFiltered(self):
         mm = self.column_by_name('phoSimMagNorm')
-        with np.errstate(divide='ignore', invalid='ignore'):
-            return np.where(np.logical_and(np.isfinite(mm), mm<10.0), 10.0, mm)
+        return np.clip(mm, 10.0, None)
 
     @cached
     def get_prefix(self):
