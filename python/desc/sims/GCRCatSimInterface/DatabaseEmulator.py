@@ -564,6 +564,9 @@ class DESCQAObject(object):
         for name in self._catalog.list_all_quantities(include_native=True):
             if isinstance(name, tuple):
                 continue
+            if self._columns_need_postfix:
+                if name in self._columns_need_postfix:
+                    continue
             assert name not in self.columnMap
             self.columnMap[name] = (name,)
             self.columns.append((name, name))
