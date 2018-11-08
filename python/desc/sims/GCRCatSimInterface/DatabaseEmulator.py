@@ -384,10 +384,14 @@ class DESCQAObject(object):
     # the dtype of the value (i.e. the argument that gets
     # passed to np.dtype())
     descqaDefaultValues = {'is_sprinkled': (0, int),
-                           'internalRv_dc2': (np.NaN, float),
-                           'internalAv_dc2': (np.NaN, float),
-                           'sedFilename_dc2': (None, (str, 200)),
-                           'magNorm_dc2': (np.NaN, float),
+                           'diskInternalRv': (np.NaN, float),
+                           'diskInternalAv': (np.NaN, float),
+                           'bulgeInternalRv': (np.NaN, float),
+                           'bulgeInternalAv': (np.NaN, float),
+                           'diskSedFilename': (None, (str, 200)),
+                           'bulgeSedFilename': (None, (str, 200)),
+                           'diskMagNorm': (np.NaN, float),
+                           'bulgeMagNorm': (np.NaN, float),
                            'varParamStr': (None, (str, 500))}
 
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')

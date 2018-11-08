@@ -452,7 +452,11 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_magNorm(self):
-        raw_magnorm = self.column_by_name('magNorm_dc2')
+        if self.get_component_type() == 'bulge':
+            magnorm_name = 'bulgeMagNorm'
+        else:
+            magnorm_name = 'diskMagNorm'
+        raw_magnorm = self.column_by_name(magnorm_name)
         fitted_magnorm = self.column_by_name('magNorm_fitted')
         preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
         preliminary_output = np.array(preliminary_output).astype(float)
@@ -460,7 +464,11 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_sedFilepath(self):
-        raw_filename = self.column_by_name('sedFilename_dc2')
+        if self.get_component_type() == 'bulge':
+            sed_name = 'bulgeSedFilename'
+        else:
+            sed_name = 'diskSedFilename'
+        raw_filename = self.column_by_name(sed_name)
         sed_idx = self.column_by_name('sedFilename_idx')
         if len(sed_idx)==0:
             return np.array([])
@@ -474,14 +482,22 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_internalRv(self):
-        raw_rv = self.column_by_name('internalRv_dc2')
+        if self.get_component_type() == 'bulge':
+            rv_name = 'bulgeInternalRv'
+        else:
+            rv_name = 'diskInternalRv'
+        raw_rv = self.column_by_name(rv_name)
         fitted_rv = self.column_by_name('internalRv_fitted')
         return np.where(np.isnan(raw_rv), fitted_rv, raw_rv)
 
 
     @cached
     def get_internalAv(self):
-        raw_av = self.column_by_name('internalAv_dc2')
+        if self.get_component_type() == 'bulge':
+            av_name = 'bulgeInternalAv'
+        else:
+            av_name = 'diskInternalAv'
+        raw_av = self.column_by_name(av_name)
         fitted_av = self.column_by_name('internalAv_fitted')
         return np.where(np.isnan(raw_av), fitted_av, raw_av)
 
@@ -506,6 +522,14 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
 
     cannot_be_null = ['magNormFiltered']
+
+    @cached
+    def get_magNorm(self):
+        return self.column_by_name('agnMagNorm')
+
+    @cached
+    def get_sedFilename(self):
+        return self.column_by_name('agnSedFilename')
 
     @cached
     def get_magNormFiltered(self):
