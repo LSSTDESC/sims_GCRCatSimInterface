@@ -219,25 +219,27 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         returns 'disk' if this is a catalog disks;
         returns 'bulge' if this is a catalog of bulges
         """
-        if ('hasDisk' in self._cannot_be_null and
-            'hasBulge' in self._cannot_be_null):
+        if not hasattr(self, '_lumtype'):
 
-            raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
-        elif 'hasDisk' in self._cannot_be_null:
-            if 'hasKnots' in self._cannot_be_null:
-                lum_type = 'knots'
+            if ('hasDisk' in self._cannot_be_null and
+                'hasBulge' in self._cannot_be_null):
+
+                raise RuntimeError('\nUnsure whether this is a disk catalog '
+                                   'or a bulge catalog\n'
+                                   'self._cannot_be_null %s' % self._cannot_be_null)
+            elif 'hasDisk' in self._cannot_be_null:
+                if 'hasKnots' in self._cannot_be_null:
+                    self._lum_type = 'knots'
+                else:
+                    self._lum_type = 'disk'
+            elif 'hasBulge' in self._cannot_be_null:
+                self._lum_type = 'bulge'
             else:
-                lum_type = 'disk'
-        elif 'hasBulge' in self._cannot_be_null:
-            lum_type = 'bulge'
-        else:
-             raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
+                raise RuntimeError('\nUnsure whether this is a disk catalog '
+                                   'or a bulge catalog\n'
+                                   'self._cannot_be_null %s' % self._cannot_be_null)
 
-        return lum_type
+        return self._lum_type
 
     # below are defined getter methods used to define CatSim value-added columns
     @cached
