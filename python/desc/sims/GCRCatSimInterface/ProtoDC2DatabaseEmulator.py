@@ -343,17 +343,21 @@ class AGN_postprocessing_mixin(object):
         find the AGN varParamStr associated with each AGN
         """
 
+        if self.agn_params_db is None:
+            return(master_chunk)
+
         if self.agn_objid is None:
             gid_name = 'galaxy_id'
             varpar_name = 'varParamStr'
-            magnorm_name = 'magNorm'
         else:
             gid_name = self.agn_objid + '_' + 'galaxy_id'
+            if not gid_name in master_chunk.dtype.names:
+                gid_name = 'galaxy_id'
             varpar_name = self.agn_objid + '_' + 'varParamStr'
-            magnorm_name = self.agn_objid + '_' + 'magNorm'
+            if not varpar_name in master_chunk.dtype.names:
+                varpar_name = 'varParamStr'
 
-        if self.agn_params_db is None:
-            return(master_chunk)
+        magnorm_name = 'agnMagNorm'
 
         half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
                                         obs_metadata.pointingDec,
