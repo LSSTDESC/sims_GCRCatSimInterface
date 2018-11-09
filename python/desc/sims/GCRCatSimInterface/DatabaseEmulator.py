@@ -352,6 +352,10 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
             data_indices_this = self._data_indices[:self._chunk_size]
 
         with np.errstate(divide='ignore', invalid='ignore'):
+            for name in self._colnames:
+                print(name,self._column_map[name][0],self._column_map[name])
+                if descqa_catalog.has_quantity(self._column_map[name][0]):
+                    print('%s: %d' % (name, len(self._loaded_qties[self._column_map[name][0]])))
             chunk = dict_to_numpy_array({name: self._loaded_qties[self._column_map[name][0]][data_indices_this]
                                          for name in self._colnames
                                          if descqa_catalog.has_quantity(self._column_map[name][0])})

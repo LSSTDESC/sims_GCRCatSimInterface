@@ -53,10 +53,16 @@ class CompoundDESCQAObject(_CompoundCatalogDBObject_mixin, DESCQAObject):
             self._nameList.append(self._dbObjectClassList[ix].objid)
 
         self._make_columns()
+
+        for kk, vv in self._compound_dbo_name_map.items():
+            if 'varParamStr' in kk or 'internalAv' in kk:
+                print('mapping %s -> %s' % (kk,vv))
+
         self.columnMap = OrderedDict([(el[0], (el[1],) if el[1] else (el[0],))
                                      for el in self.columns])
 
         for kk in self.columnMap:
+            print(kk,self.columnMap[kk])
             assert isinstance(self.columnMap[kk], tuple)
 
         self._validate_input()
@@ -74,12 +80,19 @@ class CompoundDESCQAObject(_CompoundCatalogDBObject_mixin, DESCQAObject):
                 print('default %s' % col_name)
                 prefix_name = '%s_%s'% (sub_cat_name, col_name)
                 query_name = self.name_map(prefix_name)
+                print(query_name)
                 if (query_name in self._descqaDefaultValues and
                     self._descqaDefaultValues[query_name] is not dbo.descqaDefaultValues[col_name] and
                     self._descqaDefaultValues[query_name] != dbo.descqaDefaultValues[col_name]):
 
                     val1 = self._descqaDefaultValues[query_name]
                     val2 = dbo.descqaDefaultValues[col_name]
+
+                    print('\n is ',val1 is val2)
+                    print('is not ',val1 is not val2)
+                    print('eq ',val1==val2)
+                    print('neq ',val1!=val2)
+                    print('\n')
 
                     raise RuntimeError("%s already in self._descqaDefaultValues with values\n%s\n%s\n" %
                                        (query_name, str(val1), str(val2)))
