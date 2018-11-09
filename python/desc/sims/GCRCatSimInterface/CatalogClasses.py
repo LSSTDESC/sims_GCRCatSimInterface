@@ -228,10 +228,9 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                    'or a bulge catalog\n'
                                    'self._cannot_be_null %s' % self._cannot_be_null)
             elif 'hasDisk' in self._cannot_be_null:
-                if 'hasKnots' in self._cannot_be_null:
-                    self._lum_type = 'knots'
-                else:
-                    self._lum_type = 'disk'
+                self._lum_type = 'disk'
+            elif 'hasKnots' in self._cannot_be_null:
+                self._lum_type = 'knots'
             elif 'hasBulge' in self._cannot_be_null:
                 self._lum_type = 'bulge'
             else:
