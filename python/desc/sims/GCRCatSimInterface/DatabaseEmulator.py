@@ -253,7 +253,10 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
     process that in chunks before moving on to the next healpixel.
     """
     def __init__(self, *args, **kwargs):
+        self._loader_chunk_size = 100000
+        self._indices_to_load = None
         self._healpix_and_indices_list = None
+        self._healpix_filter = None
         self._healpix_loaded = -1
         super(DESCQAChunkIterator_healpix, self).__init__(*args, **kwargs)
         self._descqa_obj._loaded_healpixel = -1
@@ -324,26 +327,37 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                                    for name in self._colnames
                                    if descqa_catalog.has_quantity(self._column_map[name][0])]
 
-        if self._loaded_qties is None or len(self._data_indices)==0:
-            try:
-                (hp, healpix_filter, valid_indices) = self._healpix_and_indices_list.pop()
-            except IndexError:
-                self._healpix_and_indices_list = None
-                self._loaded_qties = None
-                self._healpix_loaded = -1
-                self._data_indices = None
-                self._qty_name_list = None
-                self._descqa_obj._loaded_healpixel = -1
-                raise StopIteration
+        if self._loaded_qties is None or self._indices_to_load is None or len(self._data_indices)==0:
+            if self._indices_to_load is None or len(self._indices_to_load) == 0:
+                try:
+                    (self._healpix_loaded,
+                     self._healpix_filter,
+                     self._indices_to_load) = self._healpix_and_indices_list.pop()
+                except IndexError:
+                    self._healpix_and_indices_list = None
+                    self._loaded_qties = None
+                    self._healpix_loaded = -1
+                    self._data_indices = None
+                    self._qty_name_list = None
+                    self._descqa_obj._loaded_healpixel = -1
+                    self._indices_to_load = None
+                    self._healpix_filter = None
+                    raise StopIteration
 
-            self._descqa_obj._loaded_healpixel = hp
-            _DESCQAObject_metadata['loaded_healpixel'] = hp
-            print('\nloading healpix %d' % hp)
+                print('\nloading healpix %d' % self._healpix_loaded)
+                self._indices_to_load = np.sort(self._indices_to_load)
+                self._descqa_obj._loaded_healpixel = self._healpix_loaded
+                self._healpix_loaded = self._healpix_loaded
+                _DESCQAObject_metadata['loaded_healpixel'] = self._healpix_loaded
+
+            valid_indices = self._indices_to_load[:self._loader_chunk_size]
+            self._indices_to_load = self._indices_to_load[self._loader_chunk_size]
+            print("    loading hp: %d; %d -> %d" % (self._healpix_loaded, valid_indices[0], valid_indices[-1]))
+
             self._loaded_qties = {}
             for name in self._qty_name_list:
-                raw_qties = descqa_catalog.get_quantities(name, native_filters=[healpix_filter])
+                raw_qties = descqa_catalog.get_quantities(name, native_filters=[self._healpix_filter])
                 self._loaded_qties[name] = raw_qties[name][valid_indices]
-            self._healpix_loaded = hp
             self._data_indices = np.arange(len(valid_indices), dtype=int)
 
         if self._chunk_size is None:
