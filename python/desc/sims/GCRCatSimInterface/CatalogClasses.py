@@ -374,7 +374,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
               self.filter_on_healpix is True and
               'loaded_healpixel' in _DESCQAObject_metadata):
 
-            print('reading healpix list from metadata dict')
             healpix_list = np.array([_DESCQAObject_metadata['loaded_healpixel']])
         else:
             ra_rad = self.obs_metadata._pointingRA
