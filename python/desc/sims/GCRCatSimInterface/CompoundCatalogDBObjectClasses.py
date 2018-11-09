@@ -73,8 +73,18 @@ class CompoundDESCQAObject(_CompoundCatalogDBObject_mixin, DESCQAObject):
             for col_name in dbo.descqaDefaultValues:
                 print('default %s' % col_name)
                 prefix_name = '%s_%s'% (sub_cat_name, col_name)
-                self._compound_dbo_name_map[prefix_name] = prefix_name
-                self._descqaDefaultValues[prefix_name] = dbo.descqaDefaultValues[col_name]
+                query_name = self.name_map(prefix_name)
+                if (query_name in self._descqaDefaultValues and
+                    self._descqaDefaultValues[query_name] is not dbo.descqaDefaultValues[col_name] and
+                    self._descqaDefaultValues[query_name] != dbo.descqaDefaultValues[col_name]):
+
+                    val1 = self._descqaDefaultValues[query_name]
+                    val2 = dbo.descqaDefaultValues[col_name]
+
+                    raise RuntimeError("%s already in self._descqaDefaultValues with values\n%s\n%s\n" %
+                                       (query_name, str(val1), str(val2)))
+
+                self._descqaDefaultValues[query_name] = dbo.descqaDefaultValues[col_name]
 
         dbo = self._dbObjectClassList[0]()
         # need to instantiate the first one because sometimes
