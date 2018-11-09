@@ -250,7 +250,7 @@ class InstanceCatalogWriter(object):
         """
         t_start = time.time()
 
-        do_stars = False
+        do_stars = True
         do_knots = True
         do_bulges = True
         do_disks = True
@@ -545,7 +545,6 @@ class InstanceCatalogWriter(object):
                                        (len(gal_lines), full_name))
             os.unlink(full_name)
 
-        exit()
         # gzip the object files.
         gzip_process_list = []
         for orig_name in written_catalog_names:
