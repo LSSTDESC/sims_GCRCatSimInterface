@@ -320,8 +320,6 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
 
         if self._healpix_and_indices_list is None:
             self._init_data_indices()
-            for kk in self._colnames:
-                print(kk)
             self._qty_name_list = [self._column_map[name][0]
                                    for name in self._colnames
                                    if descqa_catalog.has_quantity(self._column_map[name][0])]
