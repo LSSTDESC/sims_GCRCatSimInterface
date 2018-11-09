@@ -53,8 +53,11 @@ class CompoundDESCQAObject(_CompoundCatalogDBObject_mixin, DESCQAObject):
             self._nameList.append(self._dbObjectClassList[ix].objid)
 
         self._make_columns()
-        self.columnMap = OrderedDict([(el[0], el[1] if el[1] else el[0])
+        self.columnMap = OrderedDict([(el[0], (el[1],) if el[1] else (el[0],))
                                      for el in self.columns])
+
+        for kk in self.columnMap:
+            assert isinstance(self.columnMap[kk], tuple)
 
         self._validate_input()
         self.objectTypeId = -1  # this is just a placeholder;
