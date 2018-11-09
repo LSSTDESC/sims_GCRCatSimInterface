@@ -98,7 +98,8 @@ if __name__ == "__main__":
     bandpass = hw_dict[bandpass_name]
 
     disk_file = os.path.join(data_dir, 'disk_gal_cat_%d.txt.gz' % args.obs)
-    assert os.path.isfile(disk_file)
+    if not os.path.isfile(disk_file):
+        raise RuntimeError("%s is not a file" % disk_file)
 
     bulge_file = os.path.join(data_dir, 'bulge_gal_cat_%d.txt.gz' % args.obs)
     assert os.path.isfile(bulge_file)
