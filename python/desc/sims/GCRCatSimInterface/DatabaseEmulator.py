@@ -351,7 +351,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                 _DESCQAObject_metadata['loaded_healpixel'] = self._healpix_loaded
 
             valid_indices = self._indices_to_load[:self._loader_chunk_size]
-            self._indices_to_load = self._indices_to_load[self._loader_chunk_size]
+            self._indices_to_load = self._indices_to_load[self._loader_chunk_size:]
             print("    loading hp: %d; %d -> %d" % (self._healpix_loaded, valid_indices[0], valid_indices[-1]))
 
             self._loaded_qties = {}
