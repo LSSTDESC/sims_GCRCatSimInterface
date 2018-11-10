@@ -350,7 +350,7 @@ class InstanceCatalogWriter(object):
             cat.sed_lookup_dir = self.sed_lookup_dir
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
-            cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=25000,
+            cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=10000,
                               write_header=False)
             written_catalog_names.append(knots_name)
             del cat
@@ -378,7 +378,7 @@ class InstanceCatalogWriter(object):
                 cat.sed_lookup_dir = self.sed_lookup_dir
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
-                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=25000,
+                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=10000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
                 del cat
@@ -400,7 +400,7 @@ class InstanceCatalogWriter(object):
                 cat.sed_lookup_dir = self.sed_lookup_dir
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
-                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=25000,
+                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=10000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
                 del cat
@@ -423,7 +423,7 @@ class InstanceCatalogWriter(object):
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
                 cat_name = 'agn_'+gal_name
-                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=25000,
+                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=10000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
                 del cat
@@ -485,7 +485,7 @@ class InstanceCatalogWriter(object):
                 written_catalog_names.append('bulge_'+gal_name)
                 written_catalog_names.append('disk_'+gal_name)
                 written_catalog_names.append('agn_'+gal_name)
-                gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=25000,
+                gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=10000,
                                       write_header=False)
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
