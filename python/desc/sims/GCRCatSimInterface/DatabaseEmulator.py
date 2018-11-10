@@ -253,7 +253,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
     process that in chunks before moving on to the next healpixel.
     """
     def __init__(self, *args, **kwargs):
-        self._loader_chunk_size = 1000000
+        self._loader_chunk_size = 2000000
         self._indices_to_load = None
         self._healpix_and_indices_list = None
         self._healpix_filter = None
