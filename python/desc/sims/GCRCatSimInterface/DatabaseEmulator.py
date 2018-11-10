@@ -290,7 +290,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
         for hp in healpix_list:
             healpix_filter = GCRQuery('healpix_pixel==%d' % hp)
 
-            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000', 'galaxy_id'],
+            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000', 'galaxy_id', 'mag_r_lsst'],
                                                    native_filters=[healpix_filter])
 
             ra = ra_dec['raJ2000']
@@ -313,7 +313,9 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                                          self._obs_metadata._pointingRA,
                                          self._obs_metadata._pointingDec)
 
-            valid_indices = np.where(np.logical_and(prefilter_indices, ang_sep < radius_rad))[0]
+            valid_indices = np.where(np.logical_and(prefilter_indices,
+                                     np.logical_and(ra_dec['mag_r_lsst']<=29.0,
+                                                    ang_sep < radius_rad)))[0]
             if len(valid_indices)>0:
                 self._healpix_and_indices_list.append((hp, healpix_filter, valid_indices))
 
