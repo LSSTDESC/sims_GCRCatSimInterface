@@ -141,8 +141,9 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
     gamma to shear.
     """
     def get_reasonableMagNorm(self):
-        mn = self.column_by_name('phoSimMagNorm')
-        return np.where(mn<500.0, mn, np.NaN)
+        with np.errstate(invalid='ignore', divide='ignore'):
+            mn = self.column_by_name('phoSimMagNorm')
+            return np.where(mn<500.0, mn, np.NaN)
 
     def get_uniqueId(self):
         return self.column_by_name(self.refIdCol)
@@ -454,11 +455,12 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             magnorm_name = 'bulgeMagNorm'
         else:
             magnorm_name = 'diskMagNorm'
-        raw_magnorm = self.column_by_name(magnorm_name)
-        fitted_magnorm = self.column_by_name('magNorm_fitted')
-        preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
-        preliminary_output = np.array(preliminary_output).astype(float)
-        return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
+        with np.errstate(invalid='ignore', divide='ignore'):
+            raw_magnorm = self.column_by_name(magnorm_name)
+            fitted_magnorm = self.column_by_name('magNorm_fitted')
+            preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
+            preliminary_output = np.array(preliminary_output).astype(float)
+            return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
 
     @cached
     def get_sedFilepath(self):
