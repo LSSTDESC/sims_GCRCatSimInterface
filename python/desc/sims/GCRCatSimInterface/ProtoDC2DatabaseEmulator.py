@@ -287,7 +287,9 @@ class AGN_postprocessing_mixin(object):
             else:
                 where_clause += '(htmid_8 >= %d AND htmid_8 <= %d) ' % (bound[0], bound[1])
 
-        with sqlite3.connect(self.agn_params_db) as conn:
+        with sqlite3.connect('file:%s?mode=ro' % self.agn_params_db,
+                             uri=True) as conn:
+
             cursor = conn.cursor()
 
             query = 'SELECT COUNT(galaxy_id) FROM agn_params '
