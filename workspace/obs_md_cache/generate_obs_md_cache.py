@@ -13,15 +13,16 @@ out_file = os.path.join(os.environ['SCRATCH'],
 obs_gen = ObservationMetaDataGenerator(opsim_file)
 
 t_start = time.time()
-opsim_records = obs_gen.getOpSimRecords(boundLength=2.1, boundType='circle',
+obs_md = obs_gen.getObservationMetaData(boundLength=2.1,
+                                        boundType='circle',
                                         limit=1000)
 print('getting records took %e' % (time.time()-t_start))
 
 out_dict = {}
 
 t_start = time.time()
-for rec in opsim_records:
-    out_dict[rec['obsHistID']] = rec
+for obs in obs_md:
+    out_dict[obs.OpsimMetaData['obsHistID']] = obs
 
 with open(out_file, 'wb') as out_file:
     pickle.dump(out_dict, out_file)
