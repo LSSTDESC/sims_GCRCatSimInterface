@@ -9,6 +9,7 @@ __all__ = ["DESCQAObject", "bulgeDESCQAObject",
 import numpy as np
 import healpy
 import re
+import time
 from sqlalchemy import text
 from lsst.sims.catalogs.db import CatalogDBObject, ChunkIterator
 from lsst.sims.utils import htmModule as htm
@@ -435,11 +436,15 @@ class DESCQAObject(object):
                                "You do not have *GCR* installed and setup")
 
         if yaml_file_name + self._cat_cache_suffix not in _CATALOG_CACHE:
+            t_start = time.time()
             gc = GCRCatalogs.load_catalog(yaml_file_name, config_overwrite)
             additional_postfix = self._transform_catalog(gc)
             _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix] = gc
             _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix] = \
                                       additional_postfix
+
+            print('loading the catalog took %e hrs' %
+                  ((time.time()-t_start)/3600.0))
 
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
 
