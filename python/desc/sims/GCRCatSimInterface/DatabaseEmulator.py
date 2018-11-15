@@ -288,6 +288,13 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                                          inclusive=True,
                                          nest=False)
 
+        obs_id = self._obs_metadata.OpsimMetaData['obsHistID']
+        hp_rng = np.random.RandomState(121)
+        hp_rng.random_sample(obs_id)  # so that each obs shuffles differently
+        print('pre shuffle ',healpix_list)
+        hp_rng.shuffle(healpix_list)
+        print('post shuffle ',healpix_list)
+
         for hp in healpix_list:
             healpix_filter = GCRQuery('healpix_pixel==%d' % hp)
 
