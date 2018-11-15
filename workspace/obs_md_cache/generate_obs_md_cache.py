@@ -15,7 +15,8 @@ obs_gen = ObservationMetaDataGenerator(opsim_file)
 t_start = time.time()
 obs_md = obs_gen.getObservationMetaData(boundLength=2.1,
                                         boundType='circle',
-                                        limit=1000)
+                                        obsHistID=(-10,1000000000))
+
 print('getting records took %e' % (time.time()-t_start))
 
 out_dict = {}
