@@ -297,6 +297,12 @@ class InstanceCatalogWriter(object):
                     out_file.write('%s: %s\n' % (kk, self.config_dict[kk]))
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
+
+        if has_status_file:
+            with open(status_file, 'a') as out_file:
+                out_file.write('got obs_md in %e hours\n' %
+                               ((time.time()-t_start)/3600.0))
+
         # Add directory for writing the GLSN spectra to
         glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))
         twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
