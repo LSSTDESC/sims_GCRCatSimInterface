@@ -296,7 +296,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         n_obj = 0
         for hp in healpix_list:
             file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
-            with h5py.File(file_name, 'r') as data:
+            with h5py.File(file_name, 'r', swmr=True) as data:
                 dd = angularSeparation(self.obs_metadata.pointingRA,
                                        self.obs_metadata.pointingDec,
                                        data['ra'].value, data['dec'].value)
@@ -314,7 +314,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         ct_loaded = 0
         for hp in healpix_list:
             file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
-            with h5py.File(file_name, 'r') as data:
+            with h5py.File(file_name, 'r', swmr=True) as data:
                 if not hasattr(self, '_sed_lookup_names'):
                     self._sed_lookup_names = np.copy(data['sed_names']).astype(str)
                     self._sed_lookup_names_bytes = np.copy(data['sed_names'])
