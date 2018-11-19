@@ -1,3 +1,4 @@
+import os
 import sys
 import numpy as np
 
@@ -6,6 +7,10 @@ if __name__ == "__main__":
 
     n_obs = int(sys.argv[1])
     d_obs = int(sys.argv[2])
+    out_name = sys.argv[3]
+    if os.path.exists(out_name):
+        raise RuntimeError("%s exists" % out_name)
+
     obs_hist_id = []
     with open('obshistid_in_ddf.txt', 'r') as in_file:
         for line in in_file:
@@ -16,7 +21,7 @@ if __name__ == "__main__":
     rng = np.random.RandomState(88123)
     obs_to_simulate = rng.choice(obs_hist_id, n_obs, replace=False)
 
-    with open('instance_catalog_generation.sl', 'w') as out_file:
+    with open(out_name, 'w') as out_file:
         with open('header.txt', 'r') as in_file:
             for line in in_file:
                 out_file.write(line)
