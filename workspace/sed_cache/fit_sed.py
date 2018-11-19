@@ -187,6 +187,10 @@ if __name__ == "__main__":
                         help='The number of threads to use')
     parser.add_argument('--out_name', type=str, default=None,
                         help='The name of the output file')
+    parser.add_argument('--catalog', type=str, 'cosmoDC2_v1.0_image',
+                        help='The name of the extragalactic catalog '
+                             '(defaults to cosmoDC2_v1.0_image)')
+
     args = parser.parse_args()
     assert args.healpix is not None
     assert args.out_dir is not None
@@ -196,7 +200,7 @@ if __name__ == "__main__":
 
     sed_dir = getPackageDir('sims_sed_library')
 
-    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
+    cat = GCRCatalogs.load_catalog(args.catalog)
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
     if args.lim is None:
         gid = cat.get_quantities('galaxy_id', native_filters=[h_query])['galaxy_id']
