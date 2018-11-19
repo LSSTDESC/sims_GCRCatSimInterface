@@ -187,7 +187,7 @@ if __name__ == "__main__":
                         help='The number of threads to use')
     parser.add_argument('--out_name', type=str, default=None,
                         help='The name of the output file')
-    parser.add_argument('--catalog', type=str, 'cosmoDC2_v1.0_image',
+    parser.add_argument('--catalog', type=str, default='cosmoDC2_v1.0_image',
                         help='The name of the extragalactic catalog '
                              '(defaults to cosmoDC2_v1.0_image)')
 
