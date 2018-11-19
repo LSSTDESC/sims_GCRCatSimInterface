@@ -16,6 +16,7 @@ if __name__ == "__main__":
     parser.add_argument('--nsample', type=int, default=10000)
     parser.add_argument('--seed', type=int, default=9166)
     parser.add_argument('--in_dir', type=str, default=None)
+    parser.add_argument('--catalog', type=str, default=None)
 
     args = parser.parse_args()
     rng = np.random.RandomState(args.seed)
@@ -23,7 +24,7 @@ if __name__ == "__main__":
     assert args.in_file is not None
 
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
-    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
+    cat = GCRCatalogs.load_catalog(args.catalog)
 
     assert os.path.isdir(args.in_dir)
     in_file = os.path.join(args.in_dir, args.in_file)
