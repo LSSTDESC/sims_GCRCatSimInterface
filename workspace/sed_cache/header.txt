@@ -4,6 +4,7 @@
 #SBATCH -q regular
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=24
 #SBATCH -o inst_cat_test_181105_output.txt
 #SBATCH -e inst_cat_test_181105_err.txt
 
