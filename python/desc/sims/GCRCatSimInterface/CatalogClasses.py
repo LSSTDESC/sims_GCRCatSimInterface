@@ -314,7 +314,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                        self.obs_metadata.pointingDec,
                                        data['ra'].value, data['dec'].value)
                 to_keep = np.where(dd<self.obs_metadata.boundLength+0.1)
-                dexes_to_keep[file_name] = to_keep
                 print('keeping %d of %d' % (len(to_keep[0]), len(data['galaxy_id'].value)))
 
                 raw_out_dict['galaxy_id'].append(data['galaxy_id'].value[to_keep])
