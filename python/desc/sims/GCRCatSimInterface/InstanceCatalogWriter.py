@@ -513,6 +513,8 @@ class InstanceCatalogWriter(object):
                                         os.path.join(self.host_data_dir, 'cosmoDC2_v1.0_disk_sne_host.csv'),
                                         os.path.join(out_dir, sprinkled_host_name), append=True)
 
+                written_catalog_names.append(sprinkled_host_name)
+
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
                         duration = (time.time()-t_start)/3600.0
