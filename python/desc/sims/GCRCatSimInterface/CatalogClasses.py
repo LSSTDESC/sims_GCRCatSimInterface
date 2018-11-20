@@ -292,26 +292,14 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
         out_dict = {}
-        dexes_to_keep = {}
-        n_obj = 0
-        for hp in healpix_list:
-            file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
-            with h5py.File(file_name, 'r', swmr=True) as data:
-                dd = angularSeparation(self.obs_metadata.pointingRA,
-                                       self.obs_metadata.pointingDec,
-                                       data['ra'].value, data['dec'].value)
-                to_keep = np.where(dd<self.obs_metadata.boundLength+0.1)
-                dexes_to_keep[file_name] = to_keep
-                print('keeping %d of %d' % (len(to_keep[0]), len(data['galaxy_id'].value)))
-                n_obj += len(to_keep[0])
 
-        out_dict['galaxy_id'] = np.zeros(n_obj, dtype=int)
-        out_dict['%s_sed_idx' % component_type] = np.empty(n_obj, dtype=int)
-        out_dict['%s_%s_magnorm' % (component_type, bandpass)] = np.NaN*np.ones(n_obj, dtype=float)
-        out_dict['%s_av' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
-        out_dict['%s_rv' % component_type] = np.NaN*np.ones(n_obj, dtype=float)
+        raw_out_dict = {}
+        raw_out_dict['galaxy_id'] = []
+        raw_out_dict['sed_dix'] = []
+        raw_out_dict['magnorm'] = []
+        raw_out_dict['av'] = []
+        raw_out_dict['rv'] = []
 
-        ct_loaded = 0
         for hp in healpix_list:
             file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
             with h5py.File(file_name, 'r', swmr=True) as data:
@@ -322,14 +310,35 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                     np.testing.assert_array_equal(data['sed_names'],
                                                   self._sed_lookup_names_bytes)
 
-                n_obj = len(dexes_to_keep[file_name][0])
-                s = slice(ct_loaded, ct_loaded+n_obj)
-                ct_loaded += n_obj
-                out_dict['galaxy_id'][s] = data['galaxy_id'].value[dexes_to_keep[file_name]]
-                out_dict['%s_sed_idx' % component_type][s] = data['%s_sed' % component_type].value[dexes_to_keep[file_name]]
-                out_dict['%s_%s_magnorm' % (component_type, bandpass)][s] = data['%s_magnorm' % component_type].value[bp_to_int[bandpass]][dexes_to_keep[file_name]]
-                out_dict['%s_av' % component_type][s] = data['%s_av' % component_type].value[dexes_to_keep[file_name]]
-                out_dict['%s_rv' % component_type][s] = data['%s_rv' % component_type].value[dexes_to_keep[file_name]]
+                dd = angularSeparation(self.obs_metadata.pointingRA,
+                                       self.obs_metadata.pointingDec,
+                                       data['ra'].value, data['dec'].value)
+                to_keep = np.where(dd<self.obs_metadata.boundLength+0.1)
+                dexes_to_keep[file_name] = to_keep
+                print('keeping %d of %d' % (len(to_keep[0]), len(data['galaxy_id'].value)))
+
+                raw_out_dict['galaxy_id'].append(data['galaxy_id'].value[to_keep])
+                raw_out_dict['sed_idx'].append(data['%s_sed' % component_type].value[to_keep])
+                raw_out_dict['magnorm'].append(data['%s_magnorm' % component_type].value[bp_to_int[bandpass]][to_keep])
+                raw_out_dict['av'].append(data['%s_av' % component_type].value[to_keep])
+                raw_out_dict['rv'].append(data['%s_rv' % component_type].value[to_keep])
+
+
+
+        out_dict['galaxy_id'] = np.concatenate(raw_out_dict.pop('galaxy_id'))
+
+        out_dict['%s_sed_idx'
+                 % component_type] = np.concatenate(raw_out_dict.pop('sed_idx'))
+
+        out_dict['%s_%s_magnorm'
+                 % (component_type,
+                    bandpass)] = np.concatenate(raw_out_dict.pop('magnorm'))
+
+        out_dict['%s_av'
+                 % component_type] = np.concatenate(raw_out_dict.pop('av'))
+
+        out_dict['%s_rv'
+                 % component_type] = np.concatenate(raw_out_dict.pop('rv'))
 
         # so that we can use numpy search sorted
         sorted_dex = np.argsort(out_dict['galaxy_id'])
@@ -337,7 +346,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             out_dict[k] = out_dict[k][sorted_dex]
 
         print('ending cache; %.1e Gb' % (process.memory_info().rss/(1024**3)))
-
         return out_dict
 
     @compound('sedFilename_idx', 'magNorm_fitted',
