@@ -3,10 +3,10 @@ import GCRCatalogs
 import os
 
 ## check version
-print('GCRCatalogs =', GCRCatalogs.__version__, '|' ,'GCR =', GCRCatalogs.GCR.__version__)
-for key in GCRCatalogs.available_catalogs:
-    if 'cosmo' in key:
-        print(key)
+#print('GCRCatalogs =', GCRCatalogs.__version__, '|' ,'GCR =', GCRCatalogs.GCR.__version__)
+#for key in GCRCatalogs.available_catalogs:
+#    if 'cosmo' in key:
+#        print(key)
 
 import pandas as pd
 
