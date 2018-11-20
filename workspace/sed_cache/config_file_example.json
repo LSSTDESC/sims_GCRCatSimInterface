@@ -1,0 +1,11 @@
+{"fov": 2.1,
+"db": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/minion_1016_desc_dithered_v4_sfd.db",
+"agn_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/agn_db_mbh_7.0_m_i_30.0_cosmodc2_181029.db",
+"sn_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/sne_params_wfd_cosmodc2_180911.db",
+"descqa_catalog": "cosmoDC2_v1.0_image_addon_knots_scratch",
+"star_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/dc2_stellar_db.db",
+"host_data_dir": "/global/homes/d/danielsf/sims_GCRCatSimInterface_master/data/",
+"host_image_dir": "/scratch1/scratchdirs/danielsf/hosts/181105/"
+}
+
+
