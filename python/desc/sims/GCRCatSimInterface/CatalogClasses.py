@@ -295,7 +295,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         raw_out_dict = {}
         raw_out_dict['galaxy_id'] = []
-        raw_out_dict['sed_dix'] = []
+        raw_out_dict['sed_idx'] = []
         raw_out_dict['magnorm'] = []
         raw_out_dict['av'] = []
         raw_out_dict['rv'] = []
