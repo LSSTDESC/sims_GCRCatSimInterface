@@ -193,13 +193,13 @@ class InstanceCatalogWriter(object):
         self.sed_lookup_dir = sed_lookup_dir
 
         self._agn_threads = agn_threads
-        if agn_db_name is None:
-            raise IOError("Need to specify an Proto DC2 AGN database.")
-        else:
+        if agn_db_name is not None:
             if os.path.exists(agn_db_name):
                 self.agn_db_name = agn_db_name
             else:
                 raise IOError("Path to Proto DC2 AGN database does not exist.")
+        else:
+            self.agn_db_name = None
 
         self.sn_db_name = None
         if sn_db_name is not None:
