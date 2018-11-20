@@ -288,20 +288,18 @@ class AGN_postprocessing_mixin(object):
                 where_clause += '(htmid_8 >= %d AND htmid_8 <= %d) ' % (bound[0], bound[1])
 
         where_clause += 'ORDER BY galaxy_id'
+        query = 'SELECT galaxy_id, magNorm, varParamStr '
+        query += 'FROM agn_params '
+        query += where_clause
 
         with sqlite3.connect('file:%s?mode=ro' % self.agn_params_db,
                              uri=True) as conn:
-
             cursor = conn.cursor()
-
-            query = 'SELECT galaxy_id, magNorm, varParamStr '
-            query += 'FROM agn_params '
-            query += where_clause
-
             raw_results = np.array(cursor.execute(query).fetchall()).transpose()
-            self._agn_query_results['galaxy_id'] = raw_results[0].astype(int)
-            self._agn_query_results['magNorm'] = raw_results[1].astype(float)
-            self._agn_query_results['varParamStr'] = raw_results[2].astype(str)
+
+        self._agn_query_results['galaxy_id'] = raw_results[0].astype(int)
+        self._agn_query_results['magNorm'] = raw_results[1].astype(float)
+        self._agn_query_results['varParamStr'] = raw_results[2].astype(str)
 
     def _prefilter_galaxy_id(self, obs_metadata):
         """
