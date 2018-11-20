@@ -287,34 +287,21 @@ class AGN_postprocessing_mixin(object):
             else:
                 where_clause += '(htmid_8 >= %d AND htmid_8 <= %d) ' % (bound[0], bound[1])
 
+        where_clause += 'ORDER BY galaxy_id'
+
         with sqlite3.connect('file:%s?mode=ro' % self.agn_params_db,
                              uri=True) as conn:
 
             cursor = conn.cursor()
 
-            query = 'SELECT COUNT(galaxy_id) FROM agn_params '
-            query += where_clause
-            n_agn = cursor.execute(query).fetchall()[0][0]
-            self._agn_query_results['galaxy_id'] = np.zeros(n_agn, dtype=int)
-            self._agn_query_results['magNorm'] = np.NaN*np.ones(n_agn, dtype=float)
-            self._agn_query_results['varParamStr'] = np.empty(n_agn, dtype=(str,256))
-
-            where_clause += 'ORDER BY galaxy_id'
             query = 'SELECT galaxy_id, magNorm, varParamStr '
             query += 'FROM agn_params '
             query += where_clause
 
-            result_iterator = cursor.execute(query)
-            d_agn = 100000
-            cursor.arraysize = d_agn
-            print('n_agn %d' % n_agn)
-            for ii in range(0, n_agn, d_agn):
-                s = slice(ii, ii+d_agn)
-                raw_results = np.array(result_iterator.fetchmany()).transpose()
-                print('    chunk ',raw_results.shape,raw_results[0][0],raw_results[0][-1])
-                self._agn_query_results['galaxy_id'][s] = raw_results[0].astype(int)
-                self._agn_query_results['magNorm'][s] = raw_results[1].astype(float)
-                self._agn_query_results['varParamStr'][s] = raw_results[2].astype(str)
+            raw_results = np.array(cursor.execute(query).fetchall()).transpose()
+            self._agn_query_results['galaxy_id'] = raw_results[0].astype(int)
+            self._agn_query_results['magNorm'] = raw_results[1].astype(float)
+            self._agn_query_results['varParamStr'] = raw_results[2].astype(str)
 
     def _prefilter_galaxy_id(self, obs_metadata):
         """
