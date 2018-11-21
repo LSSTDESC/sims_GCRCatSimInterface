@@ -118,6 +118,7 @@ class SubCatalogMixin(object):
         InstanceCatalog._write_recarray(self, local_recarray,
                                         self._subcat_file_handle)
 
+        self._subcat_file_handle.flush()
 
 
 class SprinklerTruthCatMixin(SubCatalogMixin):
