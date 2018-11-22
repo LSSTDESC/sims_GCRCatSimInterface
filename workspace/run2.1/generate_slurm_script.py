@@ -12,7 +12,7 @@ if __name__ == "__main__":
         raise RuntimeError("%s exists" % out_name)
 
     obs_hist_id = []
-    with open('obshistid_in_ddf.txt', 'r') as in_file:
+    with open('data/wfd_obshistid_list.txt', 'r') as in_file:
         for line in in_file:
             ii=int(line.strip())
             obs_hist_id.append(ii)
