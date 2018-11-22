@@ -16,8 +16,8 @@ setup -j -r $HOME/sims_catalogs
 
 export PYTHONPATH=$HOME/gcr-catalogs-v1.1/:$PYTHONPATH
 
-export OMP_NUM_THREADS=6
-export NUMEXPR_NUM_THREADS=6
+export OMP_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 
 export HDF5_USE_FILE_LOCKING=FALSE
