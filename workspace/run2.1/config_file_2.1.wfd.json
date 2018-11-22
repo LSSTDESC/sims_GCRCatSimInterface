@@ -5,7 +5,8 @@
 "descqa_catalog": "cosmoDC2_v1.1_image_addon_knots",
 "star_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/dc2_stellar_db.db",
 "host_data_dir": "/global/homes/d/danielsf/sims_GCRCatSimInterface_master/data/",
-"host_image_dir": "/scratch1/scratchdirs/danielsf/hosts/181105/"
+"host_image_dir": "/scratch1/scratchdirs/danielsf/hosts/181105/",
+"sed_lookup_dir": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1/sedLookup/"
 }
 
 
