@@ -1,12 +1,8 @@
-#!/bin/bash -l
-#SBATCH -N 11
-#SBATCH -t 3:00:00
-#SBATCH -q regular
+#SBATCH -t 10:00:00
+#SBATCH -q premium
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=24
-#SBATCH -o inst_cat_test_181105_output.txt
-#SBATCH -e inst_cat_test_181105_err.txt
 
 date
 
@@ -18,17 +14,11 @@ setup -j -r $HOME/sims_utils
 setup -j -r $HOME/Twinkles
 setup -j -r $HOME/sims_catalogs
 
+export PYTHONPATH=$HOME/gcr-catalogs-v1.1/:$PYTHONPATH
+
 export OMP_NUM_THREADS=6
 export NUMEXPR_NUM_THREADS=6
 export MKL_NUM_THREADS=1
 
 export HDF5_USE_FILE_LOCKING=FALSE
-
-out_dir=${SCRATCH}/inst_cat_test_181105/
-
-if [ ! -d ${out_dir} ]; then
-    mkdir -p ${out_dir}
-fi
-
-date
 
