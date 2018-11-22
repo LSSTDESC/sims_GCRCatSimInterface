@@ -7,7 +7,7 @@ do
     echo 'trying '${nn}
     python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
     --out_dir ${out_dir} \
-    --config_file ${config_file} --enable_sprinkler \
+    --config_file ${config_file} \
     --ids ${nn} --n_jobs 1 &
 done
 wait
