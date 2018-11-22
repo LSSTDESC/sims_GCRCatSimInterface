@@ -32,7 +32,7 @@ if __name__ == "__main__":
             n_srun = int(np.ceil(len(batch)/d_obs))
             out_file.write('#!/bin/bash/ -l\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
-            out_file.write('#SBATCH -o slurm_output/batch_%d_out.txt\n' % i_file)
+            out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % i_file)
             out_file.write('#SBATCH -e slurm_err/batch_%d_err.txt\n' % i_file)
             with open('header.txt', 'r') as in_file:
                 for line in in_file:
