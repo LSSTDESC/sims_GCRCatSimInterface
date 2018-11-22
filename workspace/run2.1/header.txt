@@ -22,6 +22,8 @@ export OMP_NUM_THREADS=6
 export NUMEXPR_NUM_THREADS=6
 export MKL_NUM_THREADS=1
 
+export HDF5_USE_FILE_LOCKING=FALSE
+
 out_dir=${SCRATCH}/inst_cat_test_181105/
 
 if [ ! -d ${out_dir} ]; then
