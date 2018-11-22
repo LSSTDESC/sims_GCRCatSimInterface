@@ -30,7 +30,7 @@ if __name__ == "__main__":
         out_dir = out_dir_root+'%d.sl' % i_file
         with open(out_name, 'w') as out_file:
             n_srun = int(np.ceil(len(batch)/d_obs))
-            out_file.write('#!/bin/bash/ -l\n')
+            out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
             out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % i_file)
             out_file.write('#SBATCH -e slurm_err/batch_%d_err.txt\n' % i_file)
