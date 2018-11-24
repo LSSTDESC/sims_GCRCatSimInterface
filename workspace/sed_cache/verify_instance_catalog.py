@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
     print('len(galaxy_df) ',len(galaxy_df))
     print('built final df')
-    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.0_image')
+    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1_image')
     cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'], native_filters=[hp_query])
     print('loaded galaxy_id %e' % len(cat_qties['galaxy_id']))
     cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
