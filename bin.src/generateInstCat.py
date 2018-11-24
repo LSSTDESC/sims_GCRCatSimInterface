@@ -52,6 +52,7 @@ def generate_instance_catalog(args=None, lock=None):
                                                    host_image_dir=args.host_image_dir,
                                                    host_data_dir=args.host_data_dir,
                                                    sprinkler=args.enable_sprinkler,
+                                                   gzip_threads=args.gzip_threads,
                                                    config_dict=config_dict)
 
             generate_instance_catalog.instcat_writer = instcat_writer
@@ -142,6 +143,10 @@ if __name__ == "__main__":
                         help='flag to suppress warnings')
     parser.add_argument('--n_jobs', type=int, default=1,
                         help='Number of jobs to run in parallel with multiprocessing')
+    parser.add_argument('--gzip_threads', type=int, default=3,
+                        help="number of parallel gzip jobs any one "
+                             "InstanceCatalogWriter can start in parallel "
+                             "at a time")
     parser.add_argument('--job_log', type=str, default=None,
                         help="file where we will write 'job started/completed' messages")
     parser.add_argument('--pickup_dir', type=str, default=None,

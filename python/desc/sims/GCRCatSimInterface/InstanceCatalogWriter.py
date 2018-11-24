@@ -114,7 +114,8 @@ class InstanceCatalogWriter(object):
                  sed_lookup_dir=None,
                  agn_db_name=None, agn_threads=1, sn_db_name=None,
                  sprinkler=False, host_image_dir=None,
-                 host_data_dir=None, config_dict=None):
+                 host_data_dir=None, config_dict=None,
+                 gzip_threads=3):
         """
         Parameters
         ----------
@@ -150,9 +151,14 @@ class InstanceCatalogWriter(object):
             The location of the FITS images of lensed AGN/SNe hosts produced by generate_lensed_hosts_***.py
         host_data_dir: string
             Location of csv file of lensed host data created by the sprinkler
+        gzip_threads: int
+            The number of gzip jobs that can be started in parallel after
+            catalogs are written (default=3)
         """
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
+
+        self.gzip_threads = gzip_threads
 
         # load the data for the parametrized light
         # curve stellar variability model into a
@@ -561,6 +567,12 @@ class InstanceCatalogWriter(object):
                 continue
             p = subprocess.Popen(args=['gzip', full_name])
             gzip_process_list.append(p)
+
+            if len(gzip_process_list) >= self.gzip_threads:
+                for p in gzip_process_list:
+                    p.wait()
+                gzip_process_list = []
+
         for p in gzip_process_list:
             p.wait()
 
