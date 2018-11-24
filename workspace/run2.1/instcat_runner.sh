@@ -8,6 +8,6 @@ do
     python $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
     --out_dir ${out_dir} \
     --config_file ${config_file} \
-    --ids ${nn} --n_jobs 1 &
+    --ids ${nn} --n_jobs 1 --suppress_warnings &
 done
 wait
