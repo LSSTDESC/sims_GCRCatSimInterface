@@ -3,7 +3,7 @@
 "db": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/minion_1016_desc_dithered_v4_sfd.db",
 "agn_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1/agn_param_cosmoDC2v1.1_mbh7.0_mi30.0_sf4.0_181120.db",
 "sn_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1/sne_params_cosmoDC2_v1.1_181121.db",
-"descqa_catalog": "cosmoDC2_v1.1_image",
+"descqa_catalog": "cosmoDC2_v1.1.0_addon_knots",
 "star_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/dc2_stellar_db.db",
 "host_data_dir": "/global/homes/d/danielsf/sims_GCRCatSimInterface_master/data/",
 "host_image_dir": "/scratch1/scratchdirs/danielsf/hosts/181105/",
