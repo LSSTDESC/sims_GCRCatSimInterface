@@ -303,7 +303,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         for hp in healpix_list:
             file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
-            with h5py.File(file_name, 'r', swmr=True) as data:
+            with h5py.File(file_name, 'r') as data:
                 if not hasattr(self, '_sed_lookup_names'):
                     self._sed_lookup_names = np.copy(data['sed_names']).astype(str)
                     self._sed_lookup_names_bytes = np.copy(data['sed_names'])
