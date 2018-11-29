@@ -1,5 +1,5 @@
 import GCRCatalogs
-image_cat_config = GCRCatalogs.get_catalog_config('cosmoDC2_v1.0_image')
+image_cat_config = GCRCatalogs.get_catalog_config('cosmoDC2_v1.1.4_image')
 
 healpix_pixels = image_cat_config['healpix_pixels']
 
@@ -9,8 +9,8 @@ header = '''#!/bin/bash -l
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=24
-#SBATCH -o sed_cache_v1.1_output.txt
-#SBATCH -e sed_cache_v1.1_edison_err.txt
+#SBATCH -o sed_cache_v1.1.4_output.txt
+#SBATCH -e sed_cache_v1.1.4_err.txt
 '''
 
 header += '\n#SBATCH -N %d\n\n' % len(healpix_pixels)
@@ -22,7 +22,7 @@ setup -j -r $HOME/sims_catUtils
 setup -j -r $HOME/sims_photUtils
 setup -j -r $HOME/sims_utils
 
-export PYTHONPATH=$HOME/gcr-catalogs-v1.1/:$PYTHONPATH
+export PYTHONPATH=$HOME/gcr-catalogs-desc/:$PYTHONPATH
 
 export HDF5_USE_FILE_LOCKING=FALSE
 
@@ -30,7 +30,7 @@ export OMP_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 
-out_dir=${SCRATCH}/sed_cache_v1.1/
+out_dir=${SCRATCH}/sed_cache_v1.1.4/
 
 if [ ! -d ${out_dir} ]; then
     mkdir -p ${out_dir}
@@ -42,7 +42,7 @@ with open('sed_fitting_script.sl', 'w') as out_file:
     for hp in healpix_pixels:
         out_file.write('srun -N 1 -n 1 -c 24 \\\n')
         out_file.write('python fit_sed.py --healpix %d \\\n' % hp)
-        out_file.write('--catalog cosmoDC2_v1.1 \\\n')
+        out_file.write('--catalog cosmoDC2_v1.1.4_image \\\n')
         out_file.write('--out_dir ${out_dir} \\\n')
         out_file.write('--out_name sed_fit_%d.h5 \\\n' % hp)
         out_file.write('--n_threads 24 &\n')
