@@ -64,8 +64,14 @@ if __name__ == '__main__':
 
         if survey.lower() == 'mddf':
             fname = os.path.join(args.data_root, 'mddf_gals.hdf')
-            healpixelSN_fname = 'sn_564_MS.csv'
-            randomSeedOffset = 200
+            healpixelSN_fname = os.path.join(os.environ['SCRATCH'],
+                                             'cosmoDC2_v1.1.4_sne',
+                                             'sne_csv',
+                                             'sn_%d_MS.csv' % healpixelId)
+            assert os.path.isfile(healpixelSN_fname)
+            print('reading veto data from %s' % healpixelSN_fname)
+            #healpixelSN_fname = 'sn_564_MS.csv'
+            randomSeedOffset = 20000+healpixelId
             veto_ms_gals = True
             # This is the size of region in square degrees
             area = 1.28 #  dsinthetadtheta = np.cos(np.radians(90 + 27.53)) -  np.cos(np.radians(90 + 28.667))
