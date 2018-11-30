@@ -65,7 +65,6 @@ if __name__ == '__main__':
         if survey.lower() == 'mddf':
             fname = os.path.join(args.data_root, 'mddf_gals.hdf')
             healpixelSN_fname = 'sn_564_MS.csv'
-            raise RuntimeError('Not sure why I am here')
             randomSeedOffset = 200
             veto_ms_gals = True
             # This is the size of region in square degrees
