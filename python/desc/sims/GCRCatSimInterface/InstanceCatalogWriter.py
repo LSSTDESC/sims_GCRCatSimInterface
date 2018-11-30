@@ -306,6 +306,8 @@ class InstanceCatalogWriter(object):
         # in the PhoSim catalog
         written_catalog_names = []
         sprinkled_host_name = 'spr_hosts_%d.txt' % obsHistID
+        if self.sprinkler is not False:
+            written_catalog_names.append(sprinkled_host_name)
 
         if do_stars:
             star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
