@@ -47,7 +47,7 @@ if __name__ == '__main__':
     if args.healpixelId is not None:
         healpix_list = [args.healpixelId]
     else:
-        cf = GCRCatalogs.get_catalog_config('cosmoDC2_v1.0_image')
+        cf = GCRCatalogs.get_catalog_config('cosmoDC2_v1.1.4_image')
         healpix_list = cf['healpix_pixels']
 
     for healpixelId in healpix_list:
