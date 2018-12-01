@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
     print('len(galaxy_df) ',len(galaxy_df))
     print('built final df')
-    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1_image')
+    cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image')
     cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'], native_filters=[hp_query])
     print('loaded galaxy_id %e' % len(cat_qties['galaxy_id']))
     cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
@@ -192,6 +192,7 @@ if __name__ == "__main__":
     invalid_knots = np.where(np.logical_not(np.isfinite(galaxy_df['magnorm_knots'].values.astype(np.float))))
 
     print('no knots %e' % len(invalid_knots[0]))
+    ct_knots = 0
 
     dd = angularSeparation(ra_center, dec_center,
                            cat_qties['ra'], cat_qties['dec'])
@@ -251,6 +252,7 @@ if __name__ == "__main__":
                          row['rest_rv_knots'])
             knots_mag = ss.calcMag(bandpass)
             knots_flux = np.power(10.0,-0.4*knots_mag)
+            ct_knots += 1
 
         tot_mag = -2.5*np.log10(disk_flux+bulge_flux+knots_flux)
         d_mag = np.abs(tot_mag-mag_true)
@@ -261,3 +263,4 @@ if __name__ == "__main__":
             #print(row)
 
     print('all done %d' % args.obs)
+    print('knots %e' % ct_knots)
