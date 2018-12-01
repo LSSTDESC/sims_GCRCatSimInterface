@@ -6,7 +6,7 @@ import numpy as np
 if __name__ == "__main__":
 
     config_file = 'config_file_2.1.wfd.json'
-    out_dir_root = '$SCRATCH/instcat2.1_batch_'
+    out_dir_root = '/global/cscratch1/sd/desc/DC2/Run2.0i/cosmoDC2_v1.1.4/instCat/batch_'
     out_name_root = 'slurm_scripts/batch_script_'
 
 
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         batch_slice = slice(i_start, i_start+n_obs)
         batch = obs_hist_id[batch_slice]
         out_name = out_name_root+'%d.sl' % i_file
-        out_dir = out_dir_root+'%d.sl' % i_file
+        out_dir = out_dir_root+'%d' % i_file
         with open(out_name, 'w') as out_file:
             n_srun = int(np.ceil(len(batch)/d_obs))
             out_file.write('#!/bin/bash -l\n')

@@ -1,4 +1,4 @@
-#SBATCH -t 10:00:00
+#SBATCH -t 5:00:00
 #SBATCH -q premium
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
@@ -14,7 +14,7 @@ setup -j -r $HOME/sims_utils
 setup -j -r $HOME/Twinkles
 setup -j -r $HOME/sims_catalogs
 
-export PYTHONPATH=$HOME/gcr-catalogs-v1.1/:$PYTHONPATH
+export PYTHONPATH=$HOME/gcr-catalogs-desc/:$PYTHONPATH
 
 export OMP_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
