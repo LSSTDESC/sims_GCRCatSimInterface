@@ -582,6 +582,7 @@ class InstanceCatalogWriter(object):
                 out_file.write('%d all done -- took %.3e hrs\n' %
                                (obsHistID, duration))
 
+        print("all done with %d" % obsHistID)
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
                         nsnap=1, vistime=30., minsource=100):
