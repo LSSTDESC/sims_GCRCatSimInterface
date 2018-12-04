@@ -327,7 +327,6 @@ class InstanceCatalogWriter(object):
         sprinkled_host_name = 'spr_hosts_%d.txt' % obsHistID
 
         if do_stars:
-            print('writing stars')
             star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
             star_cat.min_mag = self.min_mag
             star_cat.photParams = self.phot_params
@@ -353,7 +352,6 @@ class InstanceCatalogWriter(object):
                                    (obsHistID, duration))
 
         if 'knots' in self.descqa_catalog and do_knots:
-            print('writing knots')
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
             knots_db.field_ra = self.protoDC2_ra
             knots_db.field_dec = self.protoDC2_dec
@@ -380,7 +378,6 @@ class InstanceCatalogWriter(object):
         if self.sprinkler is False:
 
             if do_bulges:
-                print('writing bulges')
                 bulge_db = bulgeDESCQAObject(self.descqa_catalog)
                 bulge_db.field_ra = self.protoDC2_ra
                 bulge_db.field_dec = self.protoDC2_dec
