@@ -116,7 +116,6 @@ class DESCQAChunkIterator(object):
 
             self._loaded_qties = {}
             for name in qty_name_list:
-                print('\nloading %s' % name)
                 raw_qties = descqa_catalog.get_quantities(name,
                                                           native_filters=self._native_filters)
                 self._loaded_qties[name] = raw_qties[name][self._data_indices]
@@ -291,9 +290,7 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
         obs_id = self._obs_metadata.OpsimMetaData['obsHistID']
         hp_rng = np.random.RandomState(121)
         hp_rng.random_sample(obs_id)  # so that each obs shuffles differently
-        print('pre shuffle ',healpix_list)
         hp_rng.shuffle(healpix_list)
-        print('post shuffle ',healpix_list)
 
         for hp in healpix_list:
             healpix_filter = GCRQuery('healpix_pixel==%d' % hp)
@@ -354,7 +351,6 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                     self._healpix_filter = None
                     raise StopIteration
 
-                print('\nloading healpix %d' % self._healpix_loaded)
                 self._indices_to_load = np.sort(self._indices_to_load)
                 self._descqa_obj._loaded_healpixel = self._healpix_loaded
                 self._healpix_loaded = self._healpix_loaded
@@ -362,7 +358,6 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
 
             valid_indices = self._indices_to_load[:self._loader_chunk_size]
             self._indices_to_load = self._indices_to_load[self._loader_chunk_size:]
-            print("    loading hp: %d; %d -> %d" % (self._healpix_loaded, valid_indices[0], valid_indices[-1]))
 
             self._loaded_qties = {}
             for name in self._qty_name_list:
@@ -450,8 +445,6 @@ class DESCQAObject(object):
             _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix] = \
                                       additional_postfix
 
-            print('loading the catalog took %e hrs' %
-                  ((time.time()-t_start)/3600.0))
 
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
 
@@ -651,7 +644,6 @@ class DESCQAObject(object):
         limit is ignored, but needs to be here to preserve the API
         """
         if 'healpix_pixel' in self._catalog._native_filter_quantities:
-            print('Using the DESCQAChunkIterator_healpix class')
             chunk_class = DESCQAChunkIterator_healpix
         else:
             chunk_class = DESCQAChunkIterator
