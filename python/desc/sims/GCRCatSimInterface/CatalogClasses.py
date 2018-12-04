@@ -280,12 +280,10 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         """
 
         process = psutil.Process(os.getpid())
-        print('starting cache; %.1e Gb' % (process.memory_info().rss/(1024**3)))
 
         if component_type != 'disk' and component_type != 'bulge':
             raise RuntimeError("Do not know what component this is: %s" % component_type)
 
-        print('caching ',healpix_list, component_type, bandpass)
 
         assert os.path.isdir(self.sed_lookup_dir)
 
@@ -315,7 +313,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                                        self.obs_metadata.pointingDec,
                                        data['ra'].value, data['dec'].value)
                 to_keep = np.where(dd<self.obs_metadata.boundLength+0.1)
-                print('keeping %d of %d' % (len(to_keep[0]), len(data['galaxy_id'].value)))
 
                 raw_out_dict['galaxy_id'].append(data['galaxy_id'].value[to_keep])
                 raw_out_dict['sed_idx'].append(data['%s_sed' % component_type].value[to_keep])
@@ -345,7 +342,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         for k in out_dict.keys():
             out_dict[k] = out_dict[k][sorted_dex]
 
-        print('ending cache; %.1e Gb' % (process.memory_info().rss/(1024**3)))
         return out_dict
 
     @compound('sedFilename_idx', 'magNorm_fitted',
