@@ -1,5 +1,4 @@
 import os
-import psutil
 import re
 import numpy as np
 import healpy
@@ -278,8 +277,6 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         where * stands for either 'disk' or 'bulge'
         """
-
-        process = psutil.Process(os.getpid())
 
         if component_type != 'disk' and component_type != 'bulge':
             raise RuntimeError("Do not know what component this is: %s" % component_type)
