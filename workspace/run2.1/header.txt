@@ -2,7 +2,7 @@
 #SBATCH -q premium
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=24
+#SBATCH --cpus-per-task=68
 #SBATCH -C knl
 
 date
