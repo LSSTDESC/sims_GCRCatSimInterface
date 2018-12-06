@@ -46,6 +46,14 @@ if __name__ == '__main__':
 
     if args.healpixelId is not None:
         healpix_list = [args.healpixelId]
+    elif args.survey == 'mDDF':
+        ra_rad = np.radians(53.125)
+        dec_rad = np.radians(-28.10)
+        vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                       np.cos(dec_rad)*np.sin(ra_rad),
+                       np.sin(dec_rad)])
+        healpix_list = hp.query_disc(32, vv, np.radians(0.6),
+                                     nest=False, inclusive=True)
     else:
         cf = GCRCatalogs.get_catalog_config('cosmoDC2_v1.1.4_image')
         healpix_list = cf['healpix_pixels']
