@@ -114,8 +114,11 @@ class DC2SN(object):
             p = gtmp.totalMassStellar.values
             p /= p.sum()
             print('the total is ', p.sum())
+
             if numSN>len(gtmp):
-                raise RuntimeError('numSN %d len(gtmp) %d' % (numSN, len(gtmp)))
+                raise RuntimeError('numSN %d len(gtmp) %d' %
+                                   (numSN, len(gtmp)))
+
             gids = self.rng.choice(gtmp.reset_index().galaxy_id,
                                    size=numSN, replace=False,
                                    p=p) #gtmp.totalMassStellar/tot)
