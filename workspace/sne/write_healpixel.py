@@ -124,9 +124,12 @@ if __name__ == '__main__':
                                      surveyDuration=10.,
                                      cosmo=dc2Cosmo,
                                      zbinEdges=np.arange(0.001, zmax, 0.02))
-    
-        snPop = snsims.GMM_SALT2Params(numSN=None, zSamples=zdist.zSamples, rng=np.random.RandomState(2 + randomSeedOffset),
-                                       mjdmin=59580, cosmo=dc2Cosmo, surveyDuration=10.)
+
+        snPop_rng = np.random.RandomState(2 + randomSeedOffset)
+        snPop = snsims.GMM_SALT2Params(numSN=None, zSamples=zdist.zSamples,
+                                       rng=snPop_rng,
+                                       mjdmin=59580, cosmo=dc2Cosmo,
+                                       surveyDuration=10.)
     
     
         assert snPop.paramSamples.snid.max() - snPop.paramSamples.snid.size == -1
