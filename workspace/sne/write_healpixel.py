@@ -70,7 +70,17 @@ if __name__ == '__main__':
 
         veto_ms_gals = False
 
+        # This is the size of region in square degrees
+        area = hp.nside2pixarea(nside=NSIDE, degrees=True)
+        ra_min = None
+        ra_max = None
+        dec_min = None
+        dec_max = None
         if survey.lower() == 'mddf':
+            ra_min = 53.125-0.567
+            ra_max = 53.125+0.567
+            dec_min = -28.667
+            dec_max = -27.533
             healpixelSN_fname = os.path.join(os.environ['SCRATCH'],
                                              'cosmoDC2_v1.1.4_sne',
                                              'sne_csv',
@@ -80,14 +90,9 @@ if __name__ == '__main__':
             #healpixelSN_fname = 'sn_564_MS.csv'
             randomSeedOffset = 20000+healpixelId
             veto_ms_gals = True
-            # This is the size of region in square degrees
-            area = 1.28 #  dsinthetadtheta = np.cos(np.radians(90 + 27.53)) -  np.cos(np.radians(90 + 28.667))
-            # dphi = np.radians(53.76 - 52.48)
             if zmax is None:
                 zmax = 1.4
         else:
-            # This is the size of region in square degrees
-            area = hp.nside2pixarea(nside=NSIDE, degrees=True) 
             if zmax is None:
                 zmax = 1.0
 
@@ -113,9 +118,6 @@ if __name__ == '__main__':
             vetoed_galids = veto_galsdf.query(querystring).galaxy_id.values
 
         galsdf = pd.read_hdf(fname)
-        if survey.lower() == 'mddf':
-            galsdf = galsdf.query(querystring)
-
         galsdf.rename(columns=naming_dict, inplace=True)
   
         zdist = snsims.PowerLawRates(rng=np.random.RandomState(1 + randomSeedOffset),
@@ -136,7 +138,11 @@ if __name__ == '__main__':
 
         max_redshift = galsdf.redshift.max()
         sn = DC2SN(galsdf, snPop, zmax=zmax, rng=np.random.RandomState(0+ randomSeedOffset))
-        main_survey_mapper, hosted_sn_params = sn.assignHosts(binwidth=0.02,)
+        main_survey_mapper, hosted_sn_params = sn.assignHosts(binwidth=0.02,
+                                                              ra_min=ra_min,
+                                                              ra_max=ra_max,
+                                                              dec_min=dec_min,
+                                                              dec_max=dec_max)
         if len(hosted_sn_params) > 0:
             hostedSNParamsPos = sn.get_positions(hosted_sn_params,
                                     np.random.RandomState(3 + randomSeedOffset))

@@ -85,7 +85,9 @@ class DC2SN(object):
             self._hostlessSN['sndec'] = dec
         return self._hostlessSN
     
-    def assignHosts(self, binwidth=0.02):
+    def assignHosts(self, binwidth=0.02,
+                    ra_min=None, ra_max=None,
+                    dec_min=None, dec_max=None):
         """
         Find hosts in redshift bins of 0.02 and populate them weighting
         them by stellar mass of host galaxies.
@@ -94,6 +96,9 @@ class DC2SN(object):
         ----------
         binwidth : float, defaults to 0.02
             width of redshift bin
+
+        ra/dec min/max are in degrees.  These impose limits on what
+        galaxies are valid (in case we are simulating the DDF)
         """
         galsdf = self.galsdf
         self.hostedSN['zbin'] = self.hostedSN.z // binwidth
@@ -119,9 +124,35 @@ class DC2SN(object):
                 raise RuntimeError('numSN %d len(gtmp) %d' %
                                    (numSN, len(gtmp)))
 
-            gids = self.rng.choice(gtmp.reset_index().galaxy_id,
-                                   size=numSN, replace=False,
-                                   p=p) #gtmp.totalMassStellar/tot)
+            g_candidates = gtmp.reset_index()
+            gid_candidates = g_candidates.galaxy_id.values
+            ra_candidates = g_candidates.raJ2000.values
+            dec_candidates = g_candidates.decJ2000.values
+
+            # map ra onto an actually rectangular coordinate
+            # so that we can keep all of the points in the DDF
+            ra_candidates = (53.125
+            +(53.125-ra_candidates)*np.cos(np.radians(dec_candidates)))
+
+            gid_idx = self.rng.choice(np.arange(len(gid_candidates), dtype=int),
+                                      size=numSN, replace=False,
+                                      p=p) #gtmp.totalMassStellar/tot)
+
+            gids = gid_candidates[gid_idx]
+            ra_candidates = ra_candidates[gid_idx]
+            dec_candidates = dec_candidates[gid_idx]
+
+            if ra_min is not None:
+                valid = np.where(np.logical_and(ra_candidates >= ra_min,
+                                 np.logical_and(ra_candidates <= ra_max,
+                                 np.logical_and(dec_candidates >= dec_min,
+                                                dec_candidates <= dec_max))))
+
+                print('valid ',valid)
+                print('type(gids) ',type(gids))
+                gids = gids[valid]
+                hostedtmp = hostedtmp.iloc[valid]
+
             print(len(hostedtmp), len(gids))
             syslist.append(pd.DataFrame(dict(snid=hostedtmp.reset_index().snid, galaxy_id=gids)))
 
