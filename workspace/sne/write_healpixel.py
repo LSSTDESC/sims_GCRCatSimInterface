@@ -63,7 +63,6 @@ if __name__ == '__main__':
         veto_ms_gals = False
 
         if survey.lower() == 'mddf':
-            fname = os.path.join(args.data_root, 'mddf_gals.hdf')
             healpixelSN_fname = os.path.join(os.environ['SCRATCH'],
                                              'cosmoDC2_v1.1.4_sne',
                                              'sne_csv',
