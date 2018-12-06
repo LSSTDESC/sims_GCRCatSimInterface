@@ -155,6 +155,7 @@ class InstanceCatalogWriter(object):
             The number of gzip jobs that can be started in parallel after
             catalogs are written (default=3)
         """
+        self.t_start = time.time()
         if not os.path.exists(opsimdb):
             raise RuntimeError('%s does not exist' % opsimdb)
 
@@ -254,8 +255,6 @@ class InstanceCatalogWriter(object):
             This job will resume where that one left off, only simulating
             sub-catalogs that did not complete.
         """
-        t_start = time.time()
-
         do_stars = True
         do_knots = True
         do_bulges = True
@@ -307,7 +306,7 @@ class InstanceCatalogWriter(object):
         if has_status_file:
             with open(status_file, 'a') as out_file:
                 out_file.write('got obs_md in %e hours\n' %
-                               ((time.time()-t_start)/3600.0))
+                               ((time.time()-self.t_start)/3600.0))
 
         # Add directory for writing the GLSN spectra to
         glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))
@@ -347,7 +346,7 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    duration = (time.time()-t_start)/3600.0
+                    duration = (time.time()-self.t_start)/3600.0
                     out_file.write('%d wrote star catalog after %.3e hrs\n' %
                                    (obsHistID, duration))
 
@@ -367,7 +366,7 @@ class InstanceCatalogWriter(object):
             del knots_db
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    duration = (time.time()-t_start)/3600.0
+                    duration = (time.time()-self.t_start)/3600.0
                     out_file.write('%d wrote knots catalog after %.3e hrs\n' %
                                    (obsHistID, duration))
         else:
@@ -395,7 +394,7 @@ class InstanceCatalogWriter(object):
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
-                        duration = (time.time()-t_start)/3600.0
+                        duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote bulge catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
 
@@ -417,7 +416,7 @@ class InstanceCatalogWriter(object):
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
-                        duration = (time.time()-t_start)/3600.0
+                        duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote disk catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
 
@@ -440,7 +439,7 @@ class InstanceCatalogWriter(object):
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
-                        duration = (time.time()-t_start)/3600.0
+                        duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote agn catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
         else:
@@ -498,7 +497,7 @@ class InstanceCatalogWriter(object):
                                       write_header=False)
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
-                        duration = (time.time()-t_start)/3600.0
+                        duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote galaxy catalogs with sprinkling after %.3e hrs\n' % (obsHistID, duration))
 
             if do_hosts:
@@ -520,7 +519,7 @@ class InstanceCatalogWriter(object):
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
-                        duration = (time.time()-t_start)/3600.0
+                        duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote lensing host catalog after %.3e hrs\n' % (obsHistID, duration))
 
         # SN instance catalogs
@@ -539,7 +538,7 @@ class InstanceCatalogWriter(object):
 
             if has_status_file:
                 with open(status_file, 'a') as out_file:
-                    duration =(time.time()-t_start)/3600.0
+                    duration =(time.time()-self.t_start)/3600.0
                     out_file.write('%d wrote SNe catalog after %.3e hrs\n' %
                                    (obsHistID, duration))
 
@@ -575,7 +574,7 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                duration = (time.time()-t_start)/3600.0
+                duration = (time.time()-self.t_start)/3600.0
                 out_file.write('%d all done -- took %.3e hrs\n' %
                                (obsHistID, duration))
 
