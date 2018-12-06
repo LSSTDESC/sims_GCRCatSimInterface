@@ -115,8 +115,9 @@ class DC2SN(object):
             p = gtmp.totalMassStellar.values
             p /= p.sum()
             print('the total is ', p.sum())
-            gids = self.rng.choice(gtmp.reset_index().galaxy_id, size=numSN, replace=False,
-                              p=p) #gtmp.totalMassStellar/tot)
+            gids = self.rng.choice(gtmp.reset_index().galaxy_id,
+                                   size=numSN, replace=False,
+                                   p=p) #gtmp.totalMassStellar/tot)
             print(len(hostedtmp), len(gids))
             syslist.append(pd.DataFrame(dict(snid=hostedtmp.reset_index().snid, galaxy_id=gids)))
 
