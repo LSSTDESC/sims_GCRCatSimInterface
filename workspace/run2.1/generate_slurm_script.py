@@ -97,3 +97,4 @@ if __name__ == "__main__":
                 out_file.write(' &\n\n')
 
             out_file.write('\nwait\n')
+            out_file.write("\necho 'master all done for %s'\n" % out_dir)
