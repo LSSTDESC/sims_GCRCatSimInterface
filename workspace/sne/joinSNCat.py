@@ -99,9 +99,7 @@ class DC2SN(object):
         self.hostedSN['zbin'] = self.hostedSN.zbin.astype(np.int)
         galsdf['zbin'] = galsdf.redshift // binwidth
         galsdf['zbin'] = galsdf.zbin.astype(np.int)
-        
-        
-        
+
         syslist = []
 
         for zbin in self.hostedSN.zbin.unique():
