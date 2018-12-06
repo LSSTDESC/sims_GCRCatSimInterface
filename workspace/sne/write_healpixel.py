@@ -72,15 +72,13 @@ if __name__ == '__main__':
 
         # This is the size of region in square degrees
         area = hp.nside2pixarea(nside=NSIDE, degrees=True)
-        ra_min = None
-        ra_max = None
-        dec_min = None
-        dec_max = None
+        ra_center = None
+        dec_center = None
+        ra_dec_width = None
         if survey.lower() == 'mddf':
-            ra_min = 53.125-0.567
-            ra_max = 53.125+0.567
-            dec_min = -28.667
-            dec_max = -27.533
+            ra_center = 53.125
+            dec_center = -28.100
+            ra_dec_width = 0.567
             healpixelSN_fname = os.path.join(os.environ['SCRATCH'],
                                              'cosmoDC2_v1.1.4_sne',
                                              'sne_csv',
@@ -139,10 +137,9 @@ if __name__ == '__main__':
         max_redshift = galsdf.redshift.max()
         sn = DC2SN(galsdf, snPop, zmax=zmax, rng=np.random.RandomState(0+ randomSeedOffset))
         main_survey_mapper, hosted_sn_params = sn.assignHosts(binwidth=0.02,
-                                                              ra_min=ra_min,
-                                                              ra_max=ra_max,
-                                                              dec_min=dec_min,
-                                                              dec_max=dec_max)
+                                                      ra_center=ra_center,
+                                                      dec_center=dec_center,
+                                                      ra_dec_width=ra_dec_width)
         if len(hosted_sn_params) > 0:
             hostedSNParamsPos = sn.get_positions(hosted_sn_params,
                                     np.random.RandomState(3 + randomSeedOffset))

@@ -86,8 +86,9 @@ class DC2SN(object):
         return self._hostlessSN
     
     def assignHosts(self, binwidth=0.02,
-                    ra_min=None, ra_max=None,
-                    dec_min=None, dec_max=None):
+                    ra_center=None,
+                    dec_center=None,
+                    ra_dec_width=None):
         """
         Find hosts in redshift bins of 0.02 and populate them weighting
         them by stellar mass of host galaxies.
@@ -97,8 +98,8 @@ class DC2SN(object):
         binwidth : float, defaults to 0.02
             width of redshift bin
 
-        ra/dec min/max are in degrees.  These impose limits on what
-        galaxies are valid (in case we are simulating the DDF)
+        ra_center, dec_center, ra_dec_width are in degrees;
+        denote the center and size of the DDF
         """
         galsdf = self.galsdf
         self.hostedSN['zbin'] = self.hostedSN.z // binwidth
@@ -120,6 +121,7 @@ class DC2SN(object):
             p /= p.sum()
             print('the total is ', p.sum())
 
+            print('numSN %d len(gtmp) %d' % (numSN, len(gtmp)))
             if numSN>len(gtmp):
                 raise RuntimeError('numSN %d len(gtmp) %d' %
                                    (numSN, len(gtmp)))
@@ -129,11 +131,6 @@ class DC2SN(object):
             ra_candidates = g_candidates.raJ2000.values
             dec_candidates = g_candidates.decJ2000.values
 
-            # map ra onto an actually rectangular coordinate
-            # so that we can keep all of the points in the DDF
-            ra_candidates = (53.125
-            +(53.125-ra_candidates)*np.cos(np.radians(dec_candidates)))
-
             gid_idx = self.rng.choice(np.arange(len(gid_candidates), dtype=int),
                                       size=numSN, replace=False,
                                       p=p) #gtmp.totalMassStellar/tot)
@@ -142,7 +139,16 @@ class DC2SN(object):
             ra_candidates = ra_candidates[gid_idx]
             dec_candidates = dec_candidates[gid_idx]
 
-            if ra_min is not None:
+            if ra_center is not None:
+                ra_min = ra_center-ra_dec_width
+                ra_max = ra_center+ra_dec_width
+                dec_min = dec_center-ra_dec_width
+                dec_max = dec_center+ra_dec_width
+                # map ra onto an actually rectangular coordinate
+                # so that we can keep all of the points in the DDF
+                ra_candidates = (ra_center
+                  +(ra_candidates-ra_center)*np.cos(np.radians(dec_candidates)))
+
                 valid = np.where(np.logical_and(ra_candidates >= ra_min,
                                  np.logical_and(ra_candidates <= ra_max,
                                  np.logical_and(dec_candidates >= dec_min,
