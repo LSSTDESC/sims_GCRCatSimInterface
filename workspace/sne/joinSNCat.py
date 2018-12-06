@@ -46,7 +46,8 @@ class DC2SN(object):
         
         # Sample of SN split into hosted/hostless
         hstd, hstless = self.splitByHosting(self.snparams, rng=self.rng,
-                                            hostprob=self.hostprob, zmax=self.zmax)
+                                            hostprob=self.hostprob,
+                                            zmax=self.zmax)
         self.hostedSN = hstd
         self._hostedParams = None
         self._hostlessSN = hstless
