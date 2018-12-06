@@ -110,6 +110,8 @@ class DC2SN(object):
             hostedtmp = self.hostedSN.query(querystring)
             numSN = hostedtmp.z.size
             gtmp  = galsdf.query(querystring)
+            if len(gtmp) == 0:
+                continue
             p = gtmp.totalMassStellar.values
             p /= p.sum()
             print('the total is ', p.sum())
@@ -117,7 +119,9 @@ class DC2SN(object):
                               p=p) #gtmp.totalMassStellar/tot)
             print(len(hostedtmp), len(gids))
             syslist.append(pd.DataFrame(dict(snid=hostedtmp.reset_index().snid, galaxy_id=gids)))
-        
+
+        if len(syslist) == 0:
+            return [], []
         joiner = pd.concat(syslist).set_index('snid')
         cols = self.hostedSN.columns
         keepcols = list(col for col in cols if col != 'z')

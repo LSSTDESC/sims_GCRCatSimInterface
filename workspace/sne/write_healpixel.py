@@ -126,7 +126,15 @@ if __name__ == '__main__':
         max_redshift = galsdf.redshift.max()
         sn = DC2SN(galsdf, snPop, zmax=zmax, rng=np.random.RandomState(0+ randomSeedOffset))
         main_survey_mapper, hosted_sn_params = sn.assignHosts(binwidth=0.02,)
-        hostedSNParamsPos = sn.get_positions(hosted_sn_params, np.random.RandomState(3 + randomSeedOffset))
-        hostedSNParamsPos.snid = list(survey + 
-                                     '_{0}_{1}'.format(healpixelId, ind) for ind in hostedSNParamsPos.snid.values)
-        hostedSNParamsPos.to_csv(os.path.join(args.out_dir, 'sn_{0}_{1}.csv'.format(healpixelId, survey)))
+        if len(hosted_sn_params) > 0:
+            hostedSNParamsPos = sn.get_positions(hosted_sn_params,
+                                    np.random.RandomState(3 + randomSeedOffset))
+
+            hostedSNParamsPos.snid = list(survey +
+                                         '_{0}_{1}'.format(healpixelId, ind)
+                                         for ind in
+                                         hostedSNParamsPos.snid.values)
+
+            out_name = os.path.join(args.out_dir, 'sn_{0}_{1}.csv'.format(healpixelId, survey))
+            assert not os.path.isfile(out_name)
+            hostedSNParamsPos.to_csv(out_name)
