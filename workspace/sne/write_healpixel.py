@@ -149,6 +149,13 @@ if __name__ == '__main__':
                                          for ind in
                                          hostedSNParamsPos.snid.values)
 
+            if veto_ms_gals:
+                valid = np.where(np.logical_not(
+                                 np.in1d(hostedSNParamsPos.galaxy_id.values,
+                                         vetoed_galids)))
+
+                hostedSNParamsPos = hostedSNParamsPos.iloc[valid]
+
             out_name = os.path.join(args.out_dir, 'sn_{0}_{1}.csv'.format(healpixelId, survey))
             assert not os.path.isfile(out_name)
             hostedSNParamsPos.to_csv(out_name)
