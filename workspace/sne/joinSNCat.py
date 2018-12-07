@@ -99,7 +99,10 @@ class DC2SN(object):
             width of redshift bin
 
         ra_center, dec_center, ra_dec_width are in degrees;
-        denote the center and size of the DDF
+        denote the center and size of the DDF.
+            If these parameters are non-zero, this method will simulate the
+            entire healpixel it has been passed, but will then only
+            return SNe that are actually inside the DDF.
         """
         galsdf = self.galsdf
         self.hostedSN['zbin'] = self.hostedSN.z // binwidth
@@ -140,15 +143,19 @@ class DC2SN(object):
             dec_candidates = dec_candidates[gid_idx]
 
             if ra_center is not None:
+                # find the bounds of the DDF as if it were a
+                # a rectangle (i.e. ignore spherical geometry)
                 ra_min = ra_center-ra_dec_width
                 ra_max = ra_center+ra_dec_width
                 dec_min = dec_center-ra_dec_width
                 dec_max = dec_center+ra_dec_width
-                # map ra onto an actually rectangular coordinate
+
+                # map ra of SNe onto an actually rectangular coordinate
                 # so that we can keep all of the points in the DDF
                 ra_candidates = (ra_center
                   +(ra_candidates-ra_center)*np.cos(np.radians(dec_candidates)))
 
+                # select only those SNe that are in the DDF
                 valid = np.where(np.logical_and(ra_candidates >= ra_min,
                                  np.logical_and(ra_candidates <= ra_max,
                                  np.logical_and(dec_candidates >= dec_min,
@@ -162,6 +169,7 @@ class DC2SN(object):
 
         if len(syslist) == 0:
             return [], []
+
         joiner = pd.concat(syslist).set_index('snid')
         cols = self.hostedSN.columns
         keepcols = list(col for col in cols if col != 'z')

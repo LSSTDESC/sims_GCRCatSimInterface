@@ -47,6 +47,7 @@ if __name__ == '__main__':
     if args.healpixelId is not None:
         healpix_list = [args.healpixelId]
     elif args.survey == 'mDDF':
+        # Find only those healpixels that are in the DDF
         ra_rad = np.radians(53.125)
         dec_rad = np.radians(-28.10)
         vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
@@ -76,13 +77,23 @@ if __name__ == '__main__':
         dec_center = None
         ra_dec_width = None
         if survey.lower() == 'mddf':
+
+            # ra_center, dec_center, ra_dec_width define the DDF;
+            # they get passed to DC2SN.assignHosts, which uses them
+            # to only select objects that are in the DDF.
+            # This is necessary because, with NSIDE=32, the DDF is no
+            # longer in just one healpixel.  Therefore, we have to simulate
+            # the entire area of each overlapping healpixel and then
+            # select only those objects that are actually in the DDF
             ra_center = 53.125
             dec_center = -28.100
             ra_dec_width = 0.567
+
             healpixelSN_fname = os.path.join(os.environ['SCRATCH'],
                                              'cosmoDC2_v1.1.4_sne',
                                              'sne_csv',
                                              'sn_%d_MS.csv' % healpixelId)
+
             assert os.path.isfile(healpixelSN_fname)
             print('reading veto data from %s' % healpixelSN_fname)
             #healpixelSN_fname = 'sn_564_MS.csv'
@@ -150,6 +161,8 @@ if __name__ == '__main__':
                                          hostedSNParamsPos.snid.values)
 
             if veto_ms_gals:
+                # Do not add SNe to galaxies that had SNe assigned to them
+                # in the MS survey
                 c_index = np.where(np.isfinite(hostedSNParamsPos.index),
                                    hostedSNParamsPos.index, -1).astype(int)
 
