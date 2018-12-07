@@ -154,8 +154,6 @@ class DC2SN(object):
                                  np.logical_and(dec_candidates >= dec_min,
                                                 dec_candidates <= dec_max))))
 
-                print('valid ',valid)
-                print('type(gids) ',type(gids))
                 gids = gids[valid]
                 hostedtmp = hostedtmp.iloc[valid]
 
@@ -172,7 +170,6 @@ class DC2SN(object):
         params.rename(columns=dict(raJ2000='raJ2000_gal', decJ2000='decJ2000_gal', redshift='z'), inplace=True)
         
         k = joiner.reset_index().set_index('galaxy_id')
-        print(k.columns)
         xx = params.join(k)
         cols = params.columns
         dropcols = ['index', 'z', 'zbin', 'zbin_gals', 'rand_host'] #+ list(a for a in cols if 'zbin' not in a)
