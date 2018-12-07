@@ -6,7 +6,7 @@ import argparse
 if __name__ == "__main__":
 
     config_file = 'config_file_2.1.wfd.json'
-    out_dir_root = '/global/cscratch1/sd/desc/DC2/Run2.0i/cosmoDC2_v1.1.4/instCat/batch_'
+    out_dir_root = '/global/cscratch1/sd/desc/DC2/Run2.0i/cosmoDC2_v1.1.4/instCat_4yrs/batch_'
     out_name_root = 'slurm_scripts/batch_script_'
 
 
