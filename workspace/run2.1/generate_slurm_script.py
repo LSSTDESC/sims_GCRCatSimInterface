@@ -19,6 +19,9 @@ if __name__ == "__main__":
     parser.add_argument('--already_done', type=str, nargs='+', default=None,
                         help='directories to check for already completed '
                         'InstanceCatalogs')
+    parser.add_argument('--max_obs', type=int, default=993348,
+                        help='maximum allowed obsHistID '
+                        '(default = 993348, corresponding to 4 yrs of survey)')
     args = parser.parse_args()
 
     obs_already_done = set()
@@ -49,7 +52,7 @@ if __name__ == "__main__":
     with open('data/wfd_obshistid_list.txt', 'r') as in_file:
         for line in in_file:
             ii=int(line.strip())
-            if ii not in obs_already_done:
+            if (ii <= args.max_obs) and (ii not in obs_already_done):
                 obs_hist_id.append(ii)
 
     obs_hist_id = np.array(obs_hist_id)
