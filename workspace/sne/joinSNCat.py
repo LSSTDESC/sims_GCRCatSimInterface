@@ -172,7 +172,8 @@ class DC2SN(object):
         k = joiner.reset_index().set_index('galaxy_id')
         if len(k) == 0:
             return [], []
-        xx = params.join(k, how='inner')
+
+        xx = params.join(k)
         cols = params.columns
         dropcols = ['index', 'z', 'zbin', 'zbin_gals', 'rand_host'] #+ list(a for a in cols if 'zbin' not in a)
         keepcols = list(col for col in cols if col not in dropcols)
