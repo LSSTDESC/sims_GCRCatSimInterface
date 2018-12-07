@@ -151,7 +151,7 @@ if __name__ == '__main__':
 
             if veto_ms_gals:
                 valid = np.where(np.logical_not(
-                                 np.in1d(hostedSNParamsPos.galaxy_id.values,
+                                 np.in1d(hostedSNParamsPos.index.astype(int),
                                          vetoed_galids)))
 
                 hostedSNParamsPos = hostedSNParamsPos.iloc[valid]
