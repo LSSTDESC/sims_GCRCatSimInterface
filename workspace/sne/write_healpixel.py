@@ -150,8 +150,11 @@ if __name__ == '__main__':
                                          hostedSNParamsPos.snid.values)
 
             if veto_ms_gals:
+                c_index = np.where(np.isfinite(hostedSNParamsPos.index),
+                                   hostedSNParamsPos.index, -1).astype(int)
+
                 valid = np.where(np.logical_not(
-                                 np.in1d(hostedSNParamsPos.index.astype(int),
+                                 np.in1d(c_index,
                                          vetoed_galids)))
 
                 hostedSNParamsPos = hostedSNParamsPos.iloc[valid]
