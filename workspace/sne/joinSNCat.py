@@ -170,7 +170,7 @@ class DC2SN(object):
         params.rename(columns=dict(raJ2000='raJ2000_gal', decJ2000='decJ2000_gal', redshift='z'), inplace=True)
         
         k = joiner.reset_index().set_index('galaxy_id')
-        xx = params.join(k)
+        xx = params.join(k, how='inner')
         cols = params.columns
         dropcols = ['index', 'z', 'zbin', 'zbin_gals', 'rand_host'] #+ list(a for a in cols if 'zbin' not in a)
         keepcols = list(col for col in cols if col not in dropcols)
