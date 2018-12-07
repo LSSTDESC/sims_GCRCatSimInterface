@@ -156,6 +156,8 @@ if __name__ == '__main__':
 
                 hostedSNParamsPos = hostedSNParamsPos.iloc[valid]
 
-            out_name = os.path.join(args.out_dir, 'sn_{0}_{1}.csv'.format(healpixelId, survey))
-            assert not os.path.isfile(out_name)
-            hostedSNParamsPos.to_csv(out_name)
+            if len(hostedSNParamsPos)>0:
+                out_name = os.path.join(args.out_dir,
+                                        'sn_{0}_{1}.csv'.format(healpixelId,
+                                                                survey))
+                hostedSNParamsPos.to_csv(out_name)
