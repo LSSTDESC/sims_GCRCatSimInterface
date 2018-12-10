@@ -6,7 +6,7 @@ import argparse
 if __name__ == "__main__":
 
     config_file = 'config_file_2.1.wfd.json'
-    out_dir_root = '/global/cscratch1/sd/desc/DC2/Run2.0i/cosmoDC2_v1.1.4/instCat_4yrs/batch_'
+    out_dir_root = '/global/cscratch1/sd/desc/DC2/Run2.0i/cosmoDC2_v1.1.4/instCat/batch_'
     out_name_root = 'slurm_scripts/batch_script_'
 
 
@@ -93,7 +93,7 @@ if __name__ == "__main__":
                 s = slice(i_0, i_0+args.d_obs)
                 these_obs = batch[s]
                 out_file.write('\n')
-                out_file.write('srun -N 1 -n 1 -c 68 --exclusive \\\n')
+                out_file.write('srun -N 1 -n 1 -c 24 --exclusive \\\n')
                 out_file.write('bash instcat_runner.sh ${out_dir} ${config_file}')
                 for ii in these_obs:
                     out_file.write(' %d' % ii)
