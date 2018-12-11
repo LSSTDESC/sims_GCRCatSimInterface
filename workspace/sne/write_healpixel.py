@@ -143,6 +143,13 @@ if __name__ == '__main__':
                                          for ind in
                                          hostedSNParamsPos.snid.values)
 
+            snra = hostedSNParamsPos.snra.values
+            nan_snra = np.where(np.isnan(snra))
+            assert len(nan_snra[0]) == 0
+            sndec = hostedSNParamsPos.sndec.values
+            nan_sndec = np.where(np.isnan(sndec))
+            assert len(nan_sndec[0]) == 0
+
             if veto_ms_gals:
                 # Do not add SNe to galaxies that had SNe assigned to them
                 # in the MS survey
