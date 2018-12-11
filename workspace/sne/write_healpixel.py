@@ -73,21 +73,7 @@ if __name__ == '__main__':
 
         # This is the size of region in square degrees
         area = hp.nside2pixarea(nside=NSIDE, degrees=True)
-        ra_center = None
-        dec_center = None
-        ra_dec_width = None
         if survey.lower() == 'mddf':
-
-            # ra_center, dec_center, ra_dec_width define the DDF;
-            # they get passed to DC2SN.assignHosts, which uses them
-            # to only select objects that are in the DDF.
-            # This is necessary because, with NSIDE=32, the DDF is no
-            # longer in just one healpixel.  Therefore, we have to simulate
-            # the entire area of each overlapping healpixel and then
-            # select only those objects that are actually in the DDF
-            ra_center = 53.125
-            dec_center = -28.100
-            ra_dec_width = 0.567
 
             healpixelSN_fname = os.path.join(os.environ['SCRATCH'],
                                              'cosmoDC2_v1.1.4_sne',
@@ -147,10 +133,7 @@ if __name__ == '__main__':
 
         max_redshift = galsdf.redshift.max()
         sn = DC2SN(galsdf, snPop, zmax=zmax, rng=np.random.RandomState(0+ randomSeedOffset))
-        main_survey_mapper, hosted_sn_params = sn.assignHosts(binwidth=0.02,
-                                                      ra_center=ra_center,
-                                                      dec_center=dec_center,
-                                                      ra_dec_width=ra_dec_width)
+        main_survey_mapper, hosted_sn_params = sn.assignHosts(binwidth=0.02)
         if len(hosted_sn_params) > 0:
             hostedSNParamsPos = sn.get_positions(hosted_sn_params,
                                     np.random.RandomState(3 + randomSeedOffset))
@@ -172,7 +155,42 @@ if __name__ == '__main__':
 
                 hostedSNParamsPos = hostedSNParamsPos.iloc[valid]
 
+            if survey.lower() == 'mddf':
+                print('spatially trim down to the DDF')
+                # only accept those objects that are actually
+                # in the DDF
+
+                # ra_center, dec_center, ra_dec_width define the DDF;
+                # they get passed to DC2SN.assignHosts, which uses them
+                # to only select objects that are in the DDF.
+                # This is necessary because, with NSIDE=32, the DDF is no
+                # longer in just one healpixel.  Therefore, we have to simulate
+                # the entire area of each overlapping healpixel and then
+                # select only those objects that are actually in the DDF
+                ra_center = 53.125
+                dec_center = -28.100
+                ra_dec_width = 0.567
+
+                # pretend the DDF is a rectangle
+                ra_min = ra_center - ra_dec_width
+                ra_max = ra_center + ra_dec_width
+                dec_min = dec_center - ra_dec_width
+                dec_max = dec_center + ra_dec_width
+
+                # warp snra onto that rectangle
+                sndec = hostedSNParamsPos.sndec.values
+                snra = hostedSNParamsPos.snra.values
+                snra = ra_center + (snra-ra_center)*np.cos(np.radians(sndec))
+
+                valid = np.where(np.logical_and(snra >= ra_min,
+                                 np.logical_and(snra <= ra_max,
+                                 np.logical_and(sndec >= dec_min,
+                                                sndec <= dec_max))))
+
+                hostedSNParamsPos = hostedSNParamsPos.iloc[valid]
+
             if len(hostedSNParamsPos)>0:
+                print('writing out %d SNe' % len(hostedSNParamsPos))
                 out_name = os.path.join(args.out_dir,
                                         'sn_{0}_{1}.csv'.format(healpixelId,
                                                                 survey))

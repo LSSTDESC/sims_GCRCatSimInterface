@@ -85,10 +85,7 @@ class DC2SN(object):
             self._hostlessSN['sndec'] = dec
         return self._hostlessSN
     
-    def assignHosts(self, binwidth=0.02,
-                    ra_center=None,
-                    dec_center=None,
-                    ra_dec_width=None):
+    def assignHosts(self, binwidth=0.02):
         """
         Find hosts in redshift bins of 0.02 and populate them weighting
         them by stellar mass of host galaxies.
@@ -98,11 +95,6 @@ class DC2SN(object):
         binwidth : float, defaults to 0.02
             width of redshift bin
 
-        ra_center, dec_center, ra_dec_width are in degrees;
-        denote the center and size of the DDF.
-            If these parameters are non-zero, this method will simulate the
-            entire healpixel it has been passed, but will then only
-            return SNe that are actually inside the DDF.
         """
         galsdf = self.galsdf
         self.hostedSN['zbin'] = self.hostedSN.z // binwidth
@@ -141,28 +133,6 @@ class DC2SN(object):
             gids = gid_candidates[gid_idx]
             ra_candidates = ra_candidates[gid_idx]
             dec_candidates = dec_candidates[gid_idx]
-
-            if ra_center is not None:
-                # find the bounds of the DDF as if it were a
-                # a rectangle (i.e. ignore spherical geometry)
-                ra_min = ra_center-ra_dec_width
-                ra_max = ra_center+ra_dec_width
-                dec_min = dec_center-ra_dec_width
-                dec_max = dec_center+ra_dec_width
-
-                # map ra of SNe onto an actually rectangular coordinate
-                # so that we can keep all of the points in the DDF
-                ra_candidates = (ra_center
-                  +(ra_candidates-ra_center)*np.cos(np.radians(dec_candidates)))
-
-                # select only those SNe that are in the DDF
-                valid = np.where(np.logical_and(ra_candidates >= ra_min,
-                                 np.logical_and(ra_candidates <= ra_max,
-                                 np.logical_and(dec_candidates >= dec_min,
-                                                dec_candidates <= dec_max))))
-
-                gids = gids[valid]
-                hostedtmp = hostedtmp.iloc[valid]
 
             print(len(hostedtmp), len(gids))
             syslist.append(pd.DataFrame(dict(snid=hostedtmp.reset_index().snid, galaxy_id=gids)))
