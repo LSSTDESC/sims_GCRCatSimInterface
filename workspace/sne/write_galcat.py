@@ -1,5 +1,6 @@
 import sys
 import GCRCatalogs
+from GCR import GCRQuery
 import os
 import argparse
 
@@ -13,13 +14,20 @@ import pandas as pd
 
 
 def write_hdf(healpixel, out_dir, catalog_name):
-    gc = GCRCatalogs.load_catalog(catalog_name,
-                              {'healpix_pixels': [healpixel]})
+    healpix_query = GCRQuery('healpix_pixel==%d' % healpixel)
+    z_filter = (lambda x: x<=1.5, 'redshift_true')
+    gc = GCRCatalogs.load_catalog(catalog_name)
 
-    x = gc.get_quantities(['galaxy_id', 'stellar_mass', 'stellar_mass_disk', 'stellar_mass_bulge',
-                       'redshift_true', 'size_disk_true', 'size_minor_disk_true', 'size_minor_bulge_true',
-                       'size_bulge_true', 'ra', 'dec', 'position_angle_true'], return_iterator=True)
-    df = pd.DataFrame(next(x))
+    x = gc.get_quantities(['galaxy_id', 'stellar_mass',
+                           'stellar_mass_disk', 'stellar_mass_bulge',
+                           'redshift_true', 'size_disk_true',
+                           'size_minor_disk_true', 'size_minor_bulge_true',
+                           'size_bulge_true', 'ra', 'dec',
+                           'position_angle_true'],
+                           native_filters=[healpix_query],
+                           filters=[z_filter])
+
+    df = pd.DataFrame(x)
     df.to_hdf(os.path.join(out_dir,'gals_%d_ra_dec.hdf' % healpixel),index=False, key='0')
 
 
