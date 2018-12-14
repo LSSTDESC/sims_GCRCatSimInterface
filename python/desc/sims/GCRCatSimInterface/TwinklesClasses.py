@@ -20,10 +20,10 @@ _sne_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_
 _om10_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
                               'cosmoDC2_v1.0_matched_AGN.fits')
 
-assert os.path.isfile(_agn_cache_file)
-assert os.path.isfile(_sne_cache_file)
-assert os.path.isfile(_sne_cat_file)
-assert os.path.isfile(_om10_cat_file)
+#assert os.path.isfile(_agn_cache_file)
+#assert os.path.isfile(_sne_cache_file)
+#assert os.path.isfile(_sne_cat_file)
+#assert os.path.isfile(_om10_cat_file)
 
 __all__ = ["TwinklesCompoundInstanceCatalog_DC2",
            "sprinklerCompound_DC2",
