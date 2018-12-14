@@ -2,6 +2,7 @@ import os
 import re
 import numpy as np
 import GCRCatalogs
+import time
 import scipy.spatial as scipy_spatial
 from lsst.utils import getPackageDir
 from lsst.sims.utils import defaultSpecMap
@@ -62,6 +63,8 @@ def sed_filter_names_from_catalog(catalog, use_extincted=False):
             bulge_wav_min.append(0.1*float(bulge_match[1]))
             bulge_wav_width.append(0.1*float(bulge_match[2]))
 
+    print('SED matching for disk filters: {}'.format(', '.join(disk_names))) 
+    print('SED matching for bulge filters: {}'.format(', '.join(bulge_names))) 
     disk_wav_min = np.array(disk_wav_min)
     disk_wav_width = np.array(disk_wav_width)
     disk_names = np.array(disk_names)
@@ -86,7 +89,7 @@ def sed_filter_names_from_catalog(catalog, use_extincted=False):
                      'wav_width': bulge_wav_width}}
 
 
-def _create_sed_library_mags(wav_min, wav_width):
+def _create_sed_library_mags(wav_min, wav_width, alternate_sed_library_dir=None):
     """
     Calculate the magnitudes of the SEDs in sims_sed_library dir in the
     tophat filters specified by wav_min, wav_width
@@ -128,18 +131,26 @@ def _create_sed_library_mags(wav_min, wav_width):
     imsim_bp = Bandpass()
     imsim_bp.imsimBandpass()
 
-    for sed_file_name in os.listdir(_galaxy_sed_dir):
+    galaxy_sed_dir = alternate_sed_library_dir if alternate_sed_library_dir else _galaxy_sed_dir
+    print('Using SED library in {}'.format(galaxy_sed_dir))
+
+    t_start = time.time()
+    for s, sed_file_name in enumerate(os.listdir(galaxy_sed_dir)):
         spec = Sed()
-        spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
+        spec.readSED_flambda(os.path.join(galaxy_sed_dir, sed_file_name))
         sed_names.append(defaultSpecMap[sed_file_name])
         sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
         sed_mag_norm.append(spec.calcMag(imsim_bp))
+        if s%10000 == 0:
+            print('Time to process {} SEDs = {} minutes'.format(s, (time.time() - t_start)/60.))
+
+    print('Created SED library magnitudes in {} minutes'.format((time.time() - t_start)/60.))
 
     return np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm)
 
 
 def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
-                             wav_min, wav_width):
+                             wav_min, wav_width, alternate_sed_library_dir=None):
     """
     Fit SEDs from sims_sed_library to Galacticus galaxies based on the
     magnitudes in tophat filters.
@@ -176,14 +187,18 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
 
         (sed_names,
          sed_mag_list,
-         sed_mag_norm) = _create_sed_library_mags(wav_min, wav_width)
+         sed_mag_norm) = _create_sed_library_mags(wav_min, wav_width, alternate_sed_library_dir=alternate_sed_library_dir)
 
 
         sed_colors = sed_mag_list[:,1:] - sed_mag_list[:,:-1]
         sed_from_galacticus_mags._sed_names = sed_names
         sed_from_galacticus_mags._mag_norm = sed_mag_norm # N_sed
         sed_from_galacticus_mags._sed_mags = sed_mag_list # N_sed by N_mag
+        
+        t_start = time.time()
         sed_from_galacticus_mags._color_tree = scipy_spatial.cKDTree(sed_colors)
+        print('Built KDE SED tree in {} minutes'.format((time.time() - t_start)/60.))
+
         sed_from_galacticus_mags._wav_min = wav_min
         sed_from_galacticus_mags._wav_width = wav_width
 
@@ -199,8 +214,10 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     with np.errstate(invalid='ignore', divide='ignore'):
         galacticus_colors = galacticus_mags_t[:,1:] - galacticus_mags_t[:,:-1] # N_gals by (N_mag - 1)
 
+    t_start = time.time()
     (sed_dist,
-     sed_idx) = sed_from_galacticus_mags._color_tree.query(galacticus_colors, k=1)
+     sed_idx) = sed_from_galacticus_mags._color_tree.query(galacticus_colors, k=1,  n_jobs=24)
+    print('Searched KDE SED tree in {} minutes'.format((time.time() - t_start)/60.))
 
     # cKDTree returns an invalid index (==len(tree_data)) in cases
     # where the distance is not finite
@@ -210,7 +227,9 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     #distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(redshift=redshift)
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
     d_mag = (galacticus_mags_t - sed_from_galacticus_mags._sed_mags[sed_idx]).mean(axis=1)
+
     #output_mag_norm = sed_from_galacticus_mags._mag_norm[sed_idx] + d_mag + distance_modulus
+    #do not add distance modulus
     output_mag_norm = sed_from_galacticus_mags._mag_norm[sed_idx] + d_mag
 
     return output_names, output_mag_norm, sed_dist
