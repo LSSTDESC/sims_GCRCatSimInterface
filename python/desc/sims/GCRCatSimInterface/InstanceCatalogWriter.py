@@ -503,16 +503,16 @@ class InstanceCatalogWriter(object):
             if do_hosts:
                 host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
                 host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
-                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.0_bulge_agn_host.csv'),
+                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_bulge_agn_host.csv'),
                                         os.path.join(out_dir, sprinkled_host_name))
                 host_cat.write_host_cat(os.path.join(self.host_image_dir,'agn_lensed_disks'),
-                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.0_disk_agn_host.csv'),
+                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_disk_agn_host.csv'),
                                         os.path.join(out_dir, sprinkled_host_name), append=True)
                 host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_bulges'),
-                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.0_bulge_sne_host.csv'),
+                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_bulge_sne_host.csv'),
                                         os.path.join(out_dir, sprinkled_host_name), append=True)
                 host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_disks'),
-                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.0_disk_sne_host.csv'),
+                                        os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_disk_sne_host.csv'),
                                         os.path.join(out_dir, sprinkled_host_name), append=True)
 
                 written_catalog_names.append(sprinkled_host_name)
