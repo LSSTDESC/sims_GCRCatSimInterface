@@ -375,20 +375,21 @@ def cross_check_with_lensed_sne(twinkles_ID):
 
     Returns:
     -----------
-    ximgs: 5-element data array containing position of lensed host and image number  
-    yimgs: 5-element data array containing position of lensed points and image number
+    ximgs: nimg-element data array containing position of lensed host and image number
+    yimgs: nimg-element data array containing position of lensed points and image number
 
     """
     sne_lens_cats = pd.read_csv(os.path.join(twinkles_data_dir,
-                                             'dc2_sne_cat.csv'))
-    ximgs = np.zeros((5))
-    yimgs = np.zeros((5))
-        
+                                             'cosmoDC2_v1.1.4_sne_cat.csv'))
+
     idx = sne_lens_cats['twinkles_sysno'] == twinkles_ID
 
     imgnos = sne_lens_cats['imno'][idx]
     nimgs = len(sne_lens_cats['imno'][idx])
-    
+
+    ximgs = np.zeros(nimgs, dtype=float)
+    yimgs = np.zeros(nimgs, dtype=float)
+
     ximgs[:nimgs] = sne_lens_cats['x'][idx].values
     yimgs[:nimgs] = sne_lens_cats['y'][idx].values
 
