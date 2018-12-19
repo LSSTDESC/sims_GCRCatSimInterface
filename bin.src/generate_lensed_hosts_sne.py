@@ -335,7 +335,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
     eang = lens_P['phg']                # position angle of external shear
     ekpa = 0.0                          # external convergence
 
-    ximg, yimg = cross_check_with_lensed_sne(lens_P['twinklesid'])
+    #ximg, yimg = cross_check_with_lensed_sne(lens_P['twinklesid'])
 
     #----------------------------------------------------------------------
     ai1, ai2 = ole.alphas_sie(xlc1, xlc2, phl, ql, rle, le, eshr, eang, ekpa, xi1, xi2)
