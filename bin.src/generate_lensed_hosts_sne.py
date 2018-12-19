@@ -149,14 +149,16 @@ def load_in_data_sne():
 
     """
 
-    sne_host_bulge = pd.read_csv(os.path.join(data_dir,'cosmoDC2_v1.0_bulge_sne_host.csv'))
-    sne_host_disk = pd.read_csv(os.path.join(data_dir,'cosmoDC2_v1.0_disk_sne_host.csv'))
-    
+    sne_host_bulge = pd.read_csv(os.path.join(twinkles_data_dir,
+                                 'cosmoDC2_v1.1.4_bulge_sne_host.csv'))
+    sne_host_disk = pd.read_csv(os.path.join(twinkles_data_dir,
+                                'cosmoDC2_v1.1.4_disk_sne_host.csv'))
+
     idx = sne_host_bulge['image_number'] == 0
     shb_purged = sne_host_bulge[:][idx]
     shd_purged = sne_host_disk[:][idx]
     sne_lens_cats = pd.read_csv(os.path.join(twinkles_data_dir,
-                                             'cosmoDC2_v1.0_sne_cat.csv'))
+                                             'cosmoDC2_v1.1.4_sne_cat.csv'))
     idx = sne_lens_cats['imno'] == 0
 
     slc_purged = sne_lens_cats[:][idx]
