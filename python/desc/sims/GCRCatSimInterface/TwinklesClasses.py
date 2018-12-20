@@ -71,7 +71,7 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
                                         write_sn_sed=self._write_sn_sed)
 
         self._sprinkler.visit_mjd = self.mjd
-        results = self._sprinkler.sprinkle(results)
+        results = self._sprinkler.sprinkle(results, self.obs_metadata.bandpass)
 
         return results
 
@@ -202,6 +202,7 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
                 compound_dbo.mjd = self._obs_metadata.mjd.TAI
                 compound_dbo.specFileMap = twinkles_spec_map
                 compound_dbo.sed_dir = self.sed_dir
+                compound_dbo.obs_metadata = self._obs_metadata
 
                 self._write_compound(catList, compound_dbo, filename,
                                      chunk_size=chunk_size, write_header=write_header,
