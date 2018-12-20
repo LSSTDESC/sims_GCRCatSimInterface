@@ -12,13 +12,20 @@ twinkles_sn_sed_dir = 'spectra_files'
 twinkles_spec_map = psmp
 twinkles_spec_map.subdir_map['(^specFile_)'] = twinkles_sn_sed_dir
 
-_twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_defs.csv')
+_twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'],
+                                   'data', 'dc2_defs.csv')
 
-_agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_agn_cache.csv')
-_sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_sne_cache.csv')
-_sne_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'cosmoDC2_v1.0_sne_cat.csv')
-_om10_cat_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
-                              'cosmoDC2_v1.0_matched_AGN.fits')
+_agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'],
+                               'data', 'cosmoDC2_v1.1.4_agn_cache.csv')
+
+_sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'],
+                               'data', 'cosmoDC2_v1.1.4_sne_cache.csv')
+
+_sne_cat_file = os.path.join(os.environ['TWINKLES_DIR'],
+                             'data', 'cosmoDC2_v1.1.4_sne_cat.csv')
+
+_om10_cat_file = os.path.join(os.environ['TWINKLES_DIR'],
+                              'data', 'cosmoDC2_v1.1.4_matched_AGN.fits')
 
 #assert os.path.isfile(_agn_cache_file)
 #assert os.path.isfile(_sne_cache_file)
