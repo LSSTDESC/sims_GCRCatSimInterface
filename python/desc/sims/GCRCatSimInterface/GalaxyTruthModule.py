@@ -14,6 +14,31 @@ from lsst.sims.utils import defaultSpecMap
 
 __all__ = ["write_galaxies_to_truth"]
 
+_galaxy_query = '''SELECT b.sedFile, b.magNorm,
+                   d.sedFile, d.magNorm,
+                   a.sedFilepath, a.magNorm,
+                   b.redshift, b.galaxy_id,
+                   b.raJ2000, b.decJ2000,
+                   b.is_sprinkled, a.is_agn,
+                   b.shear1, b.shear2, b.kappa
+                   FROM bulge as b
+                   LEFT JOIN disk as d ON b.galaxy_id=d.galaxy_id
+                   LEFT JOIN zpoint as a ON b.galaxy_id=a.galaxy_id
+                   WHERE a.is_agn=1 OR a.galaxy_id IS NULL
+                   UNION ALL
+                   SELECT b.sedFile, b.magNorm,
+                   d.sedFile, d.magNorm,
+                   a.sedFilepath, a.magNorm,
+                   d.redshift, d.galaxy_id,
+                   d.raJ2000, d.decJ2000,
+                   d.is_sprinkled, a.is_agn,
+                   d.shear1, d.shear2, d.kappa
+                   FROM disk as d
+                   LEFT JOIN bulge as b ON d.galaxy_id=b.galaxy_id
+                   LEFT JOIN zpoint as a on d.galaxy_id=a.galaxy_id
+                   WHERE b.galaxy_id IS NULL
+                   AND (a.is_agn=1 OR a.galaxy_id IS NULL)'''
+
 
 def _fluxes(sed_name, mag_norm, redshift):
     """
@@ -175,6 +200,8 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
 
     Just writes to the database
     """
+    global _galaxy_query
+
     if input_db is None:
         raise RuntimeError("Must specify input database")
 
@@ -190,35 +217,6 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
 
     if not os.path.isfile(input_db):
         raise RuntimeError("%s does not exist" % input_db)
-
-    query = 'SELECT b.sedFile, b.magNorm, '
-    query += 'd.sedFile, d.magNorm, '
-    query += 'a.sedFilepath, a.magNorm, '
-    query += 'b.redshift, b.galaxy_id, '
-    query += 'b.raJ2000, b.decJ2000, '
-    query += 'b.is_sprinkled, a.is_agn, '
-    query += 'b.shear1, b.shear2, b.kappa '
-
-    query += 'FROM bulge as b '
-    query += 'LEFT JOIN disk as d ON b.galaxy_id=d.galaxy_id '
-    query += 'LEFT JOIN zpoint as a ON b.galaxy_id=a.galaxy_id '
-    query += 'WHERE a.is_agn=1 OR a.galaxy_id IS NULL '
-
-    query += 'UNION ALL '
-
-    query += 'SELECT b.sedFile, b.magNorm, '
-    query += 'd.sedFile, d.magNorm, '
-    query += 'a.sedFilepath, a.magNorm, '
-    query += 'd.redshift, d.galaxy_id, '
-    query += 'd.raJ2000, d.decJ2000, '
-    query += 'd.is_sprinkled, a.is_agn, '
-    query += 'd.shear1, d.shear2, d.kappa '
-
-    query += 'FROM disk as d '
-    query += 'LEFT JOIN bulge as b ON d.galaxy_id=b.galaxy_id '
-    query += 'LEFT JOIN zpoint as a on d.galaxy_id=a.galaxy_id '
-    query += 'WHERE b.galaxy_id IS NULL '
-    query += 'AND (a.is_agn=1 OR a.galaxy_id IS NULL)'
 
     chunk_size = 10000
     p_list = []
@@ -238,7 +236,7 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
 
         with sqlite3.connect(input_db) as in_conn:
             in_cursor = in_conn.cursor()
-            query = in_cursor.execute(query)
+            query = in_cursor.execute(_galaxy_query)
 
             while True:
                 results = query.fetchmany(chunk_size)
