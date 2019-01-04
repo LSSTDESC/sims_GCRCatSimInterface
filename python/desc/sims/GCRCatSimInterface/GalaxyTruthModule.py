@@ -44,6 +44,8 @@ _col_name_to_int['ra'] = 8
 _col_name_to_int['dec'] = 9
 _col_name_to_int['redshift'] = 6
 _col_name_to_int['galaxy_id'] = 7
+_col_name_to_int['bulge_sed'] = 0
+_col_name_to_int['bulge_magnorm'] = 1
 
 
 def _fluxes(sed_name, mag_norm, redshift):
@@ -163,8 +165,11 @@ def calculate_mags(galaxy_list, out_dict):
     assert len(np.where(np.isfinite(magnification))[0]) == len(magnification)
 
     for i_gal, galaxy in enumerate(galaxy_list):
-        if galaxy[0] is not None and galaxy[1] is not None:
-            bulge_fluxes[i_gal] = _fluxes(galaxy[0], galaxy[1],
+        if (galaxy[_col_name_to_int['bulge_sed']] is not None and
+            galaxy[_col_name_to_int['bulge_magnorm']] is not None):
+
+            bulge_fluxes[i_gal] = _fluxes(galaxy[_col_name_to_int['bulge_sed']],
+                                          galaxy[_col_name_to_int['bulge_magnorm']],
                                           galaxy[_col_name_to_int['redshift']])
 
         if galaxy[2] is not None and galaxy[3] is not None:
