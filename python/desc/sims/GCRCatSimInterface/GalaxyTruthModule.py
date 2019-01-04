@@ -52,7 +52,9 @@ _col_name_to_int['ra'] = 8
 _col_name_to_int['dec'] = 9
 _col_name_to_int['is_sprinkled'] = 10
 _col_name_to_int['is_agn'] = 11
-
+_col_name_to_int['shear1'] = 12
+_col_name_to_int['shear2'] = 13
+_col_name_to_int['kappa'] = 14
 
 
 def _fluxes(sed_name, mag_norm, redshift):
@@ -165,7 +167,9 @@ def calculate_mags(galaxy_list, out_dict):
     bulge_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     disk_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
 
-    magnification = np.array([1.0/((1.0-g[14])**2-g[12]**2-g[13]**2)
+    magnification = np.array([1.0/((1.0-g[_col_name_to_int['kappa']])**2
+                                   -g[_col_name_to_int['shear1']]**2
+                                   -g[_col_name_to_int['shear2']]**2)
                               for g in galaxy_list])
 
     assert magnification.min() >= 0.0
