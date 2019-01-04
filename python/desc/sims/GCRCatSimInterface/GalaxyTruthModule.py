@@ -40,14 +40,17 @@ _galaxy_query = '''SELECT b.sedFile, b.magNorm,
                    AND (a.is_agn=1 OR a.galaxy_id IS NULL)'''
 
 _col_name_to_int = {}
-_col_name_to_int['ra'] = 8
-_col_name_to_int['dec'] = 9
-_col_name_to_int['redshift'] = 6
-_col_name_to_int['galaxy_id'] = 7
 _col_name_to_int['bulge_sed'] = 0
 _col_name_to_int['bulge_magnorm'] = 1
 _col_name_to_int['disk_sed'] = 2
 _col_name_to_int['disk_magnorm'] = 3
+_col_name_to_int['agn_sed'] = 4
+_col_name_to_int['agn_magnorm'] = 5
+_col_name_to_int['redshift'] = 6
+_col_name_to_int['galaxy_id'] = 7
+_col_name_to_int['ra'] = 8
+_col_name_to_int['dec'] = 9
+
 
 
 def _fluxes(sed_name, mag_norm, redshift):
