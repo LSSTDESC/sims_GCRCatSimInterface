@@ -42,6 +42,8 @@ _galaxy_query = '''SELECT b.sedFile, b.magNorm,
 _col_name_to_int = {}
 _col_name_to_int['ra'] = 8
 _col_name_to_int['dec'] = 9
+_col_name_to_int['redshift'] = 6
+_col_name_to_int['galaxy_id'] = 7
 
 
 def _fluxes(sed_name, mag_norm, redshift):
@@ -147,6 +149,8 @@ def calculate_mags(galaxy_list, out_dict):
     out_dict is a Multiprocessing.Manager.dict object that will
     store the results of this calculation
     """
+    global _col_name_to_int
+
     i_process = mp.current_process().pid
 
     bulge_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
@@ -160,10 +164,12 @@ def calculate_mags(galaxy_list, out_dict):
 
     for i_gal, galaxy in enumerate(galaxy_list):
         if galaxy[0] is not None and galaxy[1] is not None:
-            bulge_fluxes[i_gal] = _fluxes(galaxy[0], galaxy[1], galaxy[6])
+            bulge_fluxes[i_gal] = _fluxes(galaxy[0], galaxy[1],
+                                          galaxy[_col_name_to_int['redshift']])
 
         if galaxy[2] is not None and galaxy[3] is not None:
-            disk_fluxes[i_gal] = _fluxes(galaxy[2], galaxy[3], galaxy[6])
+            disk_fluxes[i_gal] = _fluxes(galaxy[2], galaxy[3],
+                                         galaxy[_col_name_to_int['redshift']])
 
     tot_fluxes = bulge_fluxes + disk_fluxes
 
@@ -263,8 +269,8 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
                 local_dict['healpix'] = hp_arr
                 local_dict['ra'] = ra_arr
                 local_dict['dec'] = dec_arr
-                local_dict['redshift'] = np.array([r[6] for r in results])
-                local_dict['galaxy_id'] = np.array([r[7] for r in results])
+                local_dict['redshift'] = np.array([r[_col_name_to_int['redshift']] for r in results])
+                local_dict['galaxy_id'] = np.array([r[_col_name_to_int['galaxy_id']] for r in results])
                 local_dict['is_sprinkled'] = [r[10]
                                               for r in results]
                 local_dict['has_agn'] = [is_agn_converter[r[11]]
