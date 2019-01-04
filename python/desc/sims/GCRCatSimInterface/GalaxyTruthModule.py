@@ -39,6 +39,10 @@ _galaxy_query = '''SELECT b.sedFile, b.magNorm,
                    WHERE b.galaxy_id IS NULL
                    AND (a.is_agn=1 OR a.galaxy_id IS NULL)'''
 
+_col_name_to_int = {}
+_col_name_to_int['ra'] = 8
+_col_name_to_int['dec'] = 9
+
 
 def _fluxes(sed_name, mag_norm, redshift):
     """
@@ -201,6 +205,7 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
     Just writes to the database
     """
     global _galaxy_query
+    global _col_name_to_int
 
     if input_db is None:
         raise RuntimeError("Must specify input database")
@@ -248,8 +253,8 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
                 proc.start()
                 p_list.append(proc)
 
-                ra_arr = np.degrees(np.array([r[8] for r in results]))
-                dec_arr = np.degrees(np.array([r[9] for r in results]))
+                ra_arr = np.degrees(np.array([r[_col_name_to_int['ra']] for r in results]))
+                dec_arr = np.degrees(np.array([r[_col_name_to_int['dec']] for r in results]))
                 hp_arr = hp.ang2pix(n_side, ra_arr, dec_arr,
                                     lonlat=True,
                                     nest=True)
