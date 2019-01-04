@@ -142,7 +142,7 @@ def write_sprinkled_param_db(obs, field_ra=55.064, field_dec=-29.783,
     agn_db is the path to the database of AGN parameters
 
     yaml_file is the yaml file denoting the extragalactic catalog
-    to be loaded (defaulte proto-dc2_v4.6.1)
+    to be loaded (default proto-dc2_v4.6.1)
 
     out_dir is the directory where the output database will be written
 
