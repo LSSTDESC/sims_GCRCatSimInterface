@@ -50,6 +50,8 @@ _col_name_to_int['redshift'] = 6
 _col_name_to_int['galaxy_id'] = 7
 _col_name_to_int['ra'] = 8
 _col_name_to_int['dec'] = 9
+_col_name_to_int['is_sprinkled'] = 10
+_col_name_to_int['is_agn'] = 11
 
 
 
@@ -284,9 +286,9 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
                 local_dict['dec'] = dec_arr
                 local_dict['redshift'] = np.array([r[_col_name_to_int['redshift']] for r in results])
                 local_dict['galaxy_id'] = np.array([r[_col_name_to_int['galaxy_id']] for r in results])
-                local_dict['is_sprinkled'] = [r[10]
+                local_dict['is_sprinkled'] = [r[_col_name_to_int['is_sprinkled']]
                                               for r in results]
-                local_dict['has_agn'] = [is_agn_converter[r[11]]
+                local_dict['has_agn'] = [is_agn_converter[r[_col_name_to_int['is_agn']]]
                                          for r in results]
 
                 position_dict[proc.pid] = local_dict
