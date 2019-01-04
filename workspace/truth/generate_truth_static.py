@@ -65,10 +65,10 @@ if __name__ == "__main__":
         cursor.executemany('INSERT INTO column_descriptions VALUES (?,?)',values)
         conn.commit()
 
-    write_stars_to_truth(output=args.out_file,
-                         n_side=2048,
-                         n_procs=20,
-                         clobber=False)
+    #write_stars_to_truth(output=args.out_file,
+    #                     n_side=2048,
+    #                     n_procs=20,
+    #                     clobber=False)
 
     print('wrote stars')
 
