@@ -46,6 +46,8 @@ _col_name_to_int['redshift'] = 6
 _col_name_to_int['galaxy_id'] = 7
 _col_name_to_int['bulge_sed'] = 0
 _col_name_to_int['bulge_magnorm'] = 1
+_col_name_to_int['disk_sed'] = 2
+_col_name_to_int['disk_magnorm'] = 3
 
 
 def _fluxes(sed_name, mag_norm, redshift):
@@ -172,8 +174,11 @@ def calculate_mags(galaxy_list, out_dict):
                                           galaxy[_col_name_to_int['bulge_magnorm']],
                                           galaxy[_col_name_to_int['redshift']])
 
-        if galaxy[2] is not None and galaxy[3] is not None:
-            disk_fluxes[i_gal] = _fluxes(galaxy[2], galaxy[3],
+        if (galaxy[_col_name_to_int['disk_sed']] is not None and
+            galaxy[_col_name_to_int['disk_magnorm']] is not None):
+
+            disk_fluxes[i_gal] = _fluxes(galaxy[_col_name_to_int['disk_sed']],
+                                         galaxy[_col_name_to_int['disk_magnorm']],
                                          galaxy[_col_name_to_int['redshift']])
 
     tot_fluxes = bulge_fluxes + disk_fluxes
