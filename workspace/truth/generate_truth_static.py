@@ -39,7 +39,7 @@ if __name__ == "__main__":
                agn int, sprinkled int, ra float, dec float,
                redshift float, u float, g float, r float, i float,
                z float, y float, du_mw float, dg_mw float,
-               dr_mw float, di_mw float, dz_mw float,
+               dr_mw float, di_mw float, dz_mw float, dy_mw float,
                du_internal float, dg_internal float,
                dr_internal float, di_internal float,
                dz_internal_float, dy_internal_float)'''
