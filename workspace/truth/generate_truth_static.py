@@ -38,7 +38,11 @@ if __name__ == "__main__":
               (healpix_2048 int, object_id int, star int,
                agn int, sprinkled int, ra float, dec float,
                redshift float, u float, g float, r float, i float,
-               z float, y float)'''
+               z float, y float, du_mw float, dg_mw float,
+               dr_mw float, di_mw float, dz_mw float,
+               du_internal float, dg_internal float,
+               dr_internal float, di_internal float,
+               dz_internal_float, dy_internal_float)'''
 
         cursor.execute(cmd)
         conn.commit()
@@ -55,12 +59,25 @@ if __name__ == "__main__":
                   ('ra', 'in degrees'),
                   ('dec', 'in degrees'),
                   ('redshift', 'cosmological only'),
-                  ('u', 'observed lsst u magnitude; no dust extinction at all'),
-                  ('g', 'observed lsst g magnitude; no dust extinction at all'),
-                  ('r', 'observed lsst r magnitude; no dust extinction at all'),
-                  ('i', 'observed lsst i magnitude; no dust extinction at all'),
-                  ('z', 'observed lsst z magnitude; no dust extinction at all'),
-                  ('y', 'observed lsst y magnitude; no dust extinction at all'))
+                  ('u', 'observed lsst u magnitude'),
+                  ('g', 'observed lsst g magnitude'),
+                  ('r', 'observed lsst r magnitude'),
+                  ('i', 'observed lsst i magnitude'),
+                  ('z', 'observed lsst z magnitude'),
+                  ('y', 'observed lsst y magnitude'),
+                  ('du_mw', 'magnitudes of extinction in lsst u due to Milky Way dust'),
+                  ('dg_mw', 'magnitudes of extinction in lsst g due to Milky Way dust'),
+                  ('dr_mw', 'magnitudes of extinction in lsst r due to Milky Way dust'),
+                  ('di_mw', 'magnitudes of extinction in lsst i due to Milky Way dust'),
+                  ('dz_mw', 'magnitudes of extinction in lsst z due to Milky Way dust'),
+                  ('dy_mw', 'magnitudes of extinction in lsst y due to Milky Way dust'),
+                  ('du_internal', 'magnitudes of extinction in lsst u due to internal dust'),
+                  ('dg_internal', 'magnitudes of extinction in lsst g due to internal dust'),
+                  ('dr_internal', 'magnitudes of extinction in lsst r due to internal dust'),
+                  ('di_internal', 'magnitudes of extinction in lsst i due to internal dust'),
+                  ('dz_internal', 'magnitudes of extinction in lsst z due to internal dust'),
+                  ('dy_internal', 'magnitudes of extinction in lsst y due to internal dust'))
+
 
         cursor.executemany('INSERT INTO column_descriptions VALUES (?,?)',values)
         conn.commit()

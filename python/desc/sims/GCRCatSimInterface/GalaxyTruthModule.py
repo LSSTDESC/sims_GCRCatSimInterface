@@ -179,7 +179,9 @@ def write_results(conn, cursor, mag_dict, position_dict):
 
     row_ct = 0
     for k in mag_dict.keys():
-        mm = mag_dict[k]
+        mm = mag_dict[k][0]
+        dm_mw = mag_dict[k][1]
+        dm_internal = mag_dict[k][2]
         pp = position_dict[k]
         row_ct += len(pp['ra'])
         assert len(mm) == len(pp['ra'])
@@ -192,12 +194,17 @@ def write_results(conn, cursor, mag_dict, position_dict):
                    pp['ra'][i_obj], pp['dec'][i_obj],
                    pp['redshift'][i_obj],
                    mm[i_obj][0], mm[i_obj][1], mm[i_obj][2],
-                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5])
+                   mm[i_obj][3], mm[i_obj][4], mm[i_obj][5],
+                   dm_mw[i_obj][0], dm_mw[i_obj][1], dm_mw[i_obj][2],
+                   dm_mw[i_obj][3], dm_mw[i_obj][4], dm_mw[i_obj][5],
+                   dm_internal[i_obj][0], dm_internal[i_obj][1],
+                   dm_internal[i_obj][2], dm_internal[i_obj][3],
+                   dm_internal[i_obj][4], dm_internal[i_obj][5])
                   for i_obj in range(len(pp['ra']))
                   if not np.isnan(mm[i_obj][0]))
 
         cursor.executemany('''INSERT INTO truth
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', values)
         conn.commit()
 
     return row_ct
@@ -214,7 +221,11 @@ def calculate_mags(galaxy_list, out_dict):
      agn.sed_name, agn.magNorm)
 
     out_dict is a Multiprocessing.Manager.dict object that will
-    store the results of this calculation
+    store the results of this calculation in a tuple whose elements
+    are numpy arrays of
+    - observed magnitudes (all dust)
+    - dmag due to Milky Way dust
+    - dmag due to internal dust
     """
     global _col_name_to_int
 
@@ -265,16 +276,33 @@ def calculate_mags(galaxy_list, out_dict):
                                                    galaxy[_col_name_to_int['mw_rv']])
 
     tot_fluxes = bulge_fluxes + disk_fluxes
+    tot_internal_fluxes = bulge_fluxes_internal + disk_fluxes_internal
+    tot_no_dust_fluxes = bulge_fluxes_no_dust + disk_fluxes_no_dust
 
     for i_filter in range(6):
         tot_fluxes[:,i_filter] *= magnification
+        tot_internal_fluxes[:,i_filter] *= magnification
+        tot_no_dust_fluxes[:,i_filter] *= magnification
 
     dummy_sed = Sed()
     valid = np.where(tot_fluxes>0.0)
     valid_mags = dummy_sed.magFromFlux(tot_fluxes[valid])
     out_mags = np.NaN*np.ones((len(galaxy_list), 6), dtype=float)
     out_mags[valid] = valid_mags
-    out_dict[i_process] = out_mags
+
+    valid_internal_mags = dummy_sed.magFromFlux(tot_internal_fluxes[valid])
+    valid_no_dust_mags = dummy_sed.magFromFlux(tot_no_dust_fluxes[valid])
+
+    valid_dmag_mw = valid_mags-valid_internal_mags
+    valid_dmag_internal = valid_internal_mags-valid_no_dust_mags
+
+    dmag_mw = np.NaN*np.ones((len(galaxy_list), 6), dtype=float)
+    dmag_internal = np.NaN*np.ones((len(galaxy_list), 6), dtype=float)
+
+    dmag_mw[valid] = valid_dmag_mw
+    dmag_internal[valid] = valid_dmag_internal
+
+    out_dict[i_process] = (out_mags, dmag_mw, dmag_internal)
 
 
 def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
