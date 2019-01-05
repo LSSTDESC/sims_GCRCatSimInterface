@@ -368,6 +368,7 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
 
         with sqlite3.connect(input_db) as in_conn:
             in_cursor = in_conn.cursor()
+            estimated_ct = int(in_cursor.execute('SELECT COUNT(galaxy_id) FROM disk').fetchall()[0][0])
             query = in_cursor.execute(_galaxy_query)
 
             while True:
@@ -409,9 +410,9 @@ def write_galaxies_to_truth(n_side=2048, input_db=None, output=None,
                     mag_dict = mgr.dict()
                     iteration += 1
                     duration = (time.time()-t_start)/3600.0
-                    predicted = 1.0e7*duration/row_ct
-                    print('output %d in %.2e hrs; 10 million in %.2e' %
-                          (row_ct, duration, predicted))
+                    predicted = estimated_ct*duration/row_ct
+                    print('output %d in %.2e hrs; %e in %.2e' %
+                          (row_ct, duration, estimated_ct, predicted))
 
             if len(p_list) > 0:
                 for p in p_list:
