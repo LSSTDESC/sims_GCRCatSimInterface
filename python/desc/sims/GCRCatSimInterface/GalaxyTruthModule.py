@@ -20,7 +20,10 @@ _galaxy_query = '''SELECT b.sedFile, b.magNorm,
                    b.redshift, b.galaxy_id,
                    b.raJ2000, b.decJ2000,
                    b.is_sprinkled, a.is_agn,
-                   b.shear1, b.shear2, b.kappa
+                   b.shear1, b.shear2, b.kappa,
+                   b.internalRv, b.internalAv,
+                   d.internalRv, d.internalAv,
+                   b.galacticRv, b.galacticAv
                    FROM bulge as b
                    LEFT JOIN disk as d ON b.galaxy_id=d.galaxy_id
                    LEFT JOIN zpoint as a ON b.galaxy_id=a.galaxy_id
@@ -32,7 +35,10 @@ _galaxy_query = '''SELECT b.sedFile, b.magNorm,
                    d.redshift, d.galaxy_id,
                    d.raJ2000, d.decJ2000,
                    d.is_sprinkled, a.is_agn,
-                   d.shear1, d.shear2, d.kappa
+                   d.shear1, d.shear2, d.kappa,
+                   b.internalRv, b.internalAv,
+                   d.internalRv, d.internalAv,
+                   d.galacticRv, d.galacticAv
                    FROM disk as d
                    LEFT JOIN bulge as b ON d.galaxy_id=b.galaxy_id
                    LEFT JOIN zpoint as a on d.galaxy_id=a.galaxy_id
@@ -55,6 +61,12 @@ _col_name_to_int['is_agn'] = 11
 _col_name_to_int['shear1'] = 12
 _col_name_to_int['shear2'] = 13
 _col_name_to_int['kappa'] = 14
+_col_name_to_int['bulge_rv'] = 15
+_col_name_to_int['bulge_av'] = 16
+_col_name_to_int['disk_rv'] = 17
+_col_name_to_int['disk_av'] = 18
+_col_name_to_int['mw_rv'] = 19
+_col_name_to_int['mw_av'] = 20
 
 
 def _fluxes(sed_name, mag_norm, redshift):
