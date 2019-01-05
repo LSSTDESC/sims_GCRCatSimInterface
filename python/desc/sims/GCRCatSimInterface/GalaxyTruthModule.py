@@ -69,7 +69,9 @@ _col_name_to_int['mw_rv'] = 19
 _col_name_to_int['mw_av'] = 20
 
 
-def _fluxes(sed_name, mag_norm, redshift):
+def _fluxes(sed_name, mag_norm, redshift,
+            internal_av, internal_rv,
+            mw_av, mw_rv):
     """
     Find the fluxes for a galaxy component
 
@@ -81,9 +83,19 @@ def _fluxes(sed_name, mag_norm, redshift):
 
     redshift is a float
 
+    internal_av is a float
+
+    internal_rv is a float
+
+    mw_av is a float
+
+    mw_rv is a float
+
     Returns
     -------
-    array of fluxes in ugrizy order
+    fluxes with all dust (array in ugrizy order)
+    fluxes with just internal dust (array in ugrizy order)
+    fluxes with no dust (array in ugrizy order)
     """
     if not hasattr(_fluxes, '_bp_dict'):
         bp_dir = getPackageDir('throughputs')
@@ -92,15 +104,47 @@ def _fluxes(sed_name, mag_norm, redshift):
 
         _fluxes._sed_dir = getPackageDir('sims_sed_library')
 
+    if not hasattr(_fluxes, 'dust_wav'):
+        _fluxes.dust_wav = None
+
     spec = Sed()
     full_sed_name = os.path.join(_fluxes._sed_dir, sed_name)
+
     if not os.path.isfile(full_sed_name):
         full_sed_name = os.path.join(_fluxes._sed_dir, defaultSpecMap[sed_name])
     spec.readSED_flambda(full_sed_name)
+
+    if (_fluxes.dust_wav is None or
+        not np.array_equal(spec.wavelen, _fluxes.dust_wav)):
+
+        _fluxes.dust_wav = np.copy(spec.wavelen)
+        _fluxes.a_x, _fluxes.b_x = spec.setupODonnell_ab()
+
     fnorm = getImsimFluxNorm(spec, mag_norm)
     spec.multiplyFluxNorm(fnorm)
+
+    internal_dust_spec = Sed(wavelen=spec.wavelen, flambda=spec.flambda)
+    internal_dust_spec.addDust(_fluxes.a_x, _fluxes.b_x,
+                               A_v=internal_av, R_v=internal_rv)
+
     spec.redshiftSED(redshift, dimming=True)
-    return _fluxes._bp_dict.fluxListForSed(spec)
+    internal_dust_spec.redshiftSED(redshift, dimming=True)
+
+    all_dust_spec = Sed(wavelen=internal_dust_spec.wavelen,
+                        flambda=internal_dust_spec.flambda)
+
+    mw_a_x, mw_b_x = all_dust_spec.setupODonnell_ab()
+    all_dust_spec.addDust(mw_a_x, mw_b_x,
+                          A_v=mw_av, R_v=mw_rv)
+
+
+    no_dust_fluxes = _fluxes._bp_dict.fluxListForSed(spec)
+    internal_dust_fluxes = _fluxes._bp_dict.fluxListForSed(internal_dust_spec)
+    all_dust_fluxes = _fluxes._bp_dict.fluxListForSed(all_dust_spec)
+
+    return (all_dust_fluxes,
+            internal_dust_fluxes,
+            no_dust_fluxes)
 
 
 def write_results(conn, cursor, mag_dict, position_dict):
@@ -179,6 +223,12 @@ def calculate_mags(galaxy_list, out_dict):
     bulge_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
     disk_fluxes = np.zeros((len(galaxy_list), 6), dtype=float)
 
+    bulge_fluxes_internal = np.zeros((len(galaxy_list), 6), dtype=float)
+    disk_fluxes_internal = np.zeros((len(galaxy_list), 6), dtype=float)
+
+    bulge_fluxes_no_dust = np.zeros((len(galaxy_list), 6), dtype=float)
+    disk_fluxes_no_dust = np.zeros((len(galaxy_list), 6), dtype=float)
+
     magnification = np.array([1.0/((1.0-g[_col_name_to_int['kappa']])**2
                                    -g[_col_name_to_int['shear1']]**2
                                    -g[_col_name_to_int['shear2']]**2)
@@ -191,16 +241,28 @@ def calculate_mags(galaxy_list, out_dict):
         if (galaxy[_col_name_to_int['bulge_sed']] is not None and
             galaxy[_col_name_to_int['bulge_magnorm']] is not None):
 
-            bulge_fluxes[i_gal] = _fluxes(galaxy[_col_name_to_int['bulge_sed']],
-                                          galaxy[_col_name_to_int['bulge_magnorm']],
-                                          galaxy[_col_name_to_int['redshift']])
+            (bulge_fluxes[i_gal],
+             bulge_fluxes_internal[i_gal],
+             bulge_fluxes_no_dust[i_gal]) = _fluxes(galaxy[_col_name_to_int['bulge_sed']],
+                                                    galaxy[_col_name_to_int['bulge_magnorm']],
+                                                    galaxy[_col_name_to_int['redshift']],
+                                                    galaxy[_col_name_to_int['bulge_av']],
+                                                    galaxy[_col_name_to_int['bulge_rv']],
+                                                    galaxy[_col_name_to_int['mw_av']],
+                                                    galaxy[_col_name_to_int['mw_rv']])
 
         if (galaxy[_col_name_to_int['disk_sed']] is not None and
             galaxy[_col_name_to_int['disk_magnorm']] is not None):
 
-            disk_fluxes[i_gal] = _fluxes(galaxy[_col_name_to_int['disk_sed']],
-                                         galaxy[_col_name_to_int['disk_magnorm']],
-                                         galaxy[_col_name_to_int['redshift']])
+            (disk_fluxes[i_gal],
+             disk_fluxes_internal[i_gal],
+             disk_fluxes_no_dust[i_gal]) = _fluxes(galaxy[_col_name_to_int['disk_sed']],
+                                                   galaxy[_col_name_to_int['disk_magnorm']],
+                                                   galaxy[_col_name_to_int['redshift']],
+                                                   galaxy[_col_name_to_int['disk_av']],
+                                                   galaxy[_col_name_to_int['disk_rv']],
+                                                   galaxy[_col_name_to_int['mw_av']],
+                                                   galaxy[_col_name_to_int['mw_rv']])
 
     tot_fluxes = bulge_fluxes + disk_fluxes
 
