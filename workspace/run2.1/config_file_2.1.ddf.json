@@ -8,5 +8,5 @@
 "sed_lookup_dir": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/sedLookup/",
 "host_data_dir": "/global/homes/d/danielsf/Twinkles/data/"
 ,
-"host_image_dir": "/global/cscratch1/sd/danielsf/cosmoDC2_v1.1.4_hosts/"
+"host_image_dir": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/lensing_hosts/"
 }
