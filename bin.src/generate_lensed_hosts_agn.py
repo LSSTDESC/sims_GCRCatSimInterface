@@ -34,7 +34,7 @@ def load_in_data_agn():
     agn_host_bulge = pd.read_csv(os.path.join(twinkles_data_dir,
                                  'cosmoDC2_v1.1.4_bulge_agn_host.csv'))
     agn_host_disk = pd.read_csv(os.path.join(twinkles_data_dir,
-                                'cosmoDC2_v1.1.4_bulge_agn_host.csv'))
+                                'cosmoDC2_v1.1.4_disk_agn_host.csv'))
 
     idx = agn_host_bulge['image_number'] == 0
     ahb_purged = agn_host_bulge[:][idx]
