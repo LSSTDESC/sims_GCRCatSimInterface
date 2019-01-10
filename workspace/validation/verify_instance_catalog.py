@@ -51,13 +51,13 @@ if __name__ == "__main__":
 
     agn_dtype = np.dtype([('galaxy_id', int), ('twinkles_id', int)])
     agn_cache = np.genfromtxt(os.path.join(os.environ['TWINKLES_DIR'], 'data',
-                                           'cosmoDC2_v1.0_agn_cache.csv'),
+                                           'cosmoDC2_v1.1.4_agn_cache.csv'),
                               dtype=agn_dtype,
                               delimiter=',',
                               skip_header=1)
 
     sne_cache = np.genfromtxt(os.path.join(os.environ['TWINKLES_DIR'], 'data',
-                                           'cosmoDC2_v1.0_sne_cache.csv'),
+                                           'cosmoDC2_v1.1.4_sne_cache.csv'),
                               dtype=agn_dtype,
                               delimiter=',',
                               skip_header=1)
