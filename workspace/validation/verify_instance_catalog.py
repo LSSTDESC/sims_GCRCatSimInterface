@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 import healpy
 
+import multiprocessing
+
 import GCRCatalogs
 from GCR import GCRQuery
 
@@ -12,9 +14,6 @@ from lsst.sims.photUtils import BandpassDict, Sed, Bandpass
 import argparse
 
 import time
-
-d_mag_max = -1.0
-ct_knots = 0
 
 def get_sed(name, magnorm, redshift, av, rv):
     if not hasattr(get_sed, '_rest_dict'):
@@ -46,8 +45,6 @@ def get_sed(name, magnorm, redshift, av, rv):
 
 
 def validate_mag(row, mag_true):
-    global ct_knots
-    global d_mag_max
 
     if np.isnan(row['magnorm_disk']):
         disk_flux = 0.0
@@ -75,15 +72,20 @@ def validate_mag(row, mag_true):
                      row['rest_rv_knots'])
         knots_mag = ss.calcMag(bandpass)
         knots_flux = np.power(10.0,-0.4*knots_mag)
-        ct_knots += 1
 
     tot_mag = -2.5*np.log10(disk_flux+bulge_flux+knots_flux)
     d_mag = np.abs(tot_mag-mag_true)
-    if d_mag>d_mag_max:
-        d_mag_max = d_mag
-        print('d_mag_max %e -- InstanceCatalog %e truth %e -- %d' %
-              (d_mag_max, tot_mag, mag_true,index))
-        #print(row)
+    return d_mag
+
+def validate_batch(mag_true_arr, galaxy_arr, out_dict):
+    pid = os.getpid()
+    d_mag_max = 0.0
+    for mag_true, (index, galaxy) in zip(mag_true_arr, galaxy_arr.iterrows()):
+        d_mag = validate_mag(galaxy, mag_true)
+        if d_mag>d_mag_max:
+            d_mag_max = d_mag
+
+    out_dict[pid] = d_mag_max
 
 
 if __name__ == "__main__":
@@ -268,11 +270,27 @@ if __name__ == "__main__":
     gid = qties['galaxy_id'][valid_dexes]
 
     t_start = time.time()
-    for g, mag_true, (index, row) in zip(gid, mags, galaxy_df.iterrows()):
-        assert g==index
+    n_proc = 10
+    d_proc = len(gid)//n_proc
+    mgr = multiprocessing.Manager()
+    out_dict = mgr.dict()
+    p_list = []
+    for i_start in range(0, len(gid), d_proc):
+        mag_true = mags[i_start:i_start+d_proc]
+        galaxy_arr = galaxy_df.iloc[i_start:i_start+d_proc]
+        p = multiprocessing.Process(target=validate_batch,
+                                    args=(mag_true, galaxy_arr, out_dict))
+        p.start()
+        p_list.append(p)
 
-        validate_mag(row, mag_true)
+    for p in p_list:
+        p.join()
+
+    d_mag_max = 0.0
+    for k in out_dict.keys():
+        if out_dict[k] > d_mag_max:
+            d_mag_max = out_dict[k]
 
     print('\nall done %d' % args.obs)
-    print('knots %e' % ct_knots)
+    print('d_mag_max %e' % d_mag_max)
     print('took %e' % (time.time()-t_start))
