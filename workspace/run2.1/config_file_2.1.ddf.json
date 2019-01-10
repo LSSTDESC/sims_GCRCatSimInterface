@@ -2,7 +2,7 @@
 "gzip_threads": 6,
 "db": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/minion_1016_desc_dithered_v4_sfd.db",
 "agn_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/agn_db_mbh7_mi30_sf4.db",
-"sn_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/sne_cosmoDC2_v1.1.4_MS.db",
+"sn_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/sne_cosmoDC2_v1.1.4_MS_DDF.db",
 "descqa_catalog": "cosmoDC2_v1.1.4_image_addon_knots",
 "star_db_name": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/dc2_stellar_db.db",
 "sed_lookup_dir": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/sedLookup/",
