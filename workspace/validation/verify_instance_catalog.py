@@ -11,6 +11,8 @@ from lsst.sims.photUtils import BandpassDict, Sed, Bandpass
 
 import argparse
 
+import time
+
 def get_sed(name, magnorm, redshift, av, rv):
     if not hasattr(get_sed, '_rest_dict'):
         get_sed._rest_dict = {}
@@ -112,13 +114,13 @@ if __name__ == "__main__":
 
     disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024, index=disk_df.index)
     disk_df = disk_df.set_index('galaxy_id')
-    print('read disks')
+    print('read disks %e' % (len(disk_df)))
 
     bulge_df = pd.read_csv(bulge_file, delimiter=' ',
                            compression='gzip', names=colnames, dtype=col_types, nrows=None)
     bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024, index=bulge_df.index)
     bulge_df = bulge_df.set_index('galaxy_id')
-    print('read bulges')
+    print('read bulges %e' % (len(bulge_df)))
 
     for ii in range(len(colnames)):
         colnames[ii] = colnames[ii]+'_knots'
@@ -223,6 +225,7 @@ if __name__ == "__main__":
 
     d_mag_max = -1.0
 
+    t_start = time.time()
     for g, mag_true, (index, row) in zip(gid, mags, galaxy_df.iterrows()):
         assert g==index
 
@@ -262,5 +265,6 @@ if __name__ == "__main__":
                   (d_mag_max, tot_mag, mag_true,index))
             #print(row)
 
-    print('all done %d' % args.obs)
+    print('\nall done %d' % args.obs)
     print('knots %e' % ct_knots)
+    print('took %e' % (time.time()-t_start))
