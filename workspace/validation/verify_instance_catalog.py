@@ -13,6 +13,9 @@ import argparse
 
 import time
 
+d_mag_max = -1.0
+ct_knots = 0
+
 def get_sed(name, magnorm, redshift, av, rv):
     if not hasattr(get_sed, '_rest_dict'):
         get_sed._rest_dict = {}
@@ -40,6 +43,48 @@ def get_sed(name, magnorm, redshift, av, rv):
     ss.multiplyFluxNorm(fnorm)
     ss.redshiftSED(redshift, dimming=True)
     return ss
+
+
+def validate_mag(row, mag_true):
+    global ct_knots
+    global d_mag_max
+
+    if np.isnan(row['magnorm_disk']):
+        disk_flux = 0.0
+    else:
+        ss = get_sed(row['sed_disk'], row['magnorm_disk'],
+                     row['redshift_disk'], row['rest_av_disk'],
+                     row['rest_rv_disk'])
+        disk_mag = ss.calcMag(bandpass)
+        disk_flux = np.power(10.0,-0.4*disk_mag)
+
+    if np.isnan(row['magnorm_bulge']):
+        bulge_flux = 0.0
+    else:
+        ss = get_sed(row['sed_bulge'], row['magnorm_bulge'],
+                     row['redshift_bulge'], row['rest_av_bulge'],
+                     row['rest_rv_bulge'])
+        bulge_mag = ss.calcMag(bandpass)
+        bulge_flux = np.power(10.0,-0.4*bulge_mag)
+
+    if np.isnan(row['magnorm_knots']):
+        knots_flux = 0.0
+    else:
+        ss = get_sed(row['sed_knots'], row['magnorm_knots'],
+                     row['redshift_knots'], row['rest_av_knots'],
+                     row['rest_rv_knots'])
+        knots_mag = ss.calcMag(bandpass)
+        knots_flux = np.power(10.0,-0.4*knots_mag)
+        ct_knots += 1
+
+    tot_mag = -2.5*np.log10(disk_flux+bulge_flux+knots_flux)
+    d_mag = np.abs(tot_mag-mag_true)
+    if d_mag>d_mag_max:
+        d_mag_max = d_mag
+        print('d_mag_max %e -- InstanceCatalog %e truth %e -- %d' %
+              (d_mag_max, tot_mag, mag_true,index))
+        #print(row)
+
 
 if __name__ == "__main__":
 
@@ -194,7 +239,6 @@ if __name__ == "__main__":
     invalid_knots = np.where(np.logical_not(np.isfinite(galaxy_df['magnorm_knots'].values.astype(np.float))))
 
     print('no knots %e' % len(invalid_knots[0]))
-    ct_knots = 0
 
     dd = angularSeparation(ra_center, dec_center,
                            cat_qties['ra'], cat_qties['dec'])
@@ -223,47 +267,11 @@ if __name__ == "__main__":
     mags = qties[mag_name][valid_dexes]
     gid = qties['galaxy_id'][valid_dexes]
 
-    d_mag_max = -1.0
-
     t_start = time.time()
     for g, mag_true, (index, row) in zip(gid, mags, galaxy_df.iterrows()):
         assert g==index
 
-        if np.isnan(row['magnorm_disk']):
-            disk_flux = 0.0
-        else:
-            ss = get_sed(row['sed_disk'], row['magnorm_disk'],
-                         row['redshift_disk'], row['rest_av_disk'],
-                         row['rest_rv_disk'])
-            disk_mag = ss.calcMag(bandpass)
-            disk_flux = np.power(10.0,-0.4*disk_mag)
-
-        if np.isnan(row['magnorm_bulge']):
-            bulge_flux = 0.0
-        else:
-            ss = get_sed(row['sed_bulge'], row['magnorm_bulge'],
-                         row['redshift_bulge'], row['rest_av_bulge'],
-                         row['rest_rv_bulge'])
-            bulge_mag = ss.calcMag(bandpass)
-            bulge_flux = np.power(10.0,-0.4*bulge_mag)
-
-        if np.isnan(row['magnorm_knots']):
-            knots_flux = 0.0
-        else:
-            ss = get_sed(row['sed_knots'], row['magnorm_knots'],
-                         row['redshift_knots'], row['rest_av_knots'],
-                         row['rest_rv_knots'])
-            knots_mag = ss.calcMag(bandpass)
-            knots_flux = np.power(10.0,-0.4*knots_mag)
-            ct_knots += 1
-
-        tot_mag = -2.5*np.log10(disk_flux+bulge_flux+knots_flux)
-        d_mag = np.abs(tot_mag-mag_true)
-        if d_mag>d_mag_max:
-            d_mag_max = d_mag
-            print('d_mag_max %e -- InstanceCatalog %e truth %e -- %d' %
-                  (d_mag_max, tot_mag, mag_true,index))
-            #print(row)
+        validate_mag(row, mag_true)
 
     print('\nall done %d' % args.obs)
     print('knots %e' % ct_knots)
