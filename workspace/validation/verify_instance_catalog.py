@@ -160,13 +160,16 @@ if __name__ == "__main__":
     disk_df = pd.read_csv(disk_file, delimiter=' ',
                           compression='gzip', names=colnames, dtype=col_types, nrows=None)
 
-    disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024, index=disk_df.index)
+    disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024,
+                                     index=disk_df.index)
     disk_df = disk_df.set_index('galaxy_id')
     print('read disks %e' % (len(disk_df)))
 
     bulge_df = pd.read_csv(bulge_file, delimiter=' ',
-                           compression='gzip', names=colnames, dtype=col_types, nrows=None)
-    bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024, index=bulge_df.index)
+                           compression='gzip', names=colnames,
+                           dtype=col_types, nrows=None)
+    bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024,
+                                      index=bulge_df.index)
     bulge_df = bulge_df.set_index('galaxy_id')
     print('read bulges %e' % (len(bulge_df)))
 
@@ -174,16 +177,23 @@ if __name__ == "__main__":
         colnames[ii] = colnames[ii]+'_knots'
 
     knots_df = pd.read_csv(knots_file, delimiter=' ',
-                           compression='gzip', names=colnames, dtype=col_types, nrows=None)
-    knots_df['galaxy_id'] = pd.Series(knots_df['uniqueID_knots']//1024, index=knots_df.index)
+                           compression='gzip', names=colnames,
+                           dtype=col_types, nrows=None)
+    knots_df['galaxy_id'] = pd.Series(knots_df['uniqueID_knots']//1024,
+                                      index=knots_df.index)
     knots_df = knots_df.set_index('galaxy_id')
 
-    wanted_col = ['sed', 'magnorm', 'redshift', 'rest_av', 'rest_rv', 'ra', 'dec']
+    wanted_col = ['sed', 'magnorm', 'redshift',
+                  'rest_av', 'rest_rv', 'ra', 'dec']
+
     galaxy_df = disk_df[wanted_col].join(bulge_df[wanted_col], how='outer',
                                          lsuffix='_disk', rsuffix='_bulge')
+
     for ii in range(len(wanted_col)):
         wanted_col[ii] = wanted_col[ii]+'_knots'
-    galaxy_df = galaxy_df.join(knots_df[wanted_col], how='outer', rsuffix='_knots')
+    galaxy_df = galaxy_df.join(knots_df[wanted_col],
+                               how='outer',
+                               rsuffix='_knots')
     print('read knots')
 
     valid_galaxies = np.where(np.logical_not(np.in1d(galaxy_df.index,
@@ -223,7 +233,8 @@ if __name__ == "__main__":
     print('len(galaxy_df) ',len(galaxy_df))
     print('built final df')
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image')
-    cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'], native_filters=[hp_query])
+    cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'],
+                                   native_filters=[hp_query])
     print('loaded galaxy_id %e' % len(cat_qties['galaxy_id']))
     cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
 
@@ -239,7 +250,9 @@ if __name__ == "__main__":
     galaxy_df = galaxy_df.loc[dexes]
 
     galaxy_df = galaxy_df.sort_index()
-    invalid_knots = np.where(np.logical_not(np.isfinite(galaxy_df['magnorm_knots'].values.astype(np.float))))
+    invalid_knots = np.where(np.logical_not(
+                             np.isfinite(
+                             galaxy_df['magnorm_knots'].values.astype(np.float))))
 
     print('no knots %e' % len(invalid_knots[0]))
 
@@ -251,7 +264,8 @@ if __name__ == "__main__":
     cat_dexes = cat_dexes[dd_cut]
     print('did spatial cut %d of %d' % (len(cat_dexes), len(cat_qties['ra'])))
 
-    in1d_valid_dexes = np.where(np.in1d(gid, galaxy_df.index.values,assume_unique=True))
+    in1d_valid_dexes = np.where(np.in1d(gid,
+                                galaxy_df.index.values,assume_unique=True))
     valid_dexes = cat_dexes[in1d_valid_dexes]
     gid = gid[in1d_valid_dexes]
 
@@ -266,7 +280,8 @@ if __name__ == "__main__":
     np.testing.assert_array_equal(gid[sorted_dex], galaxy_df.index.values)
 
     mag_name = 'mag_true_%s_lsst' % bandpass_name
-    qties = cat.get_quantities(['galaxy_id', mag_name], native_filters=[hp_query])
+    qties = cat.get_quantities(['galaxy_id', mag_name],
+                                native_filters=[hp_query])
     mags = qties[mag_name][valid_dexes]
     gid = qties['galaxy_id'][valid_dexes]
 
