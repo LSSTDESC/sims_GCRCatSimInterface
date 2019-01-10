@@ -115,7 +115,8 @@ if __name__ == "__main__":
 
 
 
-    colnames = ['obj', 'uniqueID', 'ra', 'dec', 'magnorm', 'sed', 'redshift', 'g1', 'g2',
+    colnames = ['obj', 'uniqueID', 'ra', 'dec',
+                'magnorm', 'sed', 'redshift', 'g1', 'g2',
                 'kappa', 'dra', 'ddec', 'src_type', 'major', 'minor',
                 'positionAngle', 'sindex', 'dust_rest', 'rest_av', 'rest_rv',
                 'dust_obs', 'obs_av', 'obs_rv']
