@@ -192,3 +192,36 @@ if __name__ == "__main__":
                 print('WARNING: %d InstCat galaxies not in GCR'
                       % n_violation)
                 print('\n')
+
+        # now that we have verified all of the galaxies that should be in
+        # the catalog are in the catalog, we will verify their positions by
+        # converting all of the galaxy positions into Cartesian vectors,
+        # choosing three points to define the orientation, and computing
+        # the dot product of the whole set of Cartesian vectors with
+        # those three.  These dot products should not differ between
+        # the GCR objects and the InstanceCatalog objects
+
+        gcr_ra_rad = np.radians(gcr_ra)
+        gcr_dec_rad = np.radians(gcr_dec)
+        gcr_cos_dec = np.cos(gcr_dec_rad)
+        gcr_xyz = np.array([gcr_cos_dec*np.cos(gcr_ra_rad),
+                            gcr_cos_dec*np.sin(gcr_ra_rad),
+                            np.sin(gcr_dec_rad)]).transpose()
+
+        instcat_ra_rad = np.radians(instcat_ra)
+        instcat_dec_rad = np.radians(instcat_dec)
+        instcat_cos_dec = np.cos(instcat_dec_rad)
+        instcat_xyz = np.array([instcat_cos_dec*np.cos(instcat_ra_rad),
+                                instcat_cos_dec*np.sin(instcat_ra_rad),
+                                np.sin(instcat_dec_rad)]).transpose()
+
+        rng = np.random.RandomState(77123)
+        dx = rng.choice(np.arange(len(instcat_xyz), dtype=int), replace=False, size=3)
+
+        for idx in dx:
+            gcr_dot = np.dot(gcr_xyz, gcr_xyz[idx])
+            instcat_dot = np.dot(instcat_xyz, instcat_xyz[idx])
+            delta = np.abs(gcr_dot-instcat_dot)
+            if delta.max() > 1.0e-6:
+                raise RuntimeError("dot products were off %e %e %e" %
+                                   (delta.min(), np.median(delta), delta.max()))
