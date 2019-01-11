@@ -351,6 +351,7 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
         self.column_by_name('raJ2000')
         self.column_by_name('decJ2000')
+        galaxy_id = self.column_by_name('galaxy_id')
 
         if not hasattr(self, '_knots_available'):
             self._knots_available = False
@@ -358,15 +359,34 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
                 self._knots_available = True
 
         if self._knots_available:
+
+            if not hasattr(self, '_sprinkled_gid'):
+                twinkles_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
+                agn_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_agn_cache.csv')
+                sne_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_sne_cache.csv')
+                sprinkled_gid = []
+                for file_name in (agn_name, sne_name):
+                    with open(file_name, 'r') as in_file:
+                        for line in in_file:
+                            if line.startswith('galtileid'):
+                                continue
+                            params = line.strip().split(',')
+                            sprinkled_gid.append(int(params[0]))
+                self._sprinkled_gid = np.array(sprinkled_gid)
+
             lsst_i_mag = self.column_by_name('mag_true_i_lsst')
             knots_ratio = self.column_by_name('knots_flux_ratio')
+            is_sprinkled = np.in1d(galaxy_id, self._sprinkled_gid,
+                                   assume_unique=True)
+
+            knots_ratio = np.where(~is_sprinkled,
+                                   knots_ratio, 0.0)
 
         if component_type == 'knots' and not self._knots_available:
             raise RuntimeError("You are trying to simulate knots "
                                "but there are no knots in your "
                                "extragalactic catalog")
 
-        galaxy_id = self.column_by_name('galaxy_id')
         if len(galaxy_id) == 0:
             return np.array([[],[], [], []])
 
