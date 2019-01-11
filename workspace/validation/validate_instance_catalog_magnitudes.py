@@ -91,10 +91,17 @@ def validate_batch(mag_true_arr, galaxy_arr, out_dict):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--obs', type=int, default=None)
-    parser.add_argument('--nrows', type=int, default=100000)
-    parser.add_argument('--seed', type=int, default=9812)
-    parser.add_argument('--cat_dir', type=str, default=None)
+    parser.add_argument('--obs', type=int, default=None,
+                        help='obsHistID')
+    parser.add_argument('--nrows', type=int, default=100000,
+                        help='number of (randomly chosen) rows to '
+                        'validate (if negative, will validate all '
+                        'rows; default=10**5)')
+    parser.add_argument('--seed', type=int, default=9812,
+                        help='seed for random number generator (default=9812; '
+                        'only needed if nrows>0)')
+    parser.add_argument('--cat_dir', type=str, default=None,
+                        help='parent directory of $obsHistID/ directory')
 
     args = parser.parse_args()
 

@@ -12,10 +12,12 @@ from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--fov_deg', type=float, default=2.1)
+    parser.add_argument('--fov_deg', type=float, default=2.1,
+                        help='radius of field of view in degrees '
+                        '(default: 2.1)')
     parser.add_argument('--obs', type=int, help='obsHistID')
     parser.add_argument('--cat_dir', type=str,
-                        help='dir containing obsHistID/ dir')
+                        help='parent directory of $obsHistID/')
 
     args = parser.parse_args()
 
