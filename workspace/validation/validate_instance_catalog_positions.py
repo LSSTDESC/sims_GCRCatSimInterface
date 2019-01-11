@@ -19,6 +19,32 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
+                                  'cosmoDC2_v1.1.4_agn_cache.csv')
+
+    if not os.path.isfile(agn_cache_file):
+        raise RuntimeError('\n%s\nis not a file\n' % agn_cache_file)
+
+    sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
+                                  'cosmoDC2_v1.1.4_sne_cache.csv')
+
+    if not os.path.isfile(sne_cache_file):
+        raise RuntimeError('\n%s\nis not a file\n' % sne_cache_file)
+
+    # get a list of all of the galaxies that are going to be replace
+    # by the sprinkler
+    sprinkled_gid = []
+    for file_name in (agn_cache_file, sne_cache_file):
+        with open(file_name, 'r') as in_file:
+            for line in in_file:
+                if line.startswith('galtileid'):
+                    continue
+                params = line.strip().split(',')
+                gid = int(params[0])
+                sprinkled_gid.append(gid)
+
+    sprinkled_gid = np.array(sprinkled_gid)
+
     max_gcr_gid = int(1.5e10) # this should actually be 1.2e10;
                               # the sprinkler will not put anything
                               # that close to the cutoff, though
@@ -126,24 +152,29 @@ if __name__ == "__main__":
             inst_in_gcr = np.in1d(instcat_gid, gcr_gid, assume_unique=True)
 
             if not gcr_in_inst.all():
-                knots_name = os.path.join(inst_cat_dir,
-                                          'knots_cat_%d.txt.gz' % args.obs)
-                assert os.path.isfile(knots_name)
-                knots_gid = []
-                with gzip.open(knots_name, 'rb') as in_file:
-                    for line in in_file:
-                        params = line.strip().split(b' ')
-                        knots_gid.append(int(params[1])//1024)
-                knots_gid = np.array(knots_gid)
                 violation = ~gcr_in_inst
-                n_violation = len(np.where(violation)[0])
-                vio_in_knots = np.in1d(gcr_gid[violation], knots_gid)
-                print('WARNING: %d GCR galaxies were not in InstCat'
-                      % n_violation)
-                print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
-                print('in knots: ', vio_in_knots.all())
-                print('n: %d (%d)' % (len(np.where(vio_in_knots)[0]), len(knots_gid)))
-                print('\n')
+                missing_gid = gcr_gid[violation]
+                are_sprinkled = np.in1d(missing_gid, sprinkled_gid)
+                if not are_sprinkled.all() or component != 'disk':
+                    knots_name = os.path.join(inst_cat_dir,
+                                              'knots_cat_%d.txt.gz' % args.obs)
+                    assert os.path.isfile(knots_name)
+                    knots_gid = []
+                    with gzip.open(knots_name, 'rb') as in_file:
+                        for line in in_file:
+                            params = line.strip().split(b' ')
+                            knots_gid.append(int(params[1])//1024)
+                    knots_gid = np.array(knots_gid)
+                    n_violation = len(np.where(violation)[0])
+                    vio_in_knots = np.in1d(gcr_gid[violation], knots_gid)
+                    print('WARNING: %d GCR galaxies were not in InstCat'
+                          % n_violation)
+                    print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
+                    print('are sprinkled: %s (%d)' % (str(are_sprinkled.all()),
+                                                      len(np.where(are_sprinkled)[0])))
+                    print('in knots: ', vio_in_knots.all())
+                    print('n: %d (%d)' % (len(np.where(vio_in_knots)[0]), len(knots_gid)))
+                    print('\n')
             if not inst_in_gcr.all():
                 violation = ~inst_in_gcr
                 n_violation = len(np.where(violation)[0])
