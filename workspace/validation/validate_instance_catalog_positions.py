@@ -158,28 +158,34 @@ if __name__ == "__main__":
 
         component_name = 'stellar_mass_%s' % component
         component_sed_name = 'sed_5467_339_%s' % component
-        has_component = np.where(np.logical_and(cat_q[component_name]>0.0,
-                                                cat_q[component_sed_name]>0.0))
+        has_component = np.logical_and(cat_q[component_name]>0.0,
+                                       cat_q[component_sed_name]>0.0)
+
+        # the sprinkler will delete disks from the InstanceCatalog
+        if component == 'disk':
+            has_component &= ~np.in1d(cat_q['galaxy_id'], sprinkled_gid,
+                                      assume_unique=True)
+
+        has_component = np.where(has_component)
+
         gcr_gid = cat_q['galaxy_id'][has_component]
         gcr_ra = cat_q['ra'][has_component]
         gcr_dec = cat_q['dec'][has_component]
         gcr_comp = cat_q[component_name][has_component]
 
         if not np.array_equal(gcr_gid, instcat_gid):
+            print("WARNING galaxy_id in GCR != galaxy_id in InstanceCatalog")
             gcr_in_inst = np.in1d(gcr_gid, instcat_gid, assume_unique=True)
             inst_in_gcr = np.in1d(instcat_gid, gcr_gid, assume_unique=True)
 
             if not gcr_in_inst.all():
                 violation = ~gcr_in_inst
-                missing_gid = gcr_gid[violation]
-                are_sprinkled = np.in1d(missing_gid, sprinkled_gid)
-                if not are_sprinkled.all() or component != 'disk':
-                    print('WARNING: %d GCR galaxies were not in InstCat'
-                          % n_violation)
-                    print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
-                    print('are sprinkled: %s (%d)' % (str(are_sprinkled.all()),
-                                                      len(np.where(are_sprinkled)[0])))
-                    print('\n')
+                print('WARNING: %d GCR galaxies were not in InstCat'
+                      % n_violation)
+                print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
+                print('are sprinkled: %s (%d)' % (str(are_sprinkled.all()),
+                                                  len(np.where(are_sprinkled)[0])))
+                print('\n')
             if not inst_in_gcr.all():
                 violation = ~inst_in_gcr
                 n_violation = len(np.where(violation)[0])
