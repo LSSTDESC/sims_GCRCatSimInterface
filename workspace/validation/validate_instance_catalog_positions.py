@@ -53,6 +53,24 @@ if __name__ == "__main__":
     if not os.path.isdir(inst_cat_dir):
         raise RuntimeError('\n%s\nis not a dir\n' % inst_cat_dir)
 
+    # Make sure no sprinkled galaxies ended up in the knots catalog
+    knots_gid = []
+    knots_name = os.path.join(inst_cat_dir, 'knots_cat_%d.txt.gz' % args.obs)
+    if not os.path.isfile(knots_name):
+        raise RuntimeError('\n%s\nis not a file\n' % knots_name)
+    with gzip.open(knots_name, 'rb') as in_file:
+        for line in in_file:
+            params = line.strip().split(b' ')
+            gid = int(params[1])//1024
+            knots_gid.append(gid)
+    knots_gid = np.array(knots_gid)
+    if len(knots_gid) == 0:
+        raise RuntimeError("There were no knots at all")
+
+    sprinkled_knots = np.in1d(knots_gid, sprinkled_gid)
+    if sprinkled_knots.any():
+        raise RuntimeError("There were knots in sprinkled systems")
+
     opsim_db = os.path.join('/global', 'projecta', 'projectdirs',
                             'lsst', 'groups', 'SSim', 'DC2',
                              'minion_1016_desc_dithered_v4_sfd.db')
