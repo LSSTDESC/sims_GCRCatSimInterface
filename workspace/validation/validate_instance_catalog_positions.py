@@ -8,7 +8,6 @@ import GCR
 import GCRCatalogs
 
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
-from lsst.sims.utils import angularSeparation
 
 if __name__ == "__main__":
 
@@ -141,29 +140,10 @@ if __name__ == "__main__":
                 print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
                 print('in knots: ', vio_in_knots.all())
                 print('n: %d (%d)' % (len(np.where(vio_in_knots)[0]), len(knots_gid)))
-                print('boresite: %e %e' % (obs.pointingRA, obs.pointingDec))
-                print('ra: ',gcr_ra[violation])
-                print('dec: ',gcr_dec[violation])
-                print('angularSep: ',
-                      angularSeparation(obs.pointingRA, obs.pointingDec,
-                                        gcr_ra[violation], gcr_dec[violation]))
-                print('stellar_mass_%s: ' % component, gcr_comp[violation])
-                vio_pix = hp.ang2pix(32,gcr_ra[violation], gcr_dec[violation],
-                                     lonlat=True,nest=False)
-                for gg, pp in zip(gcr_gid[violation], vio_pix):
-                    print(gg, pp)
                 print('\n')
             if not inst_in_gcr.all():
                 violation = ~inst_in_gcr
                 n_violation = len(np.where(violation)[0])
                 print('WARNING: %d InstCat galaxies not in GCR'
                       % n_violation)
-                print('boresite: %e %e' % (obs.pointingRA, obs.pointingDec))
-                print('ra: ',instcat_ra[violation])
-                print('dec: ',instcat_dec[violation])
-                print('angularSep: ',
-                      angularSeparation(obs.pointingRA, obs.pointingDec,
-                                        instcat_ra[violation],
-                                        instcat_dec[violation]))
-                print('gid: ',instcat_gid[violation])
                 print('\n')
