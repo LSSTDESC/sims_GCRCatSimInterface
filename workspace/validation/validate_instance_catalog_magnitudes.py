@@ -244,10 +244,12 @@ if __name__ == "__main__":
     galaxy_df = galaxy_df.iloc[valid_galaxies]
     print('cut on gid_max')
 
-    rng = np.random.RandomState(args.seed)
-    dexes = rng.choice(galaxy_df.index.values, size=args.nrows, replace=False)
-
-    galaxy_df = galaxy_df.loc[dexes]
+    if args.nrows>0:
+        rng = np.random.RandomState(args.seed)
+        dexes = rng.choice(galaxy_df.index.values,
+                           size=args.nrows,
+                           replace=False)
+        galaxy_df = galaxy_df.loc[dexes]
 
     galaxy_df = galaxy_df.sort_index()
     invalid_knots = np.where(np.logical_not(
