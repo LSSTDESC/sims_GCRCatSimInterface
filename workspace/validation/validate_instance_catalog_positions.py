@@ -57,7 +57,8 @@ if __name__ == "__main__":
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image_addon_knots')
     cat_q = cat.get_quantities(['galaxy_id', 'ra', 'dec',
-                                'stellar_mass_bulge', 'stellar_mass_disk'],
+                                'stellar_mass_bulge', 'stellar_mass_disk',
+                                'sed_5467_339_disk', 'sed_5467_339_bulge'],
                                filters=[(lambda x: x<=29.0, 'mag_r_lsst')],
                                native_filters=[healpix_query])
 
@@ -112,7 +113,9 @@ if __name__ == "__main__":
         instcat_dec = instcat_dec[sorted_dex]
 
         component_name = 'stellar_mass_%s' % component
-        has_component = np.where(cat_q[component_name]>0.0)
+        component_sed_name = 'sed_5467_339_%s' % component
+        has_component = np.where(np.logical_and(cat_q[component_name]>0.0,
+                                                cat_q[component_sed_name]>0.0))
         gcr_gid = cat_q['galaxy_id'][has_component]
         gcr_ra = cat_q['ra'][has_component]
         gcr_dec = cat_q['dec'][has_component]
