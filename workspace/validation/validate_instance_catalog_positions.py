@@ -174,7 +174,6 @@ if __name__ == "__main__":
         gcr_comp = cat_q[component_name][has_component]
 
         if not np.array_equal(gcr_gid, instcat_gid):
-            print("WARNING galaxy_id in GCR != galaxy_id in InstanceCatalog")
             gcr_in_inst = np.in1d(gcr_gid, instcat_gid, assume_unique=True)
             inst_in_gcr = np.in1d(instcat_gid, gcr_gid, assume_unique=True)
 
@@ -192,6 +191,8 @@ if __name__ == "__main__":
                 print('WARNING: %d InstCat galaxies not in GCR'
                       % n_violation)
                 print('\n')
+
+            raise RuntimeError("WARNING galaxy_id in GCR != galaxy_id in InstanceCatalog")
 
         # now that we have verified all of the galaxies that should be in
         # the catalog are in the catalog, we will verify their positions by
