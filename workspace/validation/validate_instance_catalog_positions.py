@@ -156,24 +156,11 @@ if __name__ == "__main__":
                 missing_gid = gcr_gid[violation]
                 are_sprinkled = np.in1d(missing_gid, sprinkled_gid)
                 if not are_sprinkled.all() or component != 'disk':
-                    knots_name = os.path.join(inst_cat_dir,
-                                              'knots_cat_%d.txt.gz' % args.obs)
-                    assert os.path.isfile(knots_name)
-                    knots_gid = []
-                    with gzip.open(knots_name, 'rb') as in_file:
-                        for line in in_file:
-                            params = line.strip().split(b' ')
-                            knots_gid.append(int(params[1])//1024)
-                    knots_gid = np.array(knots_gid)
-                    n_violation = len(np.where(violation)[0])
-                    vio_in_knots = np.in1d(gcr_gid[violation], knots_gid)
                     print('WARNING: %d GCR galaxies were not in InstCat'
                           % n_violation)
                     print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
                     print('are sprinkled: %s (%d)' % (str(are_sprinkled.all()),
                                                       len(np.where(are_sprinkled)[0])))
-                    print('in knots: ', vio_in_knots.all())
-                    print('n: %d (%d)' % (len(np.where(vio_in_knots)[0]), len(knots_gid)))
                     print('\n')
             if not inst_in_gcr.all():
                 violation = ~inst_in_gcr
