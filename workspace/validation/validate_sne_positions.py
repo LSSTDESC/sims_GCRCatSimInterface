@@ -34,10 +34,15 @@ if __name__ == "__main__":
     disk_name = os.path.join(inst_cat_dir, 'disk_gal_cat_%d.txt.gz' % args.obs)
     if not os.path.isfile(disk_name):
         raise RuntimeError('\n%s\nis not a file\n' % disk_name)
+
     bulge_name = os.path.join(inst_cat_dir, 'bulge_gal_cat_%d.txt.gz' %
                               args.obs)
     if not os.path.isfile(bulge_name):
         raise RuntimeError('\n%s\nis not a file\n' % bulge_name)
+
+    sne_name = os.path.join(inst_cat_dir, 'sne_cat_%d.txt.gz' % args.obs)
+    if not os.path.isfile(sne_name):
+        raise RuntimeError('\n%s\nis not a file\n' % sne_name)
 
     disk_df = pd.read_csv(disk_name, delimiter=' ',
                           compression='gzip', names=sersic_colnames,
