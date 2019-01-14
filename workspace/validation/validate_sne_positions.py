@@ -37,6 +37,7 @@ if __name__ == "__main__":
     gal_cat = GCRCatalogs.load_catalog(args.cosmoDC2)
 
     t_start = time.time()
+    normalized_radius = []
     for i_pix, healpix_pixel in enumerate(healpix_list):
         spatial_query = GCRQuery('healpix_pixel==%d' % healpix_pixel)
 
@@ -67,6 +68,35 @@ if __name__ == "__main__":
         sn_dec = sn_dec[sorted_dex]
 
         np.testing.assert_array_equal(sn_gid, gal_q['galaxy_id'])
+
+        for i_gal in range(len(sn_gid)):
+            if gal_q['size_disk_true'][i_gal] > gal_q['size_bulge_true'][i_gal]:
+                comp = 'disk'
+            else:
+                comp = 'bulge'
+
+            ra = gal_q['ra'][i_gal]
+            dec = gal_q['dec'][i_gal]
+            pa = np.radians(gal_q['position_angle_true'][i_gal])
+            # vectors will be in (RA, Dec) form
+            major_axis = np.array([np.sin(pa), np.cos(pa)])
+            minor_axis = np.array([np.cos(pa), -np.sin(pa)])
+
+            sn_vec = np.array([(sn_ra[i_gal]-ra)/np.cos(np.radians(dec)),
+                               sn_dec[i_gal]-dec])
+
+            aa = np.dot(sn_vec, major_axis)*3600.0 # converting to arcsec
+            bb = np.dot(sn_vec, minor_axis)*3600.0
+
+            rrsq = ((aa/gal_q['size_%s_true' % comp][i_gal])**2 +
+                    (bb/gal_q['size_minor_%s_true' % comp][i_gal])**2)
+            normalized_radius.append(rrsq)
+
         duration = time.time()-t_start
         per = duration/(i_pix+1)
         print('did %d in %e; %e' % (i_pix+1, duration, per))
+
+    normalized_radius = np.sqrt(np.array(normalized_radius))
+    with open('rr_out.txt', 'w') as out_file:
+        for rr in normalized_radius:
+            out_file.write('%e\n' % rr)
