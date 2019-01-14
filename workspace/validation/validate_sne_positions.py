@@ -18,18 +18,18 @@ if __name__ == "__main__":
     if not os.path.isdir(inst_cat_dir):
         raise RuntimeError("\n%s\nis not a dir\n" % inst_cat_dir)
 
-    colnames = ['obj', 'uniqueID', 'ra', 'dec',
-                'magnorm', 'sed', 'redshift', 'g1', 'g2',
-                'kappa', 'dra', 'ddec', 'src_type',
-                'major_arcsec', 'minor_arcsec',
-                'pa_deg', 'sindex', 'dust_rest', 'rest_av', 'rest_rv',
-                'dust_obs', 'obs_av', 'obs_rv']
+    sersic_colnames = ['obj', 'uniqueID', 'ra', 'dec',
+                       'magnorm', 'sed', 'redshift', 'g1', 'g2',
+                       'kappa', 'dra', 'ddec', 'src_type',
+                       'major_arcsec', 'minor_arcsec',
+                       'pa_deg', 'sindex', 'dust_rest', 'rest_av', 'rest_rv',
+                       'dust_obs', 'obs_av', 'obs_rv']
 
-    col_types = {'magnorm': float, 'redshift': float,
-                 'rest_av': float, 'rest_rv': float,
-                 'sed': bytes, 'uniqueID': int,
-                 'major_arcsec': float, 'minor_arcsec': float,
-                 'pa_deg': float}
+    sersic_col_types = {'magnorm': float, 'redshift': float,
+                        'rest_av': float, 'rest_rv': float,
+                        'sed': bytes, 'uniqueID': int,
+                        'major_arcsec': float, 'minor_arcsec': float,
+                        'pa_deg': float}
 
     disk_name = os.path.join(inst_cat_dir, 'disk_gal_cat_%d.txt.gz' % args.obs)
     if not os.path.isfile(disk_name):
@@ -40,8 +40,8 @@ if __name__ == "__main__":
         raise RuntimeError('\n%s\nis not a file\n' % bulge_name)
 
     disk_df = pd.read_csv(disk_name, delimiter=' ',
-                          compression='gzip', names=colnames,
-                          dtype=col_types, nrows=None)
+                          compression='gzip', names=sersic_colnames,
+                          dtype=sersic_col_types, nrows=None)
 
     disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024,
                                      index=disk_df.index)
@@ -49,8 +49,8 @@ if __name__ == "__main__":
     disk_df.set_index('galaxy_id')
 
     bulge_df = pd.read_csv(bulge_name, delimiter=' ',
-                           compression='gzip', names=colnames,
-                           dtype=col_types, nrows=None)
+                           compression='gzip', names=sersic_colnames,
+                           dtype=sersic_col_types, nrows=None)
 
     bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024,
                                       index=bulge_df.index)
