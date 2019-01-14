@@ -29,6 +29,7 @@ if __name__ == "__main__":
         query = "SELECT galaxy_id, snra_in, sndec_in FROM sne_params"
         sn_data = sn_c.execute(query).fetchall()
         sn_data = np.array(sn_data).transpose()
+        sn_data[0] = sn_data[0].astype(int)
 
     cat_config = GCRCatalogs.get_catalog_config(args.cosmoDC2)
     healpix_list = np.sort(cat_config['healpix_pixels'])
