@@ -38,6 +38,8 @@ if __name__ == "__main__":
 
     t_start = time.time()
     normalized_radius = []
+    normalized_aa = []
+    normalized_bb = []
     for i_pix, healpix_pixel in enumerate(healpix_list):
         spatial_query = GCRQuery('healpix_pixel==%d' % healpix_pixel)
 
@@ -88,9 +90,13 @@ if __name__ == "__main__":
             aa = np.dot(sn_vec, major_axis)*3600.0 # converting to arcsec
             bb = np.dot(sn_vec, minor_axis)*3600.0
 
-            rrsq = ((aa/gal_q['size_%s_true' % comp][i_gal])**2 +
-                    (bb/gal_q['size_minor_%s_true' % comp][i_gal])**2)
+            aa /= gal_q['size_%s_true' % comp][i_gal]
+            bb /= gal_q['size_minor_%s_true' % comp][i_gal]
+
+            rrsq = (aa**2 + bb**2)
             normalized_radius.append(rrsq)
+            normalized_aa.append(aa)
+            normalized_bb.append(bb)
 
         duration = time.time()-t_start
         per = duration/(i_pix+1)
@@ -98,5 +104,5 @@ if __name__ == "__main__":
 
     normalized_radius = np.sqrt(np.array(normalized_radius))
     with open('rr_out.txt', 'w') as out_file:
-        for rr in normalized_radius:
-            out_file.write('%e\n' % rr)
+        for rr, aa, bb in zip(normalized_radius, normalized_aa, normalized_bb):
+            out_file.write('%e %e %e\n' % (rr, aa, bb))
