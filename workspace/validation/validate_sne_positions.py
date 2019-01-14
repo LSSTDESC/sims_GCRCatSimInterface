@@ -40,6 +40,7 @@ if __name__ == "__main__":
     normalized_radius = []
     normalized_aa = []
     normalized_bb = []
+    delta_pa = []
     for i_pix, healpix_pixel in enumerate(healpix_list):
         spatial_query = GCRQuery('healpix_pixel==%d' % healpix_pixel)
 
@@ -93,6 +94,12 @@ if __name__ == "__main__":
             aa /= gal_q['size_%s_true' % comp][i_gal]
             bb /= gal_q['size_minor_%s_true' % comp][i_gal]
 
+            sn_vec /= np.sqrt(np.dot(sn_vec, sn_vec))
+            sne_pa = np.arctan2(sn_vec[0], sn_vec[1])%(2.0*np.pi)
+
+            d_pa = np.degrees(pa-sne_pa)
+            delta_pa.append(d_pa)
+
             rrsq = (aa**2 + bb**2)
             normalized_radius.append(rrsq)
             normalized_aa.append(aa)
@@ -104,5 +111,6 @@ if __name__ == "__main__":
 
     normalized_radius = np.sqrt(np.array(normalized_radius))
     with open('rr_out.txt', 'w') as out_file:
-        for rr, aa, bb in zip(normalized_radius, normalized_aa, normalized_bb):
-            out_file.write('%e %e %e\n' % (rr, aa, bb))
+        for rr, aa, bb, d_pa in \
+        zip(normalized_radius, normalized_aa, normalized_bb, delta_pa):
+            out_file.write('%e %e %e %e\n' % (rr, aa, bb, d_pa))
