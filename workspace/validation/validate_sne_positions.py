@@ -49,7 +49,7 @@ if __name__ == "__main__":
                                        native_filters = [spatial_query])
 
         sn_in_gal = np.where(np.in1d(sn_data[0], gal_q['galaxy_id']))
-        sn_gid = sn_data[0][sn_in_gal]
+        sn_gid = sn_data[0][sn_in_gal].astype(int)
         sn_ra = sn_data[1][sn_in_gal]
         sn_dec = sn_data[2][sn_in_gal]
 
