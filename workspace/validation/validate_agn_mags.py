@@ -38,6 +38,29 @@ if __name__ == "__main__":
     if not os.path.isfile(agn_name):
         raise RuntimeError('\n%s\nis not a file\n' % agn_name)
 
+    phosim_name = os.path.join(inst_cat_dir, 'phosim_cat_%d.txt' % args.obs)
+    if not os.path.isfile(agn_name):
+        raise RuntimeError('\n%s\nis not a file\n' % phosim_name)
+
+    mjd = None
+    bandpass = None
+    with open(phosim_name, 'r') as in_file:
+        for line in in_file:
+            params = line.strip().split()
+            if params[0] == 'mjd':
+                mjd = float(params[1])
+            elif params[0] == 'filter':
+                bandpass = int(params[1])
+
+            if mjd is not None and bandpass is not None:
+                break
+
+    if mjd is None:
+        raise RuntimeError("Did not read MJD")
+
+    if bandpass is None:
+        raise RuntimeError("Did not read bandpass")
+
     agn_colnames = ['obj', 'uniqueID', 'ra', 'dec',
                     'magnorm', 'sed', 'redshift', 'g1', 'g2',
                     'kappa', 'dra', 'ddec', 'src_type',
@@ -68,3 +91,25 @@ if __name__ == "__main__":
         agn_varParamStr = agn_varParamStr[valid_agn]
 
         del agn_params
+
+    sorted_dex = np.argsort(agn_gid)
+    agn_gid = agn_gid[sorted_dex]
+    agn_magnorm = agn_magnorm[sorted_dex]
+    agn_varParamStr = agn_varParamStr[sorted_dex]
+
+    instcat_gid = agn_df['galaxy_id'].values
+    instcat_magnorm = agn_df['magnorm'].values
+
+    valid = np.where(instcat_gid<1.0e11)
+    instcat_gid = instcat_gid[valid]
+    instcat_magnorm = instcat_magnorm[valid]
+    sorted_dex = np.argsort(instcat_gid)
+    instcat_gid = instcat_gid[sorted_dex]
+    instcat_magnorm = instcat_magnorm[sorted_dex]
+
+    if not np.array_equal(instcat_gid, agn_gid):
+        raise RuntimeError("galaxy_id arrays are not equal")
+
+    agn_simulator = ExtraGalacticVariabilityModels()
+
+    agn_params = []
