@@ -53,3 +53,18 @@ if __name__ == "__main__":
 
     agn_df['galaxy_id'] = pd.Series(agn_df['uniqueID']//1024,
                                     index=agn_df.index)
+
+    with sqlite3.connect(args.agn_db) as agn_params_conn:
+        agn_params_cursor = agn_params_conn.cursor()
+        query = 'SELECT galaxy_id, magNorm, varParamStr FROM agn_params'
+        agn_params = agn_params_cursor.execute(query).fetchall()
+        agn_params = np.array(agn_params).transpose()
+        agn_gid = agn_params[0].astype(int)
+        agn_magnorm = agn_params[1].astype(float)
+        agn_varParamStr = agn_params[2]
+        valid_agn = np.where(np.in1d(agn_gid, agn_df['galaxy_id'].values))
+        agn_gid = agn_gid[valid_agn]
+        agn_magnorm = agn_magnorm[valid_agn]
+        agn_varParamStr = agn_varParamStr[valid_agn]
+
+        del agn_params
