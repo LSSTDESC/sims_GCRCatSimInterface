@@ -1,8 +1,7 @@
 import os
 import sqlite3
 import numpy as np
-import GCRCatalogs
-from GCR import GCRQuery
+import pandas as pd
 
 from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 
@@ -30,3 +29,27 @@ if __name__ == "__main__":
 
     if not os.path.isfile(args.agn_db):
         raise RuntimeError('\n%s\nis not a file\n' % args.agn_db)
+
+    inst_cat_dir = os.path.join(args.cat_dir, '%.8d' % args.obs)
+    if not os.path.isdir(inst_cat_dir):
+        raise RuntimeError('\n%s\nis not a dir\n' % inst_cat_dir)
+
+    agn_name = os.path.join(inst_cat_dir, 'agn_gal_cat_%d.txt.gz' % args.obs)
+    if not os.path.isfile(agn_name):
+        raise RuntimeError('\n%s\nis not a file\n' % agn_name)
+
+    agn_colnames = ['obj', 'uniqueID', 'ra', 'dec',
+                    'magnorm', 'sed', 'redshift', 'g1', 'g2',
+                    'kappa', 'dra', 'ddec', 'src_type',
+                    'dust_rest', 'dust_obs', 'obs_av', 'obs_rv']
+
+    agn_col_types = {'ra': float, 'dec':float,
+                     'magnorm': float, 'redshift': float,
+                     'sed': bytes, 'uniqueID': int}
+
+    agn_df = pd.read_csv(agn_name, delimiter=' ',
+                         compression='gzip', names=agn_colnames,
+                         dtype=agn_col_types, nrows=None)
+
+    agn_df['galaxy_id'] = pd.Series(agn_df['uniqueID']//1024,
+                                    index=agn_df.index)
