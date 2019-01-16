@@ -45,6 +45,7 @@ if __name__ == "__main__":
 
     mjd = None
     bandpass = None
+    vistime = None
     with open(phosim_name, 'r') as in_file:
         for line in in_file:
             params = line.strip().split()
@@ -52,8 +53,13 @@ if __name__ == "__main__":
                 mjd = float(params[1])
             elif params[0] == 'filter':
                 bandpass = int(params[1])
+            elif params[0] == 'vistime':
+                vistime = float(params[1])
 
-            if mjd is not None and bandpass is not None:
+            if (mjd is not None and
+                bandpass is not None and
+                vistime is not None):
+
                 break
 
     if mjd is None:
@@ -61,6 +67,11 @@ if __name__ == "__main__":
 
     if bandpass is None:
         raise RuntimeError("Did not read bandpass")
+
+    if vistime is None:
+        raise RuntimeError("Did not read vistime")
+
+    mjd -= 0.5*vistime/86400.0  # because of PhoSim/CatSim conventions
 
     agn_colnames = ['obj', 'uniqueID', 'ra', 'dec',
                     'magnorm', 'sed', 'redshift', 'g1', 'g2',
