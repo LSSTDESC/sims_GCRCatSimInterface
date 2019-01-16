@@ -546,15 +546,6 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
 
     @cached
     def get_magNorm(self):
-        gid = self.column_by_name('galaxy_id')
-        bogey = 2563036006
-        dx = np.where(gid==bogey)
-        for bp in 'ugrizy':
-            dmag = self.column_by_name('delta_lsst_%s' % bp)
-            if len(dx[0])>0:
-                print('delta_%s: %e' % (bp,dmag[dx]))
-        if len(dx[0])>0:
-            print('mjd %e' % (self.obs_metadata.mjd.TAI))
         return self.column_by_name('agnMagNorm')
 
     @cached
