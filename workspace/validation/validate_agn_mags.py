@@ -135,5 +135,9 @@ if __name__ == "__main__":
                                    agn_params, mjd, redshift=instcat_z)
 
     d_mag_instcat = instcat_magnorm - agn_magnorm
-    print('max err %e' % (np.max(np.abs(d_mag-d_mag_instcat))))
-    np.testing.assert_array_equal(d_mag_instcat, d_mag[bandpass])
+    error = np.abs(d_mag[bandpass]-d_mag_instcat)
+    max_error = error.max()
+    print('max err %e' % (max_error))
+    if np.max(error)>1.0e-5:
+        raise RuntimeError("AGN validation failed: max mag error %e" %
+                           max_error)
