@@ -2,6 +2,7 @@ import os
 import sqlite3
 import numpy as np
 import pandas as pd
+import json
 
 from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 
@@ -113,6 +114,20 @@ if __name__ == "__main__":
     if not np.array_equal(instcat_gid, agn_gid):
         raise RuntimeError("galaxy_id arrays are not equal")
 
+    if len(instcat_gid) == 0:
+        raise RuntimeError("no AGN to test")
+
     agn_simulator = ExtraGalacticVariabilityModels()
 
-    agn_params = []
+    agn_params = None
+    for var in agn_varParamStr:
+        var_dict = json.loads(var)
+        if agn_params is None:
+            agn_params = {}
+            for k in var_dict['p']:
+                agn_params[k] = []
+        for k in var_dict['p']:
+            agn_params[k].append(var_dict['p'][k])
+
+    for k in agn_params:
+        agn_params[k] = np.array(agn_params[k])
