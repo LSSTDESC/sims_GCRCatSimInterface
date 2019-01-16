@@ -117,8 +117,6 @@ if __name__ == "__main__":
     if len(instcat_gid) == 0:
         raise RuntimeError("no AGN to test")
 
-    agn_simulator = ExtraGalacticVariabilityModels()
-
     agn_params = None
     for var in agn_varParamStr:
         var_dict = json.loads(var)
@@ -131,3 +129,11 @@ if __name__ == "__main__":
 
     for k in agn_params:
         agn_params[k] = np.array(agn_params[k])
+
+    agn_simulator = ExtraGalacticVariabilityModels()
+    d_mag = agn_simulator.applyAgn([np.arange(len(agn_gid), dtype=int)],
+                                   agn_params, mjd, redshift=instcat_z)
+
+    d_mag_instcat = instcat_magnorm - agn_magnorm
+    print('max err %e' % (np.max(np.abs(d_mag-d_mag_instcat))))
+    np.testing.assert_array_equal(d_mag_instcat, d_mag[bandpass])
