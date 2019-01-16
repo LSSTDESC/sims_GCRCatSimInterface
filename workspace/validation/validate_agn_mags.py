@@ -99,13 +99,16 @@ if __name__ == "__main__":
 
     instcat_gid = agn_df['galaxy_id'].values
     instcat_magnorm = agn_df['magnorm'].values
+    instcat_z = agn_df['redshift'].values
 
     valid = np.where(instcat_gid<1.0e11)
     instcat_gid = instcat_gid[valid]
     instcat_magnorm = instcat_magnorm[valid]
+    instcat_z = instcat_z[valid]
     sorted_dex = np.argsort(instcat_gid)
     instcat_gid = instcat_gid[sorted_dex]
     instcat_magnorm = instcat_magnorm[sorted_dex]
+    instcat_z = instcat_z[sorted_dex]
 
     if not np.array_equal(instcat_gid, agn_gid):
         raise RuntimeError("galaxy_id arrays are not equal")
