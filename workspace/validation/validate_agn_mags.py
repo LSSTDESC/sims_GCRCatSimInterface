@@ -8,6 +8,14 @@ from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 
 import argparse
 
+class agnSimulator(ExtraGalacticVariabilityModels):
+
+    def column_by_name(self, arg):
+        if arg == 'galaxy_id':
+            return self._galaxy_id
+        else:
+            raise RuntimeError("bullocks")
+
 if __name__ == "__main__":
 
     project_dir = os.path.join('/global/projecta/projectdirs',
@@ -45,6 +53,7 @@ if __name__ == "__main__":
 
     mjd = None
     bandpass = None
+    vistime = None
     with open(phosim_name, 'r') as in_file:
         for line in in_file:
             params = line.strip().split()
@@ -52,8 +61,10 @@ if __name__ == "__main__":
                 mjd = float(params[1])
             elif params[0] == 'filter':
                 bandpass = int(params[1])
+            elif params[0] == 'vistime':
+                vistime = float(params[1])
 
-            if mjd is not None and bandpass is not None:
+            if mjd is not None and bandpass is not None and vistime is not None:
                 break
 
     if mjd is None:
@@ -61,6 +72,8 @@ if __name__ == "__main__":
 
     if bandpass is None:
         raise RuntimeError("Did not read bandpass")
+
+    mjd -= (0.5*vistime)/86400.0
 
     agn_colnames = ['obj', 'uniqueID', 'ra', 'dec',
                     'magnorm', 'sed', 'redshift', 'g1', 'g2',
@@ -111,6 +124,20 @@ if __name__ == "__main__":
     instcat_magnorm = instcat_magnorm[sorted_dex]
     instcat_z = instcat_z[sorted_dex]
 
+    rng = np.random.RandomState(22)
+    dex = np.arange(len(agn_gid), dtype=int)
+    rng.shuffle(dex)
+
+    instcat_gid = instcat_gid[dex]
+    instcat_z = instcat_z[dex]
+    instcat_magnorm = instcat_magnorm[dex]
+    agn_gid = agn_gid[dex]
+    new_vps = []
+    for dx in dex:
+        new_vps.append(agn_varParamStr[dx])
+    agn_magnorm = agn_magnorm[dex]
+    agn_varParamStr = new_vps
+
     if not np.array_equal(instcat_gid, agn_gid):
         raise RuntimeError("galaxy_id arrays are not equal")
 
@@ -130,10 +157,23 @@ if __name__ == "__main__":
     for k in agn_params:
         agn_params[k] = np.array(agn_params[k])
 
-    agn_simulator = ExtraGalacticVariabilityModels()
+    #agn_simulator = ExtraGalacticVariabilityModels()
+    agn_simulator = agnSimulator()
+    agn_simulator._galaxy_id = agn_gid
     d_mag = agn_simulator.applyAgn([np.arange(len(agn_gid), dtype=int)],
                                    agn_params, mjd, redshift=instcat_z)
 
+    d_mag = d_mag[bandpass]
     d_mag_instcat = instcat_magnorm - agn_magnorm
-    print('max err %e' % (np.max(np.abs(d_mag-d_mag_instcat))))
-    np.testing.assert_array_equal(d_mag_instcat, d_mag[bandpass])
+    error = np.abs(d_mag-d_mag_instcat)
+    max_dex = np.argmax(error)
+    print('max err %e' % (error[max_dex]))
+    print('is %e shld %e' % (d_mag_instcat[max_dex], d_mag[max_dex]))
+    print('magnorm %e %e' % (instcat_magnorm[max_dex], agn_magnorm[max_dex]))
+    print('agn_tau %e' % agn_params['agn_tau'][max_dex])
+    print('gid %d %d' % (agn_gid[max_dex], instcat_gid[max_dex]))
+    print('mjd %e' % mjd)
+    print('redshift %e' % instcat_z[max_dex])
+    for k in agn_params:
+        print('%s: %e' % (k, agn_params[k][max_dex]))
+    #np.testing.assert_array_equal(d_mag_instcat, d_mag)
