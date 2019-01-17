@@ -85,7 +85,7 @@ if __name__ == "__main__":
             major_axis = np.array([np.sin(pa), np.cos(pa)])
             minor_axis = np.array([np.cos(pa), -np.sin(pa)])
 
-            sn_vec = np.array([(sn_ra[i_gal]-ra)/np.cos(np.radians(dec)),
+            sn_vec = np.array([(sn_ra[i_gal]-ra)*np.cos(np.radians(dec)),
                                sn_dec[i_gal]-dec])
 
             aa = np.dot(sn_vec, major_axis)*3600.0 # converting to arcsec
