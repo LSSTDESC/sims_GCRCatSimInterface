@@ -293,7 +293,11 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
         if out_dict[k] > d_mag_max:
             d_mag_max = out_dict[k]
 
-    print('\nall done %d' % obsid)
+    if d_mag_max > 1.0e-5:
+        raise RuntimeError("\nobsHistID failed magnitud validation\n"
+                           "d_mag_max %e" % d_mag_max)
+
+    print('\nobsHistID %d passed magnitude validation' % obsid)
     print('d_mag_max %e' % d_mag_max)
     print('took %e' % (time.time()-t_start))
 
