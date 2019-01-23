@@ -44,7 +44,7 @@ def get_sed(name, magnorm, redshift, av, rv):
     return ss
 
 
-def validate_mag(row, mag_true):
+def validate_mag(row, mag_true, bandpass):
 
     if np.isnan(row['magnorm_disk']):
         disk_flux = 0.0
@@ -77,34 +77,29 @@ def validate_mag(row, mag_true):
     d_mag = np.abs(tot_mag-mag_true)
     return d_mag
 
-def validate_batch(mag_true_arr, galaxy_arr, out_dict):
+def validate_batch(mag_true_arr, galaxy_arr, bandpass, out_dict):
     pid = os.getpid()
     d_mag_max = 0.0
     for mag_true, (index, galaxy) in zip(mag_true_arr, galaxy_arr.iterrows()):
-        d_mag = validate_mag(galaxy, mag_true)
+        d_mag = validate_mag(galaxy, mag_true, bandpass)
         if d_mag>d_mag_max:
             d_mag_max = d_mag
 
     out_dict[pid] = d_mag_max
 
 
-if __name__ == "__main__":
+def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
+    """
+    Parameters
+    ----------
+    cat_dir is the parent dir of $obsid
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--obs', type=int, default=None,
-                        help='obsHistID')
-    parser.add_argument('--nrows', type=int, default=100000,
-                        help='number of (randomly chosen) rows to '
-                        'validate (if negative, will validate all '
-                        'rows; default=10**5)')
-    parser.add_argument('--seed', type=int, default=9812,
-                        help='seed for random number generator (default=9812; '
-                        'only needed if nrows>0)')
-    parser.add_argument('--cat_dir', type=str, default=None,
-                        help='parent directory of $obsHistID/ directory')
+    obsid is the obsHistID of the pointing
 
-    args = parser.parse_args()
+    seed is the seed for a random number generator
 
+    nrows is the number of galaxies to test (if <0, test all of them)
+    """
     agn_dtype = np.dtype([('galaxy_id', int), ('twinkles_id', int)])
     agn_cache = np.genfromtxt(os.path.join(os.environ['TWINKLES_DIR'], 'data',
                                            'cosmoDC2_v1.1.4_agn_cache.csv'),
@@ -132,11 +127,11 @@ if __name__ == "__main__":
                  'rest_av': float, 'rest_rv': float,
                  'sed': bytes, 'uniqueID': int}
 
-    assert os.path.isdir(args.cat_dir)
-    data_dir = os.path.join(args.cat_dir,'%.8d' % args.obs)
+    assert os.path.isdir(cat_dir)
+    data_dir = os.path.join(cat_dir,'%.8d' % obsid)
     assert os.path.isdir(data_dir)
 
-    phosim_file = os.path.join(data_dir, 'phosim_cat_%d.txt' % args.obs)
+    phosim_file = os.path.join(data_dir, 'phosim_cat_%d.txt' % obsid)
     assert os.path.isfile(phosim_file)
     bandpass_name = None
     bandpass_name_list = 'ugrizy'
@@ -154,14 +149,14 @@ if __name__ == "__main__":
 
     bandpass = hw_dict[bandpass_name]
 
-    disk_file = os.path.join(data_dir, 'disk_gal_cat_%d.txt.gz' % args.obs)
+    disk_file = os.path.join(data_dir, 'disk_gal_cat_%d.txt.gz' % obsid)
     if not os.path.isfile(disk_file):
         raise RuntimeError("%s is not a file" % disk_file)
 
-    bulge_file = os.path.join(data_dir, 'bulge_gal_cat_%d.txt.gz' % args.obs)
+    bulge_file = os.path.join(data_dir, 'bulge_gal_cat_%d.txt.gz' % obsid)
     assert os.path.isfile(bulge_file)
 
-    knots_file = os.path.join(data_dir, 'knots_cat_%d.txt.gz' % args.obs)
+    knots_file = os.path.join(data_dir, 'knots_cat_%d.txt.gz' % obsid)
     assert os.path.isfile(knots_file)
 
     disk_df = pd.read_csv(disk_file, delimiter=' ',
@@ -251,10 +246,10 @@ if __name__ == "__main__":
     galaxy_df = galaxy_df.iloc[valid_galaxies]
     print('cut on gid_max')
 
-    if args.nrows>0:
-        rng = np.random.RandomState(args.seed)
+    if nrows>0:
+        rng = np.random.RandomState(seed)
         dexes = rng.choice(galaxy_df.index.values,
-                           size=args.nrows,
+                           size=nrows,
                            replace=False)
         galaxy_df = galaxy_df.loc[dexes]
 
@@ -304,18 +299,42 @@ if __name__ == "__main__":
         mag_true = mags[i_start:i_start+d_proc]
         galaxy_arr = galaxy_df.iloc[i_start:i_start+d_proc]
         p = multiprocessing.Process(target=validate_batch,
-                                    args=(mag_true, galaxy_arr, out_dict))
+                                    args=(mag_true, galaxy_arr,
+                                          bandpass, out_dict))
         p.start()
         p_list.append(p)
 
     for p in p_list:
         p.join()
 
+    assert len(list(out_dict.keys())) > 0
+
     d_mag_max = 0.0
     for k in out_dict.keys():
         if out_dict[k] > d_mag_max:
             d_mag_max = out_dict[k]
 
-    print('\nall done %d' % args.obs)
+    print('\nall done %d' % obsid)
     print('d_mag_max %e' % d_mag_max)
     print('took %e' % (time.time()-t_start))
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--obs', type=int, default=None,
+                        help='obsHistID')
+    parser.add_argument('--nrows', type=int, default=100000,
+                        help='number of (randomly chosen) rows to '
+                        'validate (if negative, will validate all '
+                        'rows; default=10**5)')
+    parser.add_argument('--seed', type=int, default=9812,
+                        help='seed for random number generator (default=9812; '
+                        'only needed if nrows>0)')
+    parser.add_argument('--cat_dir', type=str, default=None,
+                        help='parent directory of $obsHistID/ directory')
+
+    args = parser.parse_args()
+
+    validate_instance_catalog_magnitudes(args.cat_dir, args.obs,
+                                         seed=args.seed,
+                                         nrows=args.nrows)
