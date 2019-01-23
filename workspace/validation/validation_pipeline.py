@@ -1,0 +1,3 @@
+from ic_mags import validate_instance_catalog_magnitudes
+from ic_pos import validate_instance_catalog_positions
+from ic_agn import validate_agn_mags
