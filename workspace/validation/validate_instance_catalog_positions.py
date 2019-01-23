@@ -133,7 +133,7 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
         instcat_gid = []
         instcat_ra = []
         instcat_dec = [] 
-        print('opening %s' % file_name)
+        print('validating positions in %s' % file_name)
         with gzip.open(full_name, 'rb') as in_file:
             for line in in_file:
                 params = line.strip().split(b' ')
@@ -227,6 +227,7 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
                 raise RuntimeError("dot products were off %e %e %e" %
                                    (delta.min(), np.median(delta), delta.max()))
 
+    print('\n%s\npassed position validation\n' % full_name)
 
 if __name__ == "__main__":
 
