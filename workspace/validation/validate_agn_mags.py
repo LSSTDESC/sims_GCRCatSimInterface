@@ -138,10 +138,13 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
     d_mag_instcat = instcat_magnorm - agn_magnorm
     error = np.abs(d_mag[bandpass]-d_mag_instcat)
     max_error = error.max()
-    print('max err %e' % (max_error))
     if np.max(error)>1.0e-5:
-        raise RuntimeError("AGN validation failed: max mag error %e" %
-                           max_error)
+        raise RuntimeError("\n%s\nAGN validation failed: max mag error %e" %
+                           (agn_name, max_error))
+
+    print('\n%s\npassed AGN validation' % agn_name)
+    print('max err %e' % (max_error))
+
 
 if __name__ == "__main__":
 
