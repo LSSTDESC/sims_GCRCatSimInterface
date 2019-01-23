@@ -8,38 +8,28 @@ from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 
 import argparse
 
-if __name__ == "__main__":
+def validate_agn_mags(cat_dir, obsid, agn_db):
+    """
+    Parameters
+    ----------
+    cat_dir is the parent dir of $obsid
 
-    project_dir = os.path.join('/global/projecta/projectdirs',
-                               'lsst/groups/SSim/DC2/cosmoDC2_v1.1.4')
+    obsid is the obsHistID of the pointing (an int)
 
-    default_agn_db = os.path.join(project_dir,
-                                  'agn_db_mbh7_mi30_sf4.db')
+    agn_db is the database of AGN parameters
+    """
+    if not os.path.isfile(agn_db):
+        raise RuntimeError('\n%s\nis not a file\n' % agn_db)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--cat_dir', type=str, default=None,
-                        help='parent directory of $obsHistID/')
-    parser.add_argument('--obs', type=int, default=None,
-                        help='obsHistID of pointing')
-    parser.add_argument('--agn_db', type=str,
-                        default=default_agn_db,
-                        help='Name of agn parameters db\n'
-                        '(default %s)' % default_agn_db)
-
-    args = parser.parse_args()
-
-    if not os.path.isfile(args.agn_db):
-        raise RuntimeError('\n%s\nis not a file\n' % args.agn_db)
-
-    inst_cat_dir = os.path.join(args.cat_dir, '%.8d' % args.obs)
+    inst_cat_dir = os.path.join(cat_dir, '%.8d' % obsid)
     if not os.path.isdir(inst_cat_dir):
         raise RuntimeError('\n%s\nis not a dir\n' % inst_cat_dir)
 
-    agn_name = os.path.join(inst_cat_dir, 'agn_gal_cat_%d.txt.gz' % args.obs)
+    agn_name = os.path.join(inst_cat_dir, 'agn_gal_cat_%d.txt.gz' % obsid)
     if not os.path.isfile(agn_name):
         raise RuntimeError('\n%s\nis not a file\n' % agn_name)
 
-    phosim_name = os.path.join(inst_cat_dir, 'phosim_cat_%d.txt' % args.obs)
+    phosim_name = os.path.join(inst_cat_dir, 'phosim_cat_%d.txt' % obsid)
     if not os.path.isfile(agn_name):
         raise RuntimeError('\n%s\nis not a file\n' % phosim_name)
 
@@ -89,7 +79,7 @@ if __name__ == "__main__":
     agn_df['galaxy_id'] = pd.Series(agn_df['uniqueID']//1024,
                                     index=agn_df.index)
 
-    with sqlite3.connect(args.agn_db) as agn_params_conn:
+    with sqlite3.connect(agn_db) as agn_params_conn:
         agn_params_cursor = agn_params_conn.cursor()
         query = 'SELECT galaxy_id, magNorm, varParamStr FROM agn_params'
         agn_params = agn_params_cursor.execute(query).fetchall()
@@ -152,3 +142,25 @@ if __name__ == "__main__":
     if np.max(error)>1.0e-5:
         raise RuntimeError("AGN validation failed: max mag error %e" %
                            max_error)
+
+if __name__ == "__main__":
+
+    project_dir = os.path.join('/global/projecta/projectdirs',
+                               'lsst/groups/SSim/DC2/cosmoDC2_v1.1.4')
+
+    default_agn_db = os.path.join(project_dir,
+                                  'agn_db_mbh7_mi30_sf4.db')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--cat_dir', type=str, default=None,
+                        help='parent directory of $obsHistID/')
+    parser.add_argument('--obs', type=int, default=None,
+                        help='obsHistID of pointing')
+    parser.add_argument('--agn_db', type=str,
+                        default=default_agn_db,
+                        help='Name of agn parameters db\n'
+                        '(default %s)' % default_agn_db)
+
+    args = parser.parse_args()
+
+    validate_agn_mags(args.cat_dir, args.obs, args.agn_db)
