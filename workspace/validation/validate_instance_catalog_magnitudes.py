@@ -142,7 +142,6 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
                 bandpass_name = bandpass_name_list[int(params[1])]
 
     assert bandpass_name is not None
-    print('bandpass is ',bandpass_name)
 
     (tot_dict,
      hw_dict) = BandpassDict.loadBandpassesFromFiles()
@@ -165,7 +164,6 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024,
                                      index=disk_df.index)
     disk_df = disk_df.set_index('galaxy_id')
-    print('read disks %e' % (len(disk_df)))
 
     bulge_df = pd.read_csv(bulge_file, delimiter=' ',
                            compression='gzip', names=colnames,
@@ -173,7 +171,6 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024,
                                       index=bulge_df.index)
     bulge_df = bulge_df.set_index('galaxy_id')
-    print('read bulges %e' % (len(bulge_df)))
 
     for ii in range(len(colnames)):
         colnames[ii] = colnames[ii]+'_knots'
@@ -196,13 +193,11 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     galaxy_df = galaxy_df.join(knots_df[wanted_col],
                                how='outer',
                                rsuffix='_knots')
-    print('read knots')
 
     valid_galaxies = np.where(np.logical_not(np.in1d(galaxy_df.index,
                                                      sprinkled_gid)))
 
     galaxy_df = galaxy_df.iloc[valid_galaxies]
-    print('threw out sprinkled systems; left with %e' % len(galaxy_df))
 
     ra_center = np.nanmedian(galaxy_df['ra_disk'].values)
     dec_center = np.nanmedian(galaxy_df['dec_disk'].values)
@@ -220,31 +215,22 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     healpix_list = healpy.query_disc(32, vv, np.radians(radius_deg),
                                      nest=False, inclusive=True)
 
-    print('healpix list')
-    print(healpix_list)
-    print(ra_center, dec_center)
-
     hp_query = None
     for hp in healpix_list:
-        print(hp)
         if hp_query is None:
             hp_query = GCRQuery('healpix_pixel==%d' % hp)
         else:
             hp_query |= GCRQuery('healpix_pixel==%d' % hp)
 
-    print('len(galaxy_df) ',len(galaxy_df))
-    print('built final df')
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image')
     cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'],
                                    native_filters=[hp_query])
-    print('loaded galaxy_id %e' % len(cat_qties['galaxy_id']))
     cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
 
     gid_max = cat_qties['galaxy_id'].max()
 
     valid_galaxies = np.where(galaxy_df.index.values<=gid_max)
     galaxy_df = galaxy_df.iloc[valid_galaxies]
-    print('cut on gid_max')
 
     if nrows>0:
         rng = np.random.RandomState(seed)
@@ -258,24 +244,17 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
                              np.isfinite(
                              galaxy_df['magnorm_knots'].values.astype(np.float))))
 
-    print('no knots %e' % len(invalid_knots[0]))
-
     dd = angularSeparation(ra_center, dec_center,
                            cat_qties['ra'], cat_qties['dec'])
 
     dd_cut = np.where(dd<(radius_deg+0.05))
     gid = cat_qties['galaxy_id'][dd_cut]
     cat_dexes = cat_dexes[dd_cut]
-    print('did spatial cut %d of %d' % (len(cat_dexes), len(cat_qties['ra'])))
 
     in1d_valid_dexes = np.where(np.in1d(gid,
                                 galaxy_df.index.values,assume_unique=True))
     valid_dexes = cat_dexes[in1d_valid_dexes]
     gid = gid[in1d_valid_dexes]
-
-    print('got valid_dexes')
-    print(len(valid_dexes))
-    print(len(galaxy_df))
 
     sorted_dex = np.argsort(gid)
     valid_dexes = valid_dexes[sorted_dex]
