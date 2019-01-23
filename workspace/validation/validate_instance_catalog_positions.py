@@ -9,18 +9,16 @@ import GCRCatalogs
 
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 
-if __name__ == "__main__":
+def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
+    """
+    Parameters
+    ----------
+    cat_dir is the parent dir of $obs
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--fov_deg', type=float, default=2.1,
-                        help='radius of field of view in degrees '
-                        '(default: 2.1)')
-    parser.add_argument('--obs', type=int, help='obsHistID')
-    parser.add_argument('--cat_dir', type=str,
-                        help='parent directory of $obsHistID/')
+    obsid is the obsHistID of the pointing (an int)
 
-    args = parser.parse_args()
-
+    fov_deg is the radius of the field of view in degrees
+    """
     agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
                                   'cosmoDC2_v1.1.4_agn_cache.csv')
 
@@ -51,13 +49,13 @@ if __name__ == "__main__":
                               # the sprinkler will not put anything
                               # that close to the cutoff, though
 
-    inst_cat_dir = os.path.join(args.cat_dir, '%.8d' % args.obs)
+    inst_cat_dir = os.path.join(cat_dir, '%.8d' % obsid)
     if not os.path.isdir(inst_cat_dir):
         raise RuntimeError('\n%s\nis not a dir\n' % inst_cat_dir)
 
     # Make sure no sprinkled galaxies ended up in the knots catalog
     knots_gid = []
-    knots_name = os.path.join(inst_cat_dir, 'knots_cat_%d.txt.gz' % args.obs)
+    knots_name = os.path.join(inst_cat_dir, 'knots_cat_%d.txt.gz' % obsid)
     if not os.path.isfile(knots_name):
         raise RuntimeError('\n%s\nis not a file\n' % knots_name)
     with gzip.open(knots_name, 'rb') as in_file:
@@ -81,9 +79,9 @@ if __name__ == "__main__":
         raise RuntimeError('\n%s\nis not a file\n' % opsim_db)
 
     obs_gen = ObservationMetaDataGenerator(database=opsim_db)
-    obs = obs_gen.getObservationMetaData(obsHistID=args.obs,
+    obs = obs_gen.getObservationMetaData(obsHistID=obsid,
                                          boundType='circle',
-                                         boundLength=args.fov_deg)[0]
+                                         boundLength=fov_deg)[0]
 
     ra = np.degrees(obs.OpsimMetaData['descDitheredRA'])
     dec = np.degrees(obs.OpsimMetaData['descDitheredDec'])
@@ -94,7 +92,7 @@ if __name__ == "__main__":
     boresite = np.array([np.cos(np.radians(dec))*np.cos(np.radians(ra)),
                          np.cos(np.radians(dec))*np.sin(np.radians(ra)),
                          np.sin(np.radians(dec))])
-    healpix_list = hp.query_disc(32, boresite, np.radians(args.fov_deg),
+    healpix_list = hp.query_disc(32, boresite, np.radians(fov_deg),
                                  nest=False, inclusive=True)
 
     healpix_query = GCR.GCRQuery('healpix_pixel==%d' % healpix_list[0])
@@ -109,7 +107,7 @@ if __name__ == "__main__":
                                native_filters=[healpix_query])
 
     # only select those galaxies in our field of view
-    cos_fov = np.cos(np.radians(args.fov_deg))
+    cos_fov = np.cos(np.radians(fov_deg))
     cat_ra_rad = np.radians(cat_q['ra'])
     cat_dec_rad = np.radians(cat_q['dec'])
     xyz_cat = np.array([np.cos(cat_dec_rad)*np.cos(cat_ra_rad),
@@ -127,7 +125,7 @@ if __name__ == "__main__":
         cat_q[kk] = cat_q[kk][sorted_dex]
 
     for component in ('bulge', 'disk'):
-        file_name = '%s_gal_cat_%d.txt.gz' % (component, args.obs)
+        file_name = '%s_gal_cat_%d.txt.gz' % (component, obsid)
         full_name = os.path.join(inst_cat_dir, file_name)
         if not os.path.isfile(full_name):
             raise RuntimeError('\n%s\nis not a file\n' % full_name)
@@ -228,3 +226,18 @@ if __name__ == "__main__":
             if delta.max() > 1.0e-6:
                 raise RuntimeError("dot products were off %e %e %e" %
                                    (delta.min(), np.median(delta), delta.max()))
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fov_deg', type=float, default=2.1,
+                        help='radius of field of view in degrees '
+                        '(default: 2.1)')
+    parser.add_argument('--obs', type=int, help='obsHistID')
+    parser.add_argument('--cat_dir', type=str,
+                        help='parent directory of $obsHistID/')
+
+    args = parser.parse_args()
+
+    validate_instance_catalog_positions(args.cat_dir, args.obs, args.fov_deg)
