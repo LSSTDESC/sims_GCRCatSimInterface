@@ -51,6 +51,19 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
     if not os.path.isfile(opsim_db):
         raise RuntimeError("\n%s\nis not a file" % opsim_db)
 
+    band_from_int = 'ugrizy'
+    bandpass = None
+    with open(phosim_name, 'r') as in_file:
+        for line in in_file:
+            params = line.strip().split()
+            if params[0] == 'filter':
+                bandpass = band_from_int[int(params[1])]
+                break
+    if bandpass is None:
+        raise RuntimeError("Failed to read in bandpass")
+
+    bp_dict = photUtils.BandpassDict.loadTotalBandpassesFromFiles()
+
     with sqlite3.connect(opsim_db) as conn:
         c = conn.cursor()
         r = c.execute("SELECT descDitheredRA, descDitheredDec, expMJD FROM Summary "
@@ -93,12 +106,12 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
 
     valid = np.where(sn_d<=fov_deg)
 
-    #query += "c_in, mB, t0_in, x0_in, x1_in, z_in "
     sn_param_dict = {}
     for i_sn in valid[0]:
         sn = sn_params[i_sn]
         sn_param_dict[sn[0]] = sn[3:]
 
+    d_mag_max = -1.0
     with gzip.open(sne_name, 'rb') as sne_cat_file:
         for sne_line in sne_cat_file:
             instcat_params = sne_line.strip().split(b' ')
@@ -123,10 +136,26 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
 
             sed.redshiftSED(float(instcat_params[6]), dimming=True)
             a_x, b_x = sed.setupCCM_ab()
-            sed.addDust(a_x, b_x,
-                        A_v=float(instcat_params[15]),
-                        R_v=float(instcat_params[16]))
+            A_v = float(instcat_params[15])
+            R_v = float(instcat_params[16])
+            EBV = A_v/R_v
+            sed.addDust(a_x, b_x, A_v=A_v, R_v=R_v)
 
+            instcat_mag = sed.calcMag(bp_dict[bandpass])
+
+            sn_object = SNObject()
+            sn_object.set_MWebv(EBV)
+            sn_object.set(c=control_params[0], x1=control_params[4],
+                          x0=control_params[3], t0=control_params[2],
+                          z=control_params[5])
+
+            sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
+            d_mag = np.abs(sn_mag-instcat_mag)
+            if d_mag>d_mag_max:
+                d_mag_max = d_mag
+                print('dmag %e -- %e (%e)' %
+                      (d_mag, instcat_mag,
+                       control_params[5]-float(instcat_params[6])))
 
 if __name__ == "__main__":
 
