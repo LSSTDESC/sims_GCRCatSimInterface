@@ -100,8 +100,8 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
 
     with gzip.open(sne_name, 'rb') as sne_cat_file:
         for sne_line in sne_cat_file:
-            sne_params = sne_line.strip().split(b' ')
-            sne_id = sne_params[1].decode('utf-8')
+            instcat_params = sne_line.strip().split(b' ')
+            sne_id = instcat_params[1].decode('utf-8')
             if sne_id not in sn_param_dict:
                 try:
                     sne_id_int = int(sne_id)
