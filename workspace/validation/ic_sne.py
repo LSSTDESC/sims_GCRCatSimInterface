@@ -21,6 +21,13 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
     fov_deg is the radius of the field of view in degrees
     """
 
+    project_dir = os.path.join('/global/projecta/projectdirs',
+                               'lsst/groups/SSim/DC2/cosmoDC2_v1.1.4')
+
+    sne_db_name = os.path.join(project_dir, 'sne_cosmoDC2_v1.1.4_MS_DDF.db')
+    if not os.path.isfile(sne_db_name):
+        raise RuntimeError("\n%s\nis not a file" % sne_db_name)
+
     instcat_dir = os.path.join(cat_dir, '%.8d' % obsid)
     if not os.path.isdir(instcat_dir):
         raise RuntimeError("\n%s\nis not a dir" % instcat_dir)
