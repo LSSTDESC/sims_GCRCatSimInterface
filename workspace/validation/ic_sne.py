@@ -52,10 +52,11 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
 
     with sqlite3.connect(opsim_db) as conn:
         c = conn.cursor()
-        r = c.execute("SELECT descDitheredRA, descDitheredDec FROM Summary "
+        r = c.execute("SELECT descDitheredRA, descDitheredDec, expMJD FROM Summary "
                       "WHERE obsHistID==%d" % obsid).fetchall()
         pointing_ra = np.degrees(r[0][0])
         pointing_dec = np.degrees(r[0][1])
+        expmjd = float(r[0][2])
 
     with sqlite3.connect(sne_db_name) as conn:
         c = conn.cursor()
