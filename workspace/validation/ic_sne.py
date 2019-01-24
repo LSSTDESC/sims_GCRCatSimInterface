@@ -5,6 +5,7 @@ import numpy as np
 
 import lsst.sims.utils.htmModule as htm
 from lsst.sims.utils import angularSeparation
+import lsst.sims.photUtils as photUtils
 from lsst.sims.catUtils.supernovae import SNObject
 
 import argparse
@@ -113,6 +114,18 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
             sed_name = os.path.join(instcat_dir, instcat_params[5].decode('utf-8'))
             if not os.path.isfile(sed_name):
                 raise RuntimeError("\n%s\nis not a file" % sed_name)
+
+            sed = photUtils.Sed()
+            sed.readSED_flambda(sed_name)
+
+            fnorm = photUtils.getImsimFluxNorm(sed, float(instcat_params[4]))
+            sed.multiplyFluxNorm(fnorm)
+
+            sed.redshiftSED(float(instcat_params[6]), dimming=True)
+            a_x, b_x = sed.setupCCM_ab()
+            sed.addDust(a_x, b_x,
+                        A_v=float(instcat_params[15]),
+                        R_v=float(instcat_params[16]))
 
 
 if __name__ == "__main__":
