@@ -39,6 +39,7 @@ if __name__ == "__main__":
             continue
 
         cat_dir = os.path.join(parent_dir, target_dir)
+        print('\n\n%s\n\n' % cat_dir)
         #validate_instance_catalog_magnitudes(cat_dir, obsid, nrows=-1)
         validate_instance_catalog_positions(cat_dir, obsid, 2.1)
         validate_agn_mags(cat_dir, obsid, agn_db)

@@ -7,6 +7,7 @@ import argparse
 import GCR
 import GCRCatalogs
 
+from lsst.sims.utils import angularSeparation
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 
 def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
@@ -100,9 +101,15 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
         healpix_query |= GCR.GCRQuery('healpix_pixel==%d' % hh)
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image_addon_knots')
-    cat_q = cat.get_quantities(['galaxy_id', 'ra', 'dec',
-                                'stellar_mass_bulge', 'stellar_mass_disk',
-                                'sed_5467_339_disk', 'sed_5467_339_bulge'],
+
+    qty_names = ['galaxy_id', 'ra', 'dec',
+                 'stellar_mass_bulge', 'stellar_mass_disk']
+
+    for nn in cat.list_all_quantities():
+        if nn.startswith('sed') and (nn.endswith('bulge') or nn.endswith('disk')):
+            qty_names.append(nn)
+
+    cat_q = cat.get_quantities(qty_names,
                                filters=[(lambda x: x<=29.0, 'mag_r_lsst')],
                                native_filters=[healpix_query])
 
@@ -124,6 +131,8 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
     for kk in cat_q.keys():
         cat_q[kk] = cat_q[kk][sorted_dex]
 
+    bogey = 10750009159
+
     for component in ('bulge', 'disk'):
         file_name = '%s_gal_cat_%d.txt.gz' % (component, obsid)
         full_name = os.path.join(inst_cat_dir, file_name)
@@ -132,20 +141,25 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
 
         instcat_gid = []
         instcat_ra = []
-        instcat_dec = [] 
+        instcat_dec = []
+        instcat_magnorm = []
         print('validating positions in %s' % file_name)
         with gzip.open(full_name, 'rb') as in_file:
             for line in in_file:
                 params = line.strip().split(b' ')
                 gid = int(params[1])//1024
+                if gid == bogey:
+                    print(line)
                 instcat_gid.append(gid)
                 instcat_ra.append(float(params[2]))
                 instcat_dec.append(float(params[3]))
+                instcat_magnorm.append(float(params[4]))
         print('read it in')
 
         instcat_gid = np.array(instcat_gid)
         instcat_ra = np.array(instcat_ra)
         instcat_dec = np.array(instcat_dec)
+        instcat_magnorm = np.array(instcat_magnorm)
 
         if instcat_gid.max() > max_gcr_gid:
             raise RuntimeError("\nmax gid in\n%s\n%e\n" % (full_name,
@@ -155,44 +169,72 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
         instcat_gid = instcat_gid[sorted_dex]
         instcat_ra = instcat_ra[sorted_dex]
         instcat_dec = instcat_dec[sorted_dex]
+        instcat_magnorm = instcat_magnorm[sorted_dex]
 
-        component_name = 'stellar_mass_%s' % component
-        component_sed_name = 'sed_5467_339_%s' % component
-        has_component = np.logical_and(cat_q[component_name]>0.0,
-                                       cat_q[component_sed_name]>0.0)
+        has_component = cat_q['stellar_mass_%s' % component]>0.0
+        sed_filter = None
+        for nn in qty_names:
+            if nn.startswith('sed') and nn.endswith(component):
+                if sed_filter is None:
+                    sed_filter = (cat_q[nn]>0.0)
+                else:
+                    sed_filter &= (cat_q[nn]>0.0)
 
+        if sed_filter is not None:
+            has_component &= sed_filter
+
+        print('bogey before ',(bogey in cat_q['galaxy_id']))
         # the sprinkler will delete disks from the InstanceCatalog
         if component == 'disk':
-            has_component &= ~np.in1d(cat_q['galaxy_id'], sprinkled_gid,
-                                      assume_unique=True)
+            has_component &= ~np.in1d(cat_q['galaxy_id'], sprinkled_gid)
 
         has_component = np.where(has_component)
 
         gcr_gid = cat_q['galaxy_id'][has_component]
         gcr_ra = cat_q['ra'][has_component]
         gcr_dec = cat_q['dec'][has_component]
-        gcr_comp = cat_q[component_name][has_component]
+        gcr_comp = cat_q['stellar_mass_%s' % component][has_component]
+
+        print('bogey after ',(bogey in gcr_gid))
 
         if not np.array_equal(gcr_gid, instcat_gid):
-            gcr_in_inst = np.in1d(gcr_gid, instcat_gid, assume_unique=True)
-            inst_in_gcr = np.in1d(instcat_gid, gcr_gid, assume_unique=True)
+            gcr_in_inst = np.in1d(gcr_gid, instcat_gid)
+            inst_in_gcr = np.in1d(instcat_gid, gcr_gid)
 
             if not gcr_in_inst.all():
                 violation = ~gcr_in_inst
+                n_violation = len(np.where(violation)[0])
                 print('WARNING: %d GCR galaxies were not in InstCat'
                       % n_violation)
                 print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
-                print('are sprinkled: %s (%d)' % (str(are_sprinkled.all()),
-                                                  len(np.where(are_sprinkled)[0])))
-                print('\n')
-            if not inst_in_gcr.all():
-                violation = ~inst_in_gcr
-                n_violation = len(np.where(violation)[0])
-                print('WARNING: %d InstCat galaxies not in GCR'
-                      % n_violation)
                 print('\n')
 
-            raise RuntimeError("WARNING galaxy_id in GCR != galaxy_id in InstanceCatalog")
+                raise RuntimeError("Not all GCR galaxies in InstanceCatalog")
+
+            if not inst_in_gcr.all():
+                violation = ~inst_in_gcr
+                if instcat_magnorm[violation].min()<50.0:
+                    n_violation = len(np.where(violation)[0])
+
+                    ra_violation = instcat_ra[violation]
+                    dec_violation = instcat_dec[violation]
+                    dd_violation = angularSeparation(obs.pointingRA,
+                                                     obs.pointingDec,
+                                                     ra_violation,
+                                                     dec_violation)
+                    print('WARNING: %d InstCat galaxies not in GCR'
+                          % n_violation)
+                    print(dd_violation)
+                    print(instcat_gid[violation])
+                    print('\n')
+
+                    raise RuntimeError("Not all InstanceCatalog galaxies in GCR")
+
+                # if this effects a change, it is because there were
+                # some galaxies with magNorm>50 in the InstanceCatalog;
+                # this is going to trim them out
+                instcat_ra = instcat_ra[inst_in_gcr]
+                instcat_dec = instcat_dec[inst_in_gcr]
 
         # now that we have verified all of the galaxies that should be in
         # the catalog are in the catalog, we will verify their positions by
