@@ -5,6 +5,8 @@ from ic_mags import validate_instance_catalog_magnitudes
 from ic_pos import validate_instance_catalog_positions
 from ic_agn import validate_agn_mags
 
+import time
+
 import argparse
 
 if __name__ == "__main__":
@@ -41,7 +43,10 @@ if __name__ == "__main__":
             continue
 
         cat_dir = os.path.join(parent_dir, target_dir)
-        #validate_instance_catalog_magnitudes(cat_dir, obsid, nrows=-1)
+
+        t_start = time.time()
+        validate_instance_catalog_magnitudes(cat_dir, obsid, nrows=100000)
         validate_instance_catalog_positions(cat_dir, obsid, 2.1)
         validate_agn_mags(cat_dir, obsid, agn_db)
+        print('\n\nvalidated agn after %e' % (time.time()-t_start))
         already_run.add(obsid)
