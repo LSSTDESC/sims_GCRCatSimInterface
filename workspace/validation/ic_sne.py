@@ -110,6 +110,10 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
                     raise RuntimeError("\n%s\nnot in SNe db" % sne_id)
 
             control_params = sn_param_dict[sne_id]
+            sed_name = os.path.join(instcat_dir, instcat_params[5].decode('utf-8'))
+            if not os.path.isfile(sed_name):
+                raise RuntimeError("\n%s\nis not a file" % sed_name)
+
 
 if __name__ == "__main__":
 
