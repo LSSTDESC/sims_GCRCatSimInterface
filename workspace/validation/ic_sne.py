@@ -10,13 +10,15 @@ from lsst.sims.catUtils.supernovae import SNObject
 import argparse
 
 
-def validate_sne(cat_dir, obsid):
+def validate_sne(cat_dir, obsid, fov_deg=2.1):
     """
     Parameters
     ----------
     cat_dir is the parent dir of $obsid
 
     obsid is the obsHistID of the pointing (an int)
+
+    fov_deg is the radius of the field of view in degrees
     """
 
     instcat_dir = os.path.join(cat_dir, '%.8d' % obsid)
@@ -58,7 +60,9 @@ if __name__ == "__main__":
                         help='parent dir of $obs')
     parser.add_argument('--obs', type=int, default=None,
                         help='obsHistID of the pointing')
+    parser.add_argument('--fov_deg', type=float, default=2.1,
+                        help='radius of field of view in degrees')
 
     args = parser.parse_args()
 
-    validate_sne(args.cat_dir, args.obs)
+    validate_sne(args.cat_dir, args.obs, fov_deg=args.fov_deg)
