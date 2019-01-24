@@ -84,7 +84,20 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
         query += where_clause+")"
 
         sn_params = c.execute(query).fetchall()
-        print(len(sn_params))
+    sn_ra = np.array([sn[1] for sn in sn_params])
+    sn_dec = np.array([sn[2] for sn in sn_params])
+
+    sn_d = angularSeparation(pointing_ra, pointing_dec,
+                             sn_ra, sn_dec)
+
+    valid = np.where(sn_d<=fov_deg)
+
+    #query += "c_in, mB, t0_in, x0_in, x1_in, z_in "
+    sn_param_dict = {}
+    for i_sn in valid[0]:
+        sn = sn_params[i_sn]
+        sn_param_dict[sn[0]] = sn[3:]
+    print(len(sn_param_dict))
 
 
 if __name__ == "__main__":
