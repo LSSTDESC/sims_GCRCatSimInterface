@@ -1,8 +1,10 @@
 import os
 import sqlite3
 import gzip
+import numpy as np
 
 from lsst.sims.utils import angularSeparation
+from lsst.sims.catUtils.supernovae import SNObject
 
 import argparse
 
@@ -33,6 +35,15 @@ def validate_sne(cat_dir, obsid):
                             "minion_1016_desc_dithered_v4_sfd.db")
     if not os.path.isfile(opsim_db):
         raise RuntimeError("\n%s\nis not a file" % opsim_db)
+
+    with sqlite3.connect(opsim_db) as conn:
+        c = conn.cursor()
+        r = c.execute("SELECT descDitheredRA, descDitheredDec FROM Summary "
+                      "WHERE obsHistID==%d" % obsid).fetchall()
+        pointing_ra = np.degrees(r[0][0])
+        pointing_dec = np.degrees(r[0][1])
+
+    print(pointing_ra, pointing_dec)
 
 
 if __name__ == "__main__":
