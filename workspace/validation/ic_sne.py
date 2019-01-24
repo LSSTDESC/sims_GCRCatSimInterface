@@ -57,7 +57,33 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
         pointing_ra = np.degrees(r[0][0])
         pointing_dec = np.degrees(r[0][1])
 
-    print(pointing_ra, pointing_dec)
+    with sqlite3.connect(sne_db_name) as conn:
+        c = conn.cursor()
+        query = "SELECT snid_in, snra_in, sndec_in, "
+        query += "c_in, mB, t0_in, x0_in, x1_in, z_in "
+        query += "FROM sne_params WHERE ("
+
+        where_clause = None
+        half_space = htm.halfSpaceFromRaDec(pointing_ra, pointing_dec, fov_deg)
+        bounds = half_space.findAllTrixels(6)
+
+        for bound in bounds:
+            if where_clause is not None:
+                where_clause += " OR ("
+            else:
+                where_clause = "("
+
+            if bound[0] == bound[1]:
+                where_clause += "htmid_level_6==%d" % bound[0]
+            else:
+                where_clause += "htmid_level_6>=%d AND htmid_level_6<=%d" % (bound[0],bound[1])
+
+            where_clause += ")"
+
+        query += where_clause+")"
+
+        sn_params = c.execute(query).fetchall()
+        print(len(sn_params))
 
 
 if __name__ == "__main__":
