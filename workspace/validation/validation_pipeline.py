@@ -32,6 +32,8 @@ if __name__ == "__main__":
     sub_dirs = os.listdir(parent_dir)
     while len(already_run)<4:
         target_dir = rng.choice(sub_dirs, size=1)[0]
+        if not os.path.isdir(os.path.join(parent_dir, target_dir)):
+            continue
         obs_list = os.listdir(os.path.join(parent_dir, target_dir))
         obs_dir = rng.choice(obs_list, size=1)[0]
         obsid = int(obs_dir)
