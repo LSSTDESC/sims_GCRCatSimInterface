@@ -3,6 +3,7 @@ import sqlite3
 import gzip
 import numpy as np
 
+import lsst.sims.utils.htmModule as htm
 from lsst.sims.utils import angularSeparation
 from lsst.sims.catUtils.supernovae import SNObject
 
@@ -25,6 +26,10 @@ def validate_sne(cat_dir, obsid):
     sne_name = os.path.join(instcat_dir, 'sne_cat_%d.txt.gz' % obsid)
     if not os.path.isfile(sne_name):
         raise RuntimeError("\n%s\nis not a file" % sne_name)
+
+    phosim_name = os.path.join(instcat_dir, 'phosim_cat_%d.txt' % obsid)
+    if not os.path.isfile(phosim_name):
+        raise RuntimeError("\n%s\nis not a file" % phosim_name)
 
     sed_dir = os.path.join(instcat_dir, "Dynamic")
     if not os.path.isdir(sed_dir):
