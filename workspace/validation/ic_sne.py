@@ -97,8 +97,19 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
     for i_sn in valid[0]:
         sn = sn_params[i_sn]
         sn_param_dict[sn[0]] = sn[3:]
-    print(len(sn_param_dict))
 
+    with gzip.open(sne_name, 'rb') as sne_cat_file:
+        for sne_line in sne_cat_file:
+            sne_params = sne_line.strip().split(b' ')
+            sne_id = sne_params[1].decode('utf-8')
+            if sne_id not in sn_param_dict:
+                try:
+                    sne_id_int = int(sne_id)
+                    assert sne_id_int<1.5e10
+                except (ValueError, AssertionError):
+                    raise RuntimeError("\n%s\nnot in SNe db" % sne_id)
+
+            control_params = sn_param_dict[sne_id]
 
 if __name__ == "__main__":
 
