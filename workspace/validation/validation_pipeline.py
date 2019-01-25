@@ -4,6 +4,7 @@ import numpy as np
 from ic_mags import validate_instance_catalog_magnitudes
 from ic_pos import validate_instance_catalog_positions
 from ic_agn import validate_agn_mags
+from ic_sne import validate_sne
 
 import time
 
@@ -32,6 +33,8 @@ if __name__ == "__main__":
     assert os.path.isdir(parent_dir)
 
     sub_dirs = os.listdir(parent_dir)
+    f_out = open('sn_mag_scatter.txt', 'w')
+    f_out.write('# sn_mag instcat_mag d_mag\n')
     while len(already_run)<4:
         target_dir = rng.choice(sub_dirs, size=1)[0]
         if not os.path.isdir(os.path.join(parent_dir, target_dir)):
@@ -45,8 +48,10 @@ if __name__ == "__main__":
         cat_dir = os.path.join(parent_dir, target_dir)
 
         t_start = time.time()
-        validate_instance_catalog_magnitudes(cat_dir, obsid, nrows=100000)
-        validate_instance_catalog_positions(cat_dir, obsid, 2.1)
-        validate_agn_mags(cat_dir, obsid, agn_db)
+        validate_sne(cat_dir, obsid, out_file=f_out)
+        #validate_instance_catalog_magnitudes(cat_dir, obsid, nrows=100000)
+        #validate_instance_catalog_positions(cat_dir, obsid, 2.1)
+        #validate_agn_mags(cat_dir, obsid, agn_db)
         print('\n\nvalidated agn after %e' % (time.time()-t_start))
         already_run.add(obsid)
+    f_out.close()
