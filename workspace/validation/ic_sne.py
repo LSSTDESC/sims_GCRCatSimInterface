@@ -156,6 +156,13 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
             instcat_flux = sed.calcFlux(bp_dict[bandpass])
             instcat_mag = sed.magFromFlux(instcat_flux)
             d_mag = np.abs(sn_mag-instcat_mag)
+            if not np.isfinite(d_mag):
+                if np.isfinite(sn_mag) or np.isfinite(instcat_mag):
+                    msg = '%s\ngave magnitudes %e %e (diff %e)' % (sne_id,
+                                                                   sn_mag,
+                                                                   instcat_mag)
+                    raise RuntimeError(msg)
+
             if out_file is not None:
                 out_file.write("%e %e %e\n" % (sn_mag, instcat_mag, d_mag))
 
