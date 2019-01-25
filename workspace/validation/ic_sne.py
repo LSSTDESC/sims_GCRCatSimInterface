@@ -11,7 +11,7 @@ from lsst.sims.catUtils.supernovae import SNObject
 import argparse
 
 
-def validate_sne(cat_dir, obsid, fov_deg=2.1):
+def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
     """
     Parameters
     ----------
@@ -106,11 +106,14 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
 
     valid = np.where(sn_d<=fov_deg)
 
+    sn_ra_dec = {}
     sn_param_dict = {}
     for i_sn in valid[0]:
         sn = sn_params[i_sn]
         sn_param_dict[sn[0]] = sn[3:]
+        sn_ra_dec[sn[0]] = sn[1:3]
 
+    sne_in_instcat = set()
     d_mag_max = -1.0
     with gzip.open(sne_name, 'rb') as sne_cat_file:
         for sne_line in sne_cat_file:
@@ -122,6 +125,8 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
                     assert sne_id_int<1.5e10
                 except (ValueError, AssertionError):
                     raise RuntimeError("\n%s\nnot in SNe db" % sne_id)
+
+            sne_in_instcat.add(sne_id)
 
             control_params = sn_param_dict[sne_id]
             sed_name = os.path.join(instcat_dir, instcat_params[5].decode('utf-8'))
@@ -141,8 +146,6 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
             EBV = A_v/R_v
             sed.addDust(a_x, b_x, A_v=A_v, R_v=R_v)
 
-            instcat_mag = sed.calcMag(bp_dict[bandpass])
-
             sn_object = SNObject()
             sn_object.set_MWebv(EBV)
             sn_object.set(c=control_params[0], x1=control_params[4],
@@ -150,12 +153,41 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1):
                           z=control_params[5])
 
             sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
+            instcat_flux = sed.calcFlux(bp_dict[bandpass])
+            instcat_mag = sed.magFromFlux(instcat_flux)
             d_mag = np.abs(sn_mag-instcat_mag)
+            if out_file is not None:
+                out_file.write("%e %e %e\n" % (sn_mag, instcat_mag, d_mag))
+
             if d_mag>d_mag_max:
                 d_mag_max = d_mag
                 print('dmag %e -- %e (%e)' %
                       (d_mag, instcat_mag,
                        control_params[5]-float(instcat_params[6])))
+
+    for sn_id in sn_param_dict:
+        if sn_id in sne_in_instcat:
+            continue
+        control_params = sn_param_dict[sn_id]
+
+        sn_object = SNObject()
+        sn_object.set_MWebv(0.0)
+        sn_object.set(c=control_params[0], x1=control_params[4],
+                      x0=control_params[3], t0=control_params[2],
+                      z=control_params[5])
+
+        sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
+        if sn_mag < 30.0:
+            dt = expmjd - control_params[2]
+            dd = angularSeparation(pointing_ra, pointing_dec,
+                                   sn_ra_dec[sn_id][0],
+                                   sn_ra_dec[sn_id][1])
+            msg = "A supernova with mag %e was ignored (%e, %e)" % (sn_mag,
+                         dt, dd)
+            msg += "\n\n%s\n" % sne_name
+            msg += "%s" % sn_id
+            raise RuntimeError(msg)
+
 
 if __name__ == "__main__":
 
