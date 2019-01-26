@@ -8,6 +8,7 @@ from lsst.sims.utils import angularSeparation
 import lsst.sims.photUtils as photUtils
 from lsst.sims.catUtils.supernovae import SNObject
 
+import time
 import argparse
 
 
@@ -179,9 +180,12 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
 
         sn_object = SNObject()
         sn_object.set_MWebv(0.0)
-        sn_object.set(c=control_params[0], x1=control_params[4],
-                      x0=control_params[3], t0=control_params[2],
-                      z=control_params[5])
+        cc = control_params[0]
+        x1 = control_params[4]
+        x0 = control_params[3]
+        t0 = control_params[2]
+        zz = control_params[5]
+        sn_object.set(c=cc, x1=x1, x0=x0, t0=t0, z=zz)
 
         sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
         if sn_mag < 30.0:
@@ -192,7 +196,9 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
             msg = "A supernova with mag %e was ignored (%e, %e)" % (sn_mag,
                          dt, dd)
             msg += "\n\n%s\n" % sne_name
-            msg += "%s" % sn_id
+            msg += "%s\n" % sn_id
+            msg += 'c: %e\nx0: %e\nx1: %e\nt0: %e\nz: %e\nmjd: %.4f\n' % (
+                    cc,x0,x1,t0,zz,expmjd)
             raise RuntimeError(msg)
 
 
@@ -208,4 +214,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    t_start = time.time()
     validate_sne(args.cat_dir, args.obs, fov_deg=args.fov_deg)
+    print('that took %e seconds' % (time.time()-t_start))
