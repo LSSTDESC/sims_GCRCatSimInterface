@@ -173,6 +173,8 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
                       (d_mag, instcat_mag,
                        control_params[5]-float(instcat_params[6])))
 
+    msg = '\n%s\n' % sne_name
+    ct_missing = 0
     for sn_id in sn_param_dict:
         if sn_id in sne_in_instcat:
             continue
@@ -188,18 +190,20 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
         sn_object.set(c=cc, x1=x1, x0=x0, t0=t0, z=zz)
 
         sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
-        if sn_mag < 30.0:
+        if sn_mag < 40.0:
+            ct_missing += 1
             dt = expmjd - control_params[2]
             dd = angularSeparation(pointing_ra, pointing_dec,
                                    sn_ra_dec[sn_id][0],
                                    sn_ra_dec[sn_id][1])
-            msg = "A supernova with mag %e was ignored (%e, %e)" % (sn_mag,
-                         dt, dd)
-            msg += "\n\n%s\n" % sne_name
-            msg += "%s\n" % sn_id
-            msg += 'c: %e\nx0: %e\nx1: %e\nt0: %e\nz: %e\nmjd: %.4f\n' % (
-                    cc,x0,x1,t0,zz,expmjd)
-            raise RuntimeError(msg)
+            msg += "%s: %e\n" % (sn_id, sn_mag)
+            msg += '    c: %e\n    x0: %e\n' % (cc, x0)
+            msg += '    x1: %e\n    t0: %e\n' % (x1, t0)
+            msg += '    z: %e\n    mjd: %.4f\n' % (zz, expmjd)
+
+    if ct_missing>0:
+        msg += 'ct_missing %d' % ct_missing
+        raise RuntimeError(msg)
 
 
 if __name__ == "__main__":
