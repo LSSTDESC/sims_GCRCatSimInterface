@@ -12,7 +12,8 @@ import time
 import argparse
 
 
-def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
+def validate_sne(cat_dir, obsid, fov_deg=2.1,
+                 scatter_file=None, vanishing_file=None):
     """
     Parameters
     ----------
@@ -156,22 +157,24 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
             sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
             instcat_flux = sed.calcFlux(bp_dict[bandpass])
             instcat_mag = sed.magFromFlux(instcat_flux)
-            d_mag = np.abs(sn_mag-instcat_mag)
+            d_mag = (sn_mag-instcat_mag)
             if not np.isfinite(d_mag):
                 if np.isfinite(sn_mag) or np.isfinite(instcat_mag):
                     msg = '%s\ngave magnitudes %e %e (diff %e)' % (sne_id,
                                                                    sn_mag,
-                                                                   instcat_mag)
-                    raise RuntimeError(msg)
+                                                                   instcat_mag,
+                                                                   d_mag)
+                    print(msg)
 
-            if out_file is not None:
-                out_file.write("%e %e %e\n" % (sn_mag, instcat_mag, d_mag))
+            if scatter_file is not None:
+                scatter_file.write("%e %e %e\n" % (sn_mag, instcat_mag, d_mag))
 
+            d_mag = np.abs(d_mag)
             if d_mag>d_mag_max:
                 d_mag_max = d_mag
-                print('dmag %e -- %e (%e)' %
-                      (d_mag, instcat_mag,
-                       control_params[5]-float(instcat_params[6])))
+                #print('dmag %e -- %e (%e)' %
+                #      (d_mag, instcat_mag,
+                #       control_params[5]-float(instcat_params[6])))
 
     msg = '\n%s\n' % sne_name
     ct_missing = 0
@@ -190,21 +193,10 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1, out_file=None):
         sn_object.set(c=cc, x1=x1, x0=x0, t0=t0, z=zz)
 
         sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
-        if sn_mag < 40.0:
-            ct_missing += 1
-            dt = expmjd - control_params[2]
-            dd = angularSeparation(pointing_ra, pointing_dec,
-                                   sn_ra_dec[sn_id][0],
-                                   sn_ra_dec[sn_id][1])
-            msg += "%s: %e\n" % (sn_id, sn_mag)
-            msg += '    c: %e\n    x0: %e\n' % (cc, x0)
-            msg += '    x1: %e\n    t0: %e\n' % (x1, t0)
-            msg += '    z: %e\n    mjd: %.4f\n' % (zz, expmjd)
-
-    if ct_missing>0:
-        msg += 'ct_missing %d' % ct_missing
-        raise RuntimeError(msg)
-
+        if vanishing_file is not None and np.isfinite(sn_mag):
+            vanishing_file.write('%d %s %e ' % (obsid, sn_id, sn_mag))
+            vanishing_file.write('%e %e %e %e %e %.4f %e\n' %
+                                 (cc,x0,x1,t0,zz,expmjd,expmjd-t0))
 
 if __name__ == "__main__":
 
