@@ -194,8 +194,8 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1,
 
         sn_mag = sn_object.catsimBandMag(bp_dict[bandpass], expmjd)
         if vanishing_file is not None and np.isfinite(sn_mag):
-            vanishing_file.write('%d %s %e ' % (obsid, sn_id, sn_mag))
-            vanishing_file.write('%e %e %e %e %e %.4f %e\n' %
+            vanishing_file.write('%d %s %s %e ' % (obsid, bandpass, sn_id, sn_mag))
+            vanishing_file.write('%e %e %e %.4f %e %.4f %e\n' %
                                  (cc,x0,x1,t0,zz,expmjd,expmjd-t0))
 
 if __name__ == "__main__":
