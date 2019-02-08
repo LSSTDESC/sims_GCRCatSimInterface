@@ -136,7 +136,7 @@ def validate_sne(cat_dir, obsid, fov_deg=2.1,
                 raise RuntimeError("\n%s\nis not a file" % sed_name)
 
             sed = photUtils.Sed()
-            sed.readSED_flambda(sed_name)
+            sed.readSED_flambda(sed_name, cache_sed=False)
 
             fnorm = photUtils.getImsimFluxNorm(sed, float(instcat_params[4]))
             sed.multiplyFluxNorm(fnorm)
