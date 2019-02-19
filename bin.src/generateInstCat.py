@@ -9,7 +9,7 @@ import numbers
 import json
 from astropy._erfa import ErfaWarning
 
-import desc.sims.GCRCatSimInterface.validation and ic_valid
+import desc.sims.GCRCatSimInterface.validation as ic_valid
 
 with warnings.catch_warnings():
     warnings.filterwarnings('ignore', '\nThis call', UserWarning)
