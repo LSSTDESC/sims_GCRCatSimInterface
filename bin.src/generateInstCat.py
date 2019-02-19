@@ -9,6 +9,8 @@ import numbers
 import json
 from astropy._erfa import ErfaWarning
 
+import desc.sims.GCRCatSimInterface.validation and ic_valid
+
 with warnings.catch_warnings():
     warnings.filterwarnings('ignore', '\nThis call', UserWarning)
     warnings.filterwarnings('ignore', 'Duplicate object type', UserWarning)
@@ -74,11 +76,40 @@ def generate_instance_catalog(args=None, lock=None):
 
             full_out_dir = os.path.join(args.out_dir, '%.8d' % obsHistID)
 
-            generate_instance_catalog.instcat_writer.write_catalog(obsHistID,
+            status_file_name = generate_instance_catalog.instcat_writer.write_catalog(obsHistID,
                                                                    out_dir=full_out_dir,
                                                                    fov=args.fov,
                                                                    status_dir=args.out_dir,
                                                                    pickup_file=pickup_file)
+
+            ic_valid.validate_instance_catalog_magnitudes(full_out_dir,
+                                                          obsHistID,
+                                                          seed=obsHistID,
+                                                          nrows=5000)
+
+            if status_file_name is not None:
+                with open(status_file_name, 'a') as out_file:
+                    out_file.write('validated magnitudes\n')
+
+            ic_validate.validate_instance_catalog_positions(full_out_dir,
+                                                            obsHistID,
+                                                            args.fov)
+
+            if status_file_name is not None:
+                with open(status_file_name, 'a') as out_file:
+                    out_file.write('validated positions\n')
+
+            ic_validate.validate_agn_mags(full_out_dir,
+                                          obsHistID,
+                                          args.agn_db_name)
+
+            if status_file_name is not None:
+                with open(status_file_name, 'a') as out_file:
+                    out_file.write('validated AGN\n')
+
+            if status_file_name is not None:
+                with open(status_file_name, 'a') as out_file:
+                    out_file.write('fully validated InstanceCatalog\n')
 
             if args.job_log is not None:
                 if lock is not None:
