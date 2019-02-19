@@ -12,6 +12,8 @@ from lsst.sims.catUtils.mixins import ExtraGalacticVariabilityModels
 
 import argparse
 
+__all__ = ["validate_agn_mags"]
+
 def validate_agn_mags(cat_dir, obsid, agn_db):
     """
     Parameters

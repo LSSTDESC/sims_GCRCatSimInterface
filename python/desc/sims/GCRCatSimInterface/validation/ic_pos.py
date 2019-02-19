@@ -9,6 +9,8 @@ import GCRCatalogs
 
 from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 
+__all__ = ["validate_instance_catalog_positions"]
+
 def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
     """
     Parameters

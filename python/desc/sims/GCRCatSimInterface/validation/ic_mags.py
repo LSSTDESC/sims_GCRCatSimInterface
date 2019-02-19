@@ -15,6 +15,8 @@ import argparse
 
 import time
 
+__all__ = ["validate_instance_catalog_magnitudes"]
+
 def get_sed(name, magnorm, redshift, av, rv):
     if not hasattr(get_sed, '_rest_dict'):
         get_sed._rest_dict = {}
@@ -269,7 +271,7 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     gid = qties['galaxy_id'][valid_dexes]
 
     t_start = time.time()
-    n_proc = 10
+    n_proc = 3
     d_proc = len(gid)//n_proc
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
