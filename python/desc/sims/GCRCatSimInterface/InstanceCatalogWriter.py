@@ -579,6 +579,9 @@ class InstanceCatalogWriter(object):
                                (obsHistID, duration))
 
         print("all done with %d" % obsHistID)
+        if has_status_file:
+            return status_file
+        return None
 
 def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
                         nsnap=1, vistime=30., minsource=100):
