@@ -142,7 +142,7 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
         instcat_ra = []
         instcat_dec = []
         instcat_magnorm = []
-        print('validating positions in\n%s\n' % full_name)
+
         with gzip.open(full_name, 'rb') as in_file:
             for line in in_file:
                 params = line.strip().split(b' ')
@@ -197,24 +197,22 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
             if not gcr_in_inst.all():
                 violation = ~gcr_in_inst
                 n_violation = len(np.where(violation)[0])
-                print('WARNING: %d GCR galaxies were not in InstCat'
-                      % n_violation)
-                print('d_len %d' % (len(instcat_gid)-len(gcr_gid)))
-                print('\n')
+                msg = '\nNot all GCR galaxies in InstanceCatalog\n'
+                msg += '%d GCR galaxies were not in InstCat\n' % n_violation
+                msg += 'd_len %d\n' % (len(instcat_gid)-len(gcr_gid))
 
-                raise RuntimeError("Not all GCR galaxies in InstanceCatalog")
+                raise RuntimeError(msg)
 
             if not inst_in_gcr.all():
                 violation = ~inst_in_gcr
                 if instcat_magnorm[violation].min()<50.0:
                     n_violation = len(np.where(violation)[0])
 
-                    print('WARNING: %d InstCat galaxies not in GCR'
-                          % n_violation)
-                    print(instcat_gid[violation])
-                    print('\n')
+                    msg = '\nNot all InstanceCatalog galaxies in GCR\n'
+                    msg += 'WARNING: %d InstCat galaxies not in GCR' % n_violation
+                    msg += '%s\n' % str(instcat_gid[violation])
 
-                    raise RuntimeError("Not all InstanceCatalog galaxies in GCR")
+                    raise RuntimeError(msg)
 
                 # if this effects a change, it is because there were
                 # some galaxies with magNorm>50 in the InstanceCatalog;
@@ -255,7 +253,6 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
                 raise RuntimeError("dot products were off %e %e %e" %
                                    (delta.min(), np.median(delta), delta.max()))
 
-    print('\n%s\npassed position validation\n' % full_name)
 
 if __name__ == "__main__":
 
