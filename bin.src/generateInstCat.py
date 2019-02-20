@@ -82,6 +82,10 @@ def generate_instance_catalog(args=None, lock=None):
                                                                    status_dir=args.out_dir,
                                                                    pickup_file=pickup_file)
 
+            # commenting out validation code
+            # I noticed just before going into production that it
+            # explodes the memory footprint of InstanceCatalog generation
+            """
             t_start = time.time()
             ic_valid.validate_instance_catalog_magnitudes(args.out_dir,
                                                           obsHistID,
@@ -116,6 +120,7 @@ def generate_instance_catalog(args=None, lock=None):
             if status_file_name is not None:
                 with open(status_file_name, 'a') as out_file:
                     out_file.write('fully validated InstanceCatalog\n')
+            """
 
             if args.job_log is not None:
                 if lock is not None:
