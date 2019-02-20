@@ -6,9 +6,9 @@ import argparse
 if __name__ == "__main__":
 
     config_file = 'config_file_2.1.wfd.json'
-    out_dir_root = '/global/cscratch1/sd/desc/DC2/Run2.0i/cosmoDC2_v1.1.4/instCat/batch_'
+    out_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
+    out_dir = os.path.join(out_dir, 'Run2.1i', 'instCat')
     out_name_root = 'slurm_scripts/batch_script_'
-
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--n_obs', type=int, default=1000,
@@ -23,6 +23,9 @@ if __name__ == "__main__":
                         help='maximum allowed obsHistID '
                         '(default = 993348, corresponding to 4 yrs of survey)')
     args = parser.parse_args()
+
+    if not os.path.isdir(out_dir):
+        raise RuntimeError('\n%s\nis not a dir' % out_dir)
 
     obs_already_done = set()
     if args.already_done is not None:
@@ -59,16 +62,15 @@ if __name__ == "__main__":
     rng = np.random.RandomState(88123)
     rng.shuffle(obs_hist_id)
 
-    i_file_offset = 0
+    i_file_offset = -1
     for i_file, i_start in enumerate(range(0,len(obs_hist_id), args.n_obs)):
         batch_slice = slice(i_start, i_start+args.n_obs)
         batch = obs_hist_id[batch_slice]
-        out_dir = None
-        while out_dir is None or os.path.exists(out_dir):
+        out_name = None
+        while out_name is None or os.path.isfile(out_name):
+            i_file_offset += 1
             out_name = out_name_root+'%d.sl' % (i_file+i_file_offset)
-            out_dir = out_dir_root+'%d' % (i_file+i_file_offset)
-            if os.path.exists(out_dir):
-                i_file_offset += 1
+
         with open(out_name, 'w') as out_file:
             n_srun = int(np.ceil(len(batch)/args.d_obs))
             out_file.write('#!/bin/bash -l\n')
