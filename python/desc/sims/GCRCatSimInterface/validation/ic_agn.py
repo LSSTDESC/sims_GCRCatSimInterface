@@ -124,7 +124,6 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
     instcat_z = agn_df['redshift'].values
 
     valid = np.where(instcat_gid<1.0e11)
-    print('valid v instcat %d %d' % (len(valid[0]),len(instcat_gid)))
     instcat_gid = instcat_gid[valid]
     instcat_magnorm = instcat_magnorm[valid]
     instcat_z = instcat_z[valid]
@@ -145,10 +144,11 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
         cat_q[k] = cat_q[k][sorted_dex]
 
     if not np.array_equal(cat_q['galaxy_id'], instcat_gid):
-        print('len gcr ',len(cat_q['galaxy_id']))
-        print('len instcat ',len(instcat_gid))
-        print('other comparison ',np.array_equal(instcat_gid, agn_gid))
-        raise RuntimeError("GCR gid not equal to InstCat")
+        msg = "GCR gid not equal to InstCat\n"
+        msg += "len gcr %d\n" % len(cat_q['galaxy_id'])
+        msg += "len instcat %d\n" % len(instcat_gid)
+        msg += "other comparison %s\n" % str(np.array_equal(instcat_gid, agn_gid))
+        raise RuntimeError(msg)
 
     if not np.array_equal(instcat_gid, agn_gid):
         raise RuntimeError("galaxy_id arrays are not equal")
@@ -171,7 +171,6 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
 
     agn_simulator = ExtraGalacticVariabilityModels()
     agn_simulator._agn_threads = 10
-    print('simulating AGN')
     d_mag = agn_simulator.applyAgn([np.arange(len(agn_gid), dtype=int)],
                                    agn_params, mjd, redshift=cat_q['redshift_true'])
 
@@ -190,15 +189,10 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
     valid = np.where(error<=1.0e-5)
     d_mag_valid = d_mag_instcat[valid]
     mag_valid = instcat_magnorm[valid]
-    print('valid dmag %e %e %e' % (d_mag_valid.min(), np.median(d_mag_valid), d_mag_valid.max()))
-    print('valid mag %e %e %e' % (mag_valid.min(), np.median(mag_valid), mag_valid.max()))
 
     if np.max(error)>1.0e-5:
         raise RuntimeError("\n%s\nAGN validation failed: max mag error %e" %
                            (agn_name, max_error))
-
-    print('\n%s\npassed AGN validation' % agn_name)
-    print('max err %e' % (max_error))
 
 
 if __name__ == "__main__":
