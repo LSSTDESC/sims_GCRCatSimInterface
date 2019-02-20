@@ -82,30 +82,36 @@ def generate_instance_catalog(args=None, lock=None):
                                                                    status_dir=args.out_dir,
                                                                    pickup_file=pickup_file)
 
-            ic_valid.validate_instance_catalog_magnitudes(full_out_dir,
+            t_start = time.time()
+            ic_valid.validate_instance_catalog_magnitudes(args.out_dir,
                                                           obsHistID,
                                                           seed=obsHistID,
                                                           nrows=5000)
 
             if status_file_name is not None:
                 with open(status_file_name, 'a') as out_file:
-                    out_file.write('validated magnitudes\n')
+                    out_file.write('validated magnitudes %e\n' %
+                                   (time.time()-t_start))
 
-            ic_validate.validate_instance_catalog_positions(full_out_dir,
-                                                            obsHistID,
-                                                            args.fov)
-
-            if status_file_name is not None:
-                with open(status_file_name, 'a') as out_file:
-                    out_file.write('validated positions\n')
-
-            ic_validate.validate_agn_mags(full_out_dir,
-                                          obsHistID,
-                                          args.agn_db_name)
+            t_start = time.time()
+            ic_valid.validate_instance_catalog_positions(args.out_dir,
+                                                         obsHistID,
+                                                         args.fov)
 
             if status_file_name is not None:
                 with open(status_file_name, 'a') as out_file:
-                    out_file.write('validated AGN\n')
+                    out_file.write('validated positions %e\n' %
+                                   (time.time()-t_start))
+
+            t_start = time.time()
+            ic_valid.validate_agn_mags(args.out_dir,
+                                       obsHistID,
+                                       args.agn_db_name)
+
+            if status_file_name is not None:
+                with open(status_file_name, 'a') as out_file:
+                    out_file.write('validated AGN %e\n' %
+                                   (time.time()-t_start))
 
             if status_file_name is not None:
                 with open(status_file_name, 'a') as out_file:
