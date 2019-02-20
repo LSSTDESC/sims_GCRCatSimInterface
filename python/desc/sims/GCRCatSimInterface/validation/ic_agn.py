@@ -170,7 +170,7 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
         agn_params[k] = np.array(agn_params[k])
 
     agn_simulator = ExtraGalacticVariabilityModels()
-    agn_simulator._agn_threads = 10
+    agn_simulator._agn_threads = 3
     d_mag = agn_simulator.applyAgn([np.arange(len(agn_gid), dtype=int)],
                                    agn_params, mjd, redshift=cat_q['redshift_true'])
 
