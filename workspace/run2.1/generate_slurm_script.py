@@ -5,7 +5,7 @@ import argparse
 
 if __name__ == "__main__":
 
-    config_file = 'config_file_2.1.wfd.json'
+    config_file = 'config_file_2.1.ddf.json'
     out_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
     out_dir = os.path.join(out_dir, 'Run2.1i', 'instCat')
     out_name_root = 'slurm_scripts/batch_script_'
@@ -38,16 +38,18 @@ if __name__ == "__main__":
                 raise RuntimeError("Something is wrong\n%s\nis not a dir"
                                    % dir_name)
 
-            file_list = os.listdir(dir_name)
-            for file_name in file_list:
-                if not file_name.startswith('job'):
+            sub_dir_list = os.listdir(dir_name)
+            for sub_dir in sub_dir_list:
+                if not os.path.isdir(os.path.join(dir_name, sub_dir)):
                     continue
-                pars = file_name.replace('.txt','').split('_')
-                obshistid = int(pars[2])
-                with open(os.path.join(dir_name, file_name), 'r') as in_file:
-                    lines = in_file.readlines()
-                    is_done = ('all done' in lines[-1])
-                if is_done:
+                obs_dir_list = os.listdir(os.path.join(dir_name, sub_dir))
+                for obs_dir in obs_dir_list:
+                    if not os.path.isdir(os.path.join(dir_name, sub_dir, obs_dir)):
+                        continue
+                    try:
+                        obshistid = int(obs_dir)
+                    except ValueError:
+                        continue
                     obs_already_done.add(obshistid)
 
     print('N already done %d' % (len(obs_already_done)))
@@ -62,14 +64,15 @@ if __name__ == "__main__":
     rng = np.random.RandomState(88123)
     rng.shuffle(obs_hist_id)
 
-    i_file_offset = -1
+    i_file_offset = 0
     for i_file, i_start in enumerate(range(0,len(obs_hist_id), args.n_obs)):
         batch_slice = slice(i_start, i_start+args.n_obs)
         batch = obs_hist_id[batch_slice]
         out_name = None
         while out_name is None or os.path.isfile(out_name):
-            i_file_offset += 1
             out_name = out_name_root+'%d.sl' % (i_file+i_file_offset)
+            if os.path.isfile(out_name):
+                i_file_offset += 1
 
         with open(out_name, 'w') as out_file:
             n_srun = int(np.ceil(len(batch)/args.d_obs))
