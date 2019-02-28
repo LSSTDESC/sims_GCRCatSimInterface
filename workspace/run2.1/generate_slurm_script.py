@@ -16,9 +16,8 @@ if __name__ == "__main__":
                         '(default=1000)')
     parser.add_argument('--d_obs', type=int, default=7,
                         help='Number of pointings per node (default=7)')
-    parser.add_argument('--already_done', type=str, nargs='+', default=None,
-                        help='directories to check for already completed '
-                        'InstanceCatalogs')
+    parser.add_argument('--already_done', type=str, default=None,
+                        help='file containing list of completed obsHistID')
     parser.add_argument('--max_obs', type=int, default=993348,
                         help='maximum allowed obsHistID '
                         '(default = 993348, corresponding to 4 yrs of survey)')
@@ -29,28 +28,10 @@ if __name__ == "__main__":
 
     obs_already_done = set()
     if args.already_done is not None:
-        if isinstance(args.already_done, str):
-            args.already_done = [args.already_done]
-
-        for dir_name in args.already_done:
-            print('checking %s' % dir_name)
-            if not os.path.isdir(dir_name):
-                raise RuntimeError("Something is wrong\n%s\nis not a dir"
-                                   % dir_name)
-
-            sub_dir_list = os.listdir(dir_name)
-            for sub_dir in sub_dir_list:
-                if not os.path.isdir(os.path.join(dir_name, sub_dir)):
-                    continue
-                obs_dir_list = os.listdir(os.path.join(dir_name, sub_dir))
-                for obs_dir in obs_dir_list:
-                    if not os.path.isdir(os.path.join(dir_name, sub_dir, obs_dir)):
-                        continue
-                    try:
-                        obshistid = int(obs_dir)
-                    except ValueError:
-                        continue
-                    obs_already_done.add(obshistid)
+        with open(args.already_done, 'r') as in_file:
+            for line in in_file:
+                obsid = int(line)
+                obs_already_done.add(obsid)
 
     print('N already done %d' % (len(obs_already_done)))
     obs_hist_id = []
