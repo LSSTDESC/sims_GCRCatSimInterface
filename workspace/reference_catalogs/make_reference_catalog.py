@@ -49,7 +49,7 @@ cat_name = 'cosmoDC2_v1.1.4_image'
 out_name = os.path.join(out_dir, 'reference_catalog_190304.txt')
 
 ast_err_deg = 0.0001/3600.0
-ast_err_rad = np.sqrt(2)*np.radians(ast_err_deg)  # 0.1 milliarcsec in radians (in both directions)
+ast_err_rad = np.radians(ast_err_deg)/np.sqrt(2)  # 0.1 milliarcsec in radians (total)
 phot_err = 0.001  # in mags
 
 cat_config = GCRCatalogs.get_catalog_config(cat_name)
