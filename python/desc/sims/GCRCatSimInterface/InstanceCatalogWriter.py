@@ -244,6 +244,8 @@ class InstanceCatalogWriter(object):
             ID of the desired visit.
         out_dir: str [None]
             Output directory.  It will be created if it doesn't already exist.
+            This is actually a parent directory.  The InstanceCatalog will be
+            written to 'out_dir/%.8d' % obsHistID
         fov: float [2.]
             Field-of-view angular radius in degrees.  2 degrees will cover
             the LSST focal plane.
@@ -258,6 +260,8 @@ class InstanceCatalogWriter(object):
 
         if out_dir is None:
             raise RuntimeError("must specify out_dir")
+
+        full_out_dir = os.path.join(out_dir, '%.8d' % obsHistID)
 
         do_stars = True
         do_knots = True
@@ -287,8 +291,8 @@ class InstanceCatalogWriter(object):
                     if 'wrote SNe' in line:
                         do_sne = False
 
-        if not os.path.exists(out_dir):
-            os.makedirs(out_dir)
+        if not os.path.exists(full_out_dir):
+            os.makedirs(full_out_dir)
 
         has_status_file = False
         if status_dir is not None:
@@ -313,7 +317,7 @@ class InstanceCatalogWriter(object):
                                ((time.time()-self.t_start)/3600.0))
 
         # Add directory for writing the GLSN spectra to
-        glsn_spectra_dir = str(os.path.join(out_dir, 'Dynamic'))
+        glsn_spectra_dir = str(os.path.join(full_out_dir, 'Dynamic'))
         twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
         # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
@@ -343,8 +347,8 @@ class InstanceCatalogWriter(object):
             bright_cat.photParams = self.phot_params
             bright_cat.lsstBandpassDict = self.bp_dict
 
-            cat_dict = {os.path.join(out_dir, star_name): star_cat,
-                        os.path.join(out_dir, bright_star_name): bright_cat}
+            cat_dict = {os.path.join(full_out_dir, star_name): star_cat,
+                        os.path.join(full_out_dir, bright_star_name): bright_cat}
             parallelCatalogWriter(cat_dict, chunk_size=50000, write_header=False)
             written_catalog_names.append(star_name)
 
@@ -363,7 +367,7 @@ class InstanceCatalogWriter(object):
             cat.sed_lookup_dir = self.sed_lookup_dir
             cat.photParams = self.phot_params
             cat.lsstBandpassDict = self.bp_dict
-            cat.write_catalog(os.path.join(out_dir, knots_name), chunk_size=5000,
+            cat.write_catalog(os.path.join(full_out_dir, knots_name), chunk_size=5000,
                               write_header=False)
             written_catalog_names.append(knots_name)
             del cat
@@ -375,7 +379,7 @@ class InstanceCatalogWriter(object):
                                    (obsHistID, duration))
         else:
             # Creating empty knots component
-            subprocess.check_call('cd %(out_dir)s; touch %(knots_name)s' % locals(), shell=True)
+            subprocess.check_call('cd %(full_out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
 
         if self.sprinkler is False:
@@ -390,7 +394,7 @@ class InstanceCatalogWriter(object):
                 cat.sed_lookup_dir = self.sed_lookup_dir
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
-                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=5000,
+                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
                 del cat
@@ -412,7 +416,7 @@ class InstanceCatalogWriter(object):
                 cat.sed_lookup_dir = self.sed_lookup_dir
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
-                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=5000,
+                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
                 del cat
@@ -435,7 +439,7 @@ class InstanceCatalogWriter(object):
                 cat.lsstBandpassDict = self.bp_dict
                 cat.photParams = self.phot_params
                 cat_name = 'agn_'+gal_name
-                cat.write_catalog(os.path.join(out_dir, cat_name), chunk_size=5000,
+                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,
                                   write_header=False)
                 written_catalog_names.append(cat_name)
                 del cat
@@ -497,7 +501,7 @@ class InstanceCatalogWriter(object):
                 written_catalog_names.append('bulge_'+gal_name)
                 written_catalog_names.append('disk_'+gal_name)
                 written_catalog_names.append('agn_'+gal_name)
-                gal_cat.write_catalog(os.path.join(out_dir, gal_name), chunk_size=5000,
+                gal_cat.write_catalog(os.path.join(full_out_dir, gal_name), chunk_size=5000,
                                       write_header=False)
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
@@ -508,16 +512,16 @@ class InstanceCatalogWriter(object):
                 host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
                 host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
                                         os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_bulge_agn_host.csv'),
-                                        os.path.join(out_dir, sprinkled_host_name))
+                                        os.path.join(full_out_dir, sprinkled_host_name))
                 host_cat.write_host_cat(os.path.join(self.host_image_dir,'agn_lensed_disks'),
                                         os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_disk_agn_host.csv'),
-                                        os.path.join(out_dir, sprinkled_host_name), append=True)
+                                        os.path.join(full_out_dir, sprinkled_host_name), append=True)
                 host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_bulges'),
                                         os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_bulge_sne_host.csv'),
-                                        os.path.join(out_dir, sprinkled_host_name), append=True)
+                                        os.path.join(full_out_dir, sprinkled_host_name), append=True)
                 host_cat.write_host_cat(os.path.join(self.host_image_dir, 'sne_lensed_disks'),
                                         os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_disk_sne_host.csv'),
-                                        os.path.join(out_dir, sprinkled_host_name), append=True)
+                                        os.path.join(full_out_dir, sprinkled_host_name), append=True)
 
                 written_catalog_names.append(sprinkled_host_name)
 
@@ -528,14 +532,16 @@ class InstanceCatalogWriter(object):
 
         # SN instance catalogs
         if self.sn_db_name is not None and do_sne:
-            phosimcatalog = snphosimcat(self.sn_db_name, obs_metadata=obs_md,
-                                        objectIDtype=42, sedRootDir=out_dir)
+            phosimcatalog = snphosimcat(self.sn_db_name,
+                                        obs_metadata=obs_md,
+                                        objectIDtype=42,
+                                        sedRootDir=full_out_dir)
 
             phosimcatalog.photParams = self.phot_params
             phosimcatalog.lsstBandpassDict = self.bp_dict
 
             snOutFile = 'sne_cat_{}.txt'.format(obsHistID)
-            phosimcatalog.write_catalog(os.path.join(out_dir, snOutFile),
+            phosimcatalog.write_catalog(os.path.join(full_out_dir, snOutFile),
                                         chunk_size=5000, write_header=False)
 
             written_catalog_names.append(snOutFile)
@@ -547,11 +553,11 @@ class InstanceCatalogWriter(object):
                                    (obsHistID, duration))
 
         make_instcat_header(self.star_db, obs_md,
-                            os.path.join(out_dir, phosim_cat_name),
+                            os.path.join(full_out_dir, phosim_cat_name),
                             object_catalogs=written_catalog_names)
 
-        if os.path.exists(os.path.join(out_dir, gal_name)):
-            full_name = os.path.join(out_dir, gal_name)
+        if os.path.exists(os.path.join(full_out_dir, gal_name)):
+            full_name = os.path.join(full_out_dir, gal_name)
             with open(full_name, 'r') as in_file:
                 gal_lines = in_file.readlines()
                 if len(gal_lines) > 0:
@@ -562,7 +568,7 @@ class InstanceCatalogWriter(object):
         # gzip the object files.
         gzip_process_list = []
         for orig_name in written_catalog_names:
-            full_name = os.path.join(out_dir, orig_name)
+            full_name = os.path.join(full_out_dir, orig_name)
             if not os.path.exists(full_name):
                 continue
             p = subprocess.Popen(args=['gzip', full_name])

@@ -74,10 +74,8 @@ def generate_instance_catalog(args=None, lock=None):
                 pickup_file = os.path.join(args.pickup_dir, 'job_log_%.8d.txt' % obsHistID)
                 config_dict['pickup_file'] = pickup_file
 
-            full_out_dir = os.path.join(args.out_dir, '%.8d' % obsHistID)
-
             status_file_name = generate_instance_catalog.instcat_writer.write_catalog(obsHistID,
-                                                                   out_dir=full_out_dir,
+                                                                   out_dir=args.out_dir,
                                                                    fov=args.fov,
                                                                    status_dir=args.out_dir,
                                                                    pickup_file=pickup_file)
