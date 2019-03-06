@@ -102,15 +102,26 @@ with open(out_name, 'w') as out_file:
 
     bp_dict = photUtils.BandpassDict.loadTotalBandpassesFromFiles()
 
+    where_clause = 'WHERE ra>=47.72 AND ra<=75.98 '
+    where_clause += 'AND decl>=-46.61 AND decl<=-24.594'
+
     with sqlite3.connect(star_db_name) as star_conn:
         t_start_stars = time.time()
         star_cursor = star_conn.cursor()
-        star_cmd = star_cursor.execute("SELECT simobjid, ra, decl, sedFilename, magNorm FROM stars")
+
+        final_ct = star_cursor.execute('SELECT count(simobjid) from stars '
+                                       + where_clause).fetchall()[0][0]
+
+        star_cmd = star_cursor.execute('SELECT simobjid, ra, decl, '
+                                       + 'sedFilename, magNorm FROM stars '
+                                       + where_clause)
+
         star_r = star_cmd.fetchmany(chunk_size)
         tot_stars = 0
         while len(star_r)>0:
             n_stars = len(star_r)
             tot_stars += n_stars
+            print('n_stars %d tot %d of %d' % (n_stars, tot_stars, final_ct))
             star_r = np.array(star_r).transpose()
             unq = star_r[0].astype(int)*1024 + 2
             ra = star_r[1].astype(float)
@@ -157,11 +168,13 @@ with open(out_name, 'w') as out_file:
 
             duration = time.time()-t_start_stars
             duration = duration/3600.0
-            proj = 2.0e6*duration/tot_stars
-            print('can do 2 million stars in %e hrs' % proj)
+            proj = final_ct*duration/tot_stars
+            print('can do all stars in %e hrs (%e now)' %
+                  (proj, duration))
 
             star_r = star_cmd.fetchmany(chunk_size)
 
+    print('done with stars')
     for healpix in healpix_list:
         healpix_filter = GCRQuery('healpix_pixel==%d' % healpix)
         q = cat.get_quantities(q_names, native_filters=[healpix_filter],
