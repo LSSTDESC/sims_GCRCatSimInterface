@@ -233,7 +233,7 @@ class InstanceCatalogWriter(object):
 
         self.instcats = get_instance_catalogs()
 
-    def write_catalog(self, obsHistID, out_dir='.', fov=2, status_dir=None,
+    def write_catalog(self, obsHistID, out_dir=None, fov=2, status_dir=None,
                       pickup_file=None):
         """
         Write the instance catalog for the specified obsHistID.
@@ -242,7 +242,7 @@ class InstanceCatalogWriter(object):
         ----------
         obsHistID: int
             ID of the desired visit.
-        out_dir: str ['.']
+        out_dir: str [None]
             Output directory.  It will be created if it doesn't already exist.
         fov: float [2.]
             Field-of-view angular radius in degrees.  2 degrees will cover
@@ -255,6 +255,10 @@ class InstanceCatalogWriter(object):
             This job will resume where that one left off, only simulating
             sub-catalogs that did not complete.
         """
+
+        if out_dir is None:
+            raise RuntimeError("must specify out_dir")
+
         do_stars = True
         do_knots = True
         do_bulges = True
