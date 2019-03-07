@@ -30,12 +30,12 @@ export MKL_NUM_THREADS=1
 
 export HDF5_USE_FILE_LOCKING=FALSE
 
-config_dir=$SFD_SCRATCH/test_config_production/
+config_dir=${SFD_SCRATCH}test_config_production/
 config_file=test_config_production_file.json
 
 python make_config.py ${config_dir} ${config_file}
 
-out_dir=$SFD_SCRATCH/instcat_test_190307small/
+out_dir=${SFD_SCRATCH}instcat_test_190307small/
 if [ ! -d ${out_dir} ]; then
     mkdir -p ${out_dir}
 fi
