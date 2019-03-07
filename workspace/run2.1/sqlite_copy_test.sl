@@ -16,13 +16,13 @@ SFD_SCRATCH=/global/cscratch1/sd/danielsf/
 
 source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
 setup -j -r $HOME/sims_GCRCatSimInterface_sfd
-setup -j -r $SFD_HOME/sims_catUtils
-setup -j -r $SFD_HOME/sims_photUtils
-setup -j -r $SFD_HOME/sims_utils
-setup -j -r $SFD_HOME/Twinkles
-setup -j -r $SFD_HOME/sims_catalogs
+setup -j -r $HOME/sims_catUtils_sfd
+setup -j -r $HOME/sims_photUtils_sfd
+setup -j -r $HOME/sims_utils_sfd
+setup -j -r $HOME/Twinkles_sfd
+setup -j -r $HOME/sims_catalogs_sfd
 
-export PYTHONPATH=$SFD_HOME/gcr-catalogs-desc/:$PYTHONPATH
+export PYTHONPATH=$HOME/gcr-catalogs_sfd/:$PYTHONPATH
 
 export OMP_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
