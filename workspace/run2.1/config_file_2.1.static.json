@@ -1,4 +1,4 @@
-{"fov": 2.1,
+{"fov": 0.2,
 "gzip_threads": 3,
 "descqa_catalog": "cosmoDC2_v1.1.4_image_addon_knots",
 "sed_lookup_dir": "/global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/sedLookup/",
