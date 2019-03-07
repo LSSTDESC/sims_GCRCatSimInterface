@@ -15,7 +15,7 @@ SFD_HOME=/global/homes/d/danielsf/
 SFD_SCRATCH=/global/cscratch1/sd/danielsf/
 
 source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
-setup -j -r $HOME/sims_GCRCatSimInterface_master
+setup -j -r $HOME/sims_GCRCatSimInterface_sfd
 setup -j -r $SFD_HOME/sims_catUtils
 setup -j -r $SFD_HOME/sims_photUtils
 setup -j -r $SFD_HOME/sims_utils
