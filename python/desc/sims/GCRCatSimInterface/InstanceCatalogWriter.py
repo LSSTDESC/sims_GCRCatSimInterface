@@ -262,6 +262,7 @@ class InstanceCatalogWriter(object):
             raise RuntimeError("must specify out_dir")
 
         full_out_dir = os.path.join(out_dir, '%.8d' % obsHistID)
+        tar_name = os.path.join(out_dir, '%.8d.tar' % obsHistID)
 
         do_stars = True
         do_knots = True
@@ -581,6 +582,21 @@ class InstanceCatalogWriter(object):
 
         for p in gzip_process_list:
             p.wait()
+
+        if has_status_file:
+            with open(status_file, 'a') as out_file:
+                out_file.write("%d tarring\n" % obsHistID)
+        p = subprocess.Popen(args=['tar', '-C', out_dir,
+                                   '-cf', tar_name, '%.8d' % obsHistID])
+        p.wait()
+        p = subprocess.Popen(args=['rm', '-rf', full_out_dir])
+        p.wait()
+
+        if has_status_file:
+            with open(status_file, 'a') as out_file:
+                out_file.write("%d gzipping %s\n" % (obsHistID, tar_name))
+        p = subprocess.Popen(args=['gzip', tar_name])
+        p.wait()
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
