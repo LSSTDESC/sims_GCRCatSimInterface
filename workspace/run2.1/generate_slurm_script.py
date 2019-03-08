@@ -5,8 +5,6 @@ import argparse
 
 if __name__ == "__main__":
 
-    out_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
-    out_dir = os.path.join(out_dir, 'Run2.1i', 'instCat')
     out_name_root = 'slurm_scripts/batch_script_'
 
     parser = argparse.ArgumentParser()
@@ -20,10 +18,12 @@ if __name__ == "__main__":
     parser.add_argument('--max_obs', type=int, default=993348,
                         help='maximum allowed obsHistID '
                         '(default = 993348, corresponding to 4 yrs of survey)')
+    parser.add_argument('--out_dir', type=str, default=None,
+                        help='Where InstanceCatalogs will be written')
     args = parser.parse_args()
 
-    if not os.path.isdir(out_dir):
-        raise RuntimeError('\n%s\nis not a dir' % out_dir)
+    if args.out_dir is None:
+        raise RuntimeError("Must specify an output directory")
 
     obs_already_done = set()
     if args.already_done is not None:
@@ -76,7 +76,7 @@ if __name__ == "__main__":
             out_file.write('python make_config.py %s %s\n' % (config_dir_name, config_file_name))
 
             out_file.write('\n')
-            out_file.write('out_dir=%s\n' % out_dir)
+            out_file.write('out_dir=%s\n' % args.out_dir)
             out_file.write('config_file=%s\n' % config_file_name)
             out_file.write("if [ ! -d ${out_dir} ]; then\n")
             out_file.write("    mkdir -p ${out_dir}\n")
@@ -94,7 +94,7 @@ if __name__ == "__main__":
                 out_file.write(' &\n\n')
 
             out_file.write('\nwait\n')
-            out_file.write("\necho 'master all done for %s (%d)'\n" % (out_dir, file_id))
+            out_file.write("\necho 'master all done for %s (%d)'\n" % (args.out_dir, file_id))
             out_file.write('rm %s\n' % config_file_name)
             out_file.write('rm -rf %s\n' % config_dir_name)
             out_file.write('date\n')
