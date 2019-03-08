@@ -229,7 +229,8 @@ class InstanceCatalogWriter(object):
             if os.path.exists(host_data_dir):
                 self.host_data_dir = host_data_dir
             else:
-                raise IOError("Path to host data directory does not exist.")
+                raise IOError("Path to host data directory does not exist.\n\n",
+                              "%s\n\n" % host_data_dir)
 
         self.instcats = get_instance_catalogs()
 
