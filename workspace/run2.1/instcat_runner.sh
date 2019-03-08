@@ -9,6 +9,6 @@ do
     --out_dir ${out_dir} \
     --config_file ${config_file} \
     --ids ${nn} --n_jobs 1 --suppress_warnings \
-    --enable_sprinkler &
+    --host_data_dir $TWINKLES_DIR/data/ --enable_sprinkler &
 done
 wait
