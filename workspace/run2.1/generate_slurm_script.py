@@ -5,7 +5,6 @@ import argparse
 
 if __name__ == "__main__":
 
-    config_file = 'config_file_2.1.ddf.json'
     out_dir = '/global/projecta/projectdirs/lsst/groups/SSim/DC2'
     out_dir = os.path.join(out_dir, 'Run2.1i', 'instCat')
     out_name_root = 'slurm_scripts/batch_script_'
@@ -56,20 +55,29 @@ if __name__ == "__main__":
                 i_file_offset += 1
 
         with open(out_name, 'w') as out_file:
+            file_id = i_file+i_file_offset
             n_srun = int(np.ceil(len(batch)/args.d_obs))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
-            out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' %
-                           (i_file+i_file_offset))
-            out_file.write('#SBATCH -e slurm_err/batch_%d_err.txt\n' %
-                           (i_file+i_file_offset))
+            out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % file_id)
+            out_file.write('#SBATCH -e slurm_err/batch_%d_err.txt\n' % file_id)
             with open('header.txt', 'r') as in_file:
                 for line in in_file:
                     out_file.write(line)
 
+            config_dir_name = os.path.join(os.environ['SCRATCH'],'config_data_%d' % file_id)
+            out_file.write('\n')
+            out_file.write('if [ -d %s ]; then\n' % config_dir_name)
+            out_file.write('    rm -rf %s\n' % config_dir_name)
+            out_file.write('fi\n')
+
+            config_file_name = os.path.join('scratch_config_%d.json' % file_id)
+            out_file.write('\n')
+            out_file.write('python make_config.py %s %s\n' % (config_dir_name, config_file_name))
+
             out_file.write('\n')
             out_file.write('out_dir=%s\n' % out_dir)
-            out_file.write('config_file=%s\n' % config_file)
+            out_file.write('config_file=%s\n' % config_file_name)
             out_file.write("if [ ! -d ${out_dir} ]; then\n")
             out_file.write("    mkdir -p ${out_dir}\n")
             out_file.write("fi\n")
@@ -86,4 +94,8 @@ if __name__ == "__main__":
                 out_file.write(' &\n\n')
 
             out_file.write('\nwait\n')
-            out_file.write("\necho 'master all done for %s'\n" % out_dir)
+            out_file.write("\necho 'master all done for %s (%d)'\n" % (out_dir, file_id))
+            out_file.write('rm %s\n' % config_file_name)
+            out_file.write('rm -rf %s\n' % config_dir_name)
+            out_file.write('date\n')
+            out_file.write("echo 'cleaned up for %d'\n" % file_id)
