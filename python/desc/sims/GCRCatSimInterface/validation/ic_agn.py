@@ -95,20 +95,30 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
                    np.sin(pointing_dec)])
     hp_list = healpy.query_disc(32,vv,np.radians(2.2),nest=False,inclusive=True)
 
+    chunk_size = 10000
+    agn_gid = []
+    agn_magnorm = []
+    agn_varParamStr = []
     with sqlite3.connect(agn_db) as agn_params_conn:
         agn_params_cursor = agn_params_conn.cursor()
         query = 'SELECT galaxy_id, magNorm, varParamStr FROM agn_params'
-        agn_params = agn_params_cursor.execute(query).fetchall()
-        agn_params = np.array(agn_params).transpose()
-        agn_gid = agn_params[0].astype(int)
-        agn_magnorm = agn_params[1].astype(float)
-        agn_varParamStr = agn_params[2]
-        valid_agn = np.where(np.in1d(agn_gid, agn_df['galaxy_id'].values))
-        agn_gid = agn_gid[valid_agn]
-        agn_magnorm = agn_magnorm[valid_agn]
-        agn_varParamStr = agn_varParamStr[valid_agn]
+        agn_query = agn_params_cursor.execute(query)
+        agn_chunk = agn_query.fetchmany(size=chunk_size)
+        while len(agn_chunk)>0:
+            agn_chunk = np.array(agn_chunk).transpose()
+            chunk_gid = agn_chunk[0].astype(int)
+            chunk_magnorm = agn_chunk[1].astype(float)
+            chunk_varParamStr = agn_chunk[2]
+            valid_agn = np.where(np.in1d(chunk_gid, agn_df['galaxy_id'].values))
+            agn_gid.append(chunk_gid[valid_agn])
+            agn_magnorm.append(chunk_magnorm[valid_agn])
+            agn_varParamStr.append(chunk_varParamStr[valid_agn])
+            agn_chunk = agn_query.fetchmany(size=chunk_size)
 
-        del agn_params
+    agn_gid = np.concatenate(agn_gid)
+    agn_magnorm = np.concatenate(agn_magnorm)
+    agn_varParamStr = np.concatenate(agn_varParamStr)
+    print('sql gave %d agn' % len(agn_gid))
 
     sorted_dex = np.argsort(agn_gid)
     agn_gid = agn_gid[sorted_dex]
