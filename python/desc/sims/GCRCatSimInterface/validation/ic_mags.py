@@ -131,7 +131,8 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
 
     assert os.path.isdir(cat_dir)
     data_dir = os.path.join(cat_dir,'%.8d' % obsid)
-    assert os.path.isdir(data_dir)
+    if not os.path.isdir(data_dir):
+        raise RuntimeError('\n\n%s\nis not a dir\n\n' % data_dir)
 
     phosim_file = os.path.join(data_dir, 'phosim_cat_%d.txt' % obsid)
     assert os.path.isfile(phosim_file)
@@ -160,16 +161,22 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     knots_file = os.path.join(data_dir, 'knots_cat_%d.txt.gz' % obsid)
     assert os.path.isfile(knots_file)
 
+    print('reading disks')
     disk_df = pd.read_csv(disk_file, delimiter=' ',
                           compression='gzip', names=colnames, dtype=col_types, nrows=None)
+    print('read disks')
 
     disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024,
                                      index=disk_df.index)
     disk_df = disk_df.set_index('galaxy_id')
 
+    print('reading bulges')
     bulge_df = pd.read_csv(bulge_file, delimiter=' ',
                            compression='gzip', names=colnames,
                            dtype=col_types, nrows=None)
+
+    print('read bulges')
+
     bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024,
                                       index=bulge_df.index)
     bulge_df = bulge_df.set_index('galaxy_id')
@@ -177,9 +184,12 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     for ii in range(len(colnames)):
         colnames[ii] = colnames[ii]+'_knots'
 
+    print('reading knots')
     knots_df = pd.read_csv(knots_file, delimiter=' ',
                            compression='gzip', names=colnames,
                            dtype=col_types, nrows=None)
+    print('read knots')
+
     knots_df['galaxy_id'] = pd.Series(knots_df['uniqueID_knots']//1024,
                                       index=knots_df.index)
     knots_df = knots_df.set_index('galaxy_id')

@@ -1,10 +1,7 @@
 import os
 import numpy as np
 
-from ic_mags import validate_instance_catalog_magnitudes
-from ic_pos import validate_instance_catalog_positions
-from ic_agn import validate_agn_mags
-from ic_sne import validate_sne
+import desc.sims.GCRCatSimInterface.validation as validation
 
 import time
 
@@ -27,35 +24,28 @@ if __name__ == "__main__":
 
     already_run = set()
 
-    parent_dir = os.path.join('/global/cscratch1/sd/desc',
-                              'DC2/Run2.1i/instCat')
+    parent_dir = os.path.join(os.environ['SCRATCH'], 'test_validation')
 
     assert os.path.isdir(parent_dir)
 
-    sub_dirs = os.listdir(parent_dir)
-
     log_name = 'validated_catalogs.txt'
 
-    while len(already_run)<40:
-        target_dir = rng.choice(sub_dirs, size=1)[0]
-        if not os.path.isdir(os.path.join(parent_dir, target_dir)):
-            continue
-        obs_list = os.listdir(os.path.join(parent_dir, target_dir))
-        obs_dir = rng.choice(obs_list, size=1)[0]
+    while len(already_run)<1:
+        obs_dir = '00749676'
         obsid = int(obs_dir)
         if obsid in already_run:
             continue
 
-        cat_dir = os.path.join(parent_dir, target_dir)
+        cat_dir = os.path.join(parent_dir)
 
         t_start = time.time()
         #validate_sne(cat_dir, obsid, out_file=f_out)
         mag_seed = rng.randint(0,10000)
-        validate_instance_catalog_magnitudes(cat_dir, obsid,
-                                             seed=mag_seed,
-                                             nrows=100000)
-        validate_instance_catalog_positions(cat_dir, obsid, 2.1)
-        validate_agn_mags(cat_dir, obsid, agn_db)
+        validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
+                                                        seed=mag_seed,
+                                                        nrows=10000)
+        validation.validate_instance_catalog_positions(cat_dir, obsid, 2.1)
+        validation.validate_agn_mags(cat_dir, obsid, agn_db)
         print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
         already_run.add(obsid)
         with open(log_name, 'a') as out_file:
