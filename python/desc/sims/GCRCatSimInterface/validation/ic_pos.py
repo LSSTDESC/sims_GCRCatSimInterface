@@ -97,10 +97,6 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
     healpix_list = hp.query_disc(32, boresite, np.radians(fov_deg),
                                  nest=False, inclusive=True)
 
-    healpix_query = GCR.GCRQuery('healpix_pixel==%d' % healpix_list[0])
-    for hh in healpix_list[1:]:
-        healpix_query |= GCR.GCRQuery('healpix_pixel==%d' % hh)
-
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image_addon_knots')
 
     qty_names = ['galaxy_id', 'ra', 'dec',
@@ -110,23 +106,35 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
         if nn.startswith('sed') and (nn.endswith('bulge') or nn.endswith('disk')):
             qty_names.append(nn)
 
-    cat_q = cat.get_quantities(qty_names,
-                               filters=[(lambda x: x<=29.0, 'mag_r_lsst')],
-                               native_filters=[healpix_query])
+    final_q = {}
+    for name in qty_names:
+        final_q[name] = []
 
-    # only select those galaxies in our field of view
-    cos_fov = np.cos(np.radians(fov_deg))
-    cat_ra_rad = np.radians(cat_q['ra'])
-    cat_dec_rad = np.radians(cat_q['dec'])
-    xyz_cat = np.array([np.cos(cat_dec_rad)*np.cos(cat_ra_rad),
-                        np.cos(cat_dec_rad)*np.sin(cat_ra_rad),
-                        np.sin(cat_dec_rad)]).transpose()
+    for hh in healpix_list:
+        healpix_query = GCR.GCRQuery('healpix_pixel==%d' % hh)
+        cat_q = cat.get_quantities(qty_names,
+                                   filters=[(lambda x: x<=29.0, 'mag_r_lsst')],
+                                   native_filters=[healpix_query])
 
-    dot = np.dot(xyz_cat, boresite)
-    cat_valid = np.where(dot>=cos_fov)
+        # only select those galaxies in our field of view
+        cos_fov = np.cos(np.radians(fov_deg))
+        cat_ra_rad = np.radians(cat_q['ra'])
+        cat_dec_rad = np.radians(cat_q['dec'])
+        xyz_cat = np.array([np.cos(cat_dec_rad)*np.cos(cat_ra_rad),
+                            np.cos(cat_dec_rad)*np.sin(cat_ra_rad),
+                            np.sin(cat_dec_rad)]).transpose()
 
-    for kk in cat_q.keys():
-        cat_q[kk] = cat_q[kk][cat_valid]
+        dot = np.dot(xyz_cat, boresite)
+        cat_valid = np.where(dot>=cos_fov)
+
+        for kk in cat_q.keys():
+            final_q[kk].append(cat_q[kk][cat_valid])
+
+    cat_q = {}
+    list_of_keys = list(final_q.keys())
+    for kk in list_of_keys:
+        data = final_q.pop(kk)
+        cat_q[kk] = np.concatenate(data)
 
     sorted_dex = np.argsort(cat_q['galaxy_id'])
     for kk in cat_q.keys():
