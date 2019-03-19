@@ -125,6 +125,10 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
                 'positionAngle', 'sindex', 'dust_rest', 'rest_av', 'rest_rv',
                 'dust_obs', 'obs_av', 'obs_rv']
 
+    to_drop = ['obj', 'g1', 'g2', 'kappa', 'dra', 'ddec', 'src_type',
+               'major', 'minor', 'positionAngle', 'sindex', 'dust_rest',
+               'dust_obs']
+
     col_types = {'magnorm': float, 'redshift': float,
                  'rest_av': float, 'rest_rv': float,
                  'sed': bytes, 'uniqueID': int}
@@ -164,6 +168,7 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     print('reading disks')
     disk_df = pd.read_csv(disk_file, delimiter=' ',
                           compression='gzip', names=colnames, dtype=col_types, nrows=None)
+    disk_df = disk_df.drop(labels=to_drop, axis='columns')
     print('read disks')
 
     disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024,
@@ -175,6 +180,7 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
                            compression='gzip', names=colnames,
                            dtype=col_types, nrows=None)
 
+    bulge_df = bulge_df.drop(labels=to_drop, axis='columns')
     print('read bulges')
 
     bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024,
@@ -183,11 +189,14 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
 
     for ii in range(len(colnames)):
         colnames[ii] = colnames[ii]+'_knots'
+    for ii in range(len(to_drop)):
+        to_drop[ii] = to_drop[ii]+'_knots'
 
     print('reading knots')
     knots_df = pd.read_csv(knots_file, delimiter=' ',
                            compression='gzip', names=colnames,
                            dtype=col_types, nrows=None)
+    knots_df = knots_df.drop(labels=to_drop, axis='columns')
     print('read knots')
 
     knots_df['galaxy_id'] = pd.Series(knots_df['uniqueID_knots']//1024,
