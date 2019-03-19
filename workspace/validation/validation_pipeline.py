@@ -41,10 +41,10 @@ if __name__ == "__main__":
         t_start = time.time()
         #validate_sne(cat_dir, obsid, out_file=f_out)
         mag_seed = rng.randint(0,10000)
-        validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
-                                                        seed=mag_seed,
-                                                        nrows=10000)
-        validation.validate_instance_catalog_positions(cat_dir, obsid, 2.1)
+        #validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
+        #                                                seed=mag_seed,
+        #                                                nrows=10000)
+        #validation.validate_instance_catalog_positions(cat_dir, obsid, 2.1)
         validation.validate_agn_mags(cat_dir, obsid, agn_db)
         print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
         already_run.add(obsid)
