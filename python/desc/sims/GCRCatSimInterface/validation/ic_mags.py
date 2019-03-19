@@ -168,7 +168,7 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     print('reading disks')
     disk_df = pd.read_csv(disk_file, delimiter=' ',
                           compression='gzip', names=colnames, dtype=col_types, nrows=None)
-    disk_df = disk_df.drop(labels=to_drop, axis='columns')
+    disk_df.drop(labels=to_drop, axis='columns', inplace=True)
     print('read disks')
 
     disk_df['galaxy_id'] = pd.Series(disk_df['uniqueID']//1024,
@@ -180,7 +180,7 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
                            compression='gzip', names=colnames,
                            dtype=col_types, nrows=None)
 
-    bulge_df = bulge_df.drop(labels=to_drop, axis='columns')
+    bulge_df.drop(labels=to_drop, axis='columns', inplace=True)
     print('read bulges')
 
     bulge_df['galaxy_id'] = pd.Series(bulge_df['uniqueID']//1024,
@@ -196,7 +196,7 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     knots_df = pd.read_csv(knots_file, delimiter=' ',
                            compression='gzip', names=colnames,
                            dtype=col_types, nrows=None)
-    knots_df = knots_df.drop(labels=to_drop, axis='columns')
+    knots_df.drop(labels=to_drop, axis='columns', inplace=True)
     print('read knots')
 
     knots_df['galaxy_id'] = pd.Series(knots_df['uniqueID_knots']//1024,
