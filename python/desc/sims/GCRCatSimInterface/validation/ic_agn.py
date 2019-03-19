@@ -95,10 +95,6 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
                    np.sin(pointing_dec)])
     hp_list = healpy.query_disc(32,vv,np.radians(2.2),nest=False,inclusive=True)
 
-    hp_query = GCRQuery('healpix_pixel==%d' % hp_list[0])
-    for hp in hp_list[1:]:
-        hp_query |= GCRQuery('healpix_pixel==%d' % hp)
-
     with sqlite3.connect(agn_db) as agn_params_conn:
         agn_params_cursor = agn_params_conn.cursor()
         query = 'SELECT galaxy_id, magNorm, varParamStr FROM agn_params'
@@ -133,11 +129,25 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
     instcat_z = instcat_z[sorted_dex]
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image')
-    cat_q = cat.get_quantities(['galaxy_id', 'redshift_true'], native_filters=[hp_query])
 
-    valid = np.in1d(cat_q['galaxy_id'], agn_df['galaxy_id'])
+    cat_q = {}
+    cat_q['galaxy_id'] = []
+    cat_q['redshift_true'] = []
+    for hp in hp_list:
+        hp_query = GCRQuery('healpix_pixel==%d' % hp)
+
+        local_q = cat.get_quantities(['galaxy_id', 'redshift_true'],
+                                     native_filters=[hp_query])
+
+        valid = np.in1d(local_q['galaxy_id'], agn_df['galaxy_id'])
+        if valid.any():
+            for k in cat_q:
+                cat_q[k].append(local_q[k][valid])
+
     for k in cat_q:
-        cat_q[k] = cat_q[k][valid]
+        cat_q[k] = np.concatenate(cat_q[k])
+
+    print('we have %d agn' % len(cat_q['galaxy_id']))
 
     sorted_dex = np.argsort(cat_q['galaxy_id'])
     for k in cat_q:
