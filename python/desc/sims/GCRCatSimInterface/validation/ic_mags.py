@@ -236,22 +236,26 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     healpix_list = healpy.query_disc(32, vv, np.radians(radius_deg),
                                      nest=False, inclusive=True)
 
-    hp_query = None
-    for hp in healpix_list:
-        if hp_query is None:
-            hp_query = GCRQuery('healpix_pixel==%d' % hp)
-        else:
-            hp_query |= GCRQuery('healpix_pixel==%d' % hp)
+    gal_id_values = galaxy_df.index.values
 
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image')
-    cat_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'],
-                                   native_filters=[hp_query])
+    cat_qties = {}
+    cat_qties['galaxy_id'] = []
+    cat_qties['ra'] = []
+    cat_qties['dec'] = []
+    for hp in healpix_list:
+        hp_query = GCRQuery('healpix_pixel==%d' % hp)
+        local_qties = cat.get_quantities(['galaxy_id', 'ra', 'dec'],
+                                       native_filters=[hp_query])
+        valid = np.in1d(local_qties['galaxy_id'], gal_id_values)
+        if valid.any():
+            for k in local_qties:
+                cat_qties[k].append(local_qties[k][valid])
+
+    for k in cat_qties:
+        cat_qties[k] = np.concatenate(cat_qties[k])
+
     cat_dexes = np.arange(len(cat_qties['galaxy_id']), dtype=int)
-
-    gid_max = cat_qties['galaxy_id'].max()
-
-    valid_galaxies = np.where(galaxy_df.index.values<=gid_max)
-    galaxy_df = galaxy_df.iloc[valid_galaxies]
 
     if nrows>0:
         rng = np.random.RandomState(seed)
@@ -284,10 +288,31 @@ def validate_instance_catalog_magnitudes(cat_dir, obsid, seed=99, nrows=-1):
     np.testing.assert_array_equal(gid[sorted_dex], galaxy_df.index.values)
 
     mag_name = 'mag_true_%s_lsst' % bandpass_name
-    qties = cat.get_quantities(['galaxy_id', mag_name],
-                                native_filters=[hp_query])
+    qties = {}
+    qties['galaxy_id'] = []
+    qties[mag_name] = []
+    for hp in healpix_list:
+        hp_query = GCRQuery('healpix_pixel==%d' % hp)
+        local_qties = cat.get_quantities(['galaxy_id', mag_name],
+                                         native_filters=[hp_query])
+
+        valid = np.in1d(local_qties['galaxy_id'], gal_id_values)
+        if valid.any():
+            for k in local_qties:
+                qties[k].append(local_qties[k][valid])
+
+    for k in qties:
+        qties[k] = np.concatenate(qties[k])
+
+    np.testing.assert_array_equal(qties['galaxy_id'], cat_qties['galaxy_id'])
+
     mags = qties[mag_name][valid_dexes]
     gid = qties['galaxy_id'][valid_dexes]
+
+    assert len(gid) == len(mags)
+    assert len(mags) > 0
+    if nrows>0:
+        assert len(mags) == nrows
 
     t_start = time.time()
     n_proc = 3
