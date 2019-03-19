@@ -102,13 +102,17 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
     qty_names = ['galaxy_id', 'ra', 'dec',
                  'stellar_mass_bulge', 'stellar_mass_disk']
 
-    for nn in cat.list_all_quantities():
-        if nn.startswith('sed') and (nn.endswith('bulge') or nn.endswith('disk')):
-            qty_names.append(nn)
-
     final_q = {}
     for name in qty_names:
         final_q[name] = []
+
+    final_q['disk_sed_filter'] = []
+    final_q['bulge_sed_filter'] = []
+
+    sed_qty_names = []
+    for nn in cat.list_all_quantities():
+        if nn.startswith('sed') and (nn.endswith('bulge') or nn.endswith('disk')):
+            sed_qty_names.append(nn)
 
     for hh in healpix_list:
         healpix_query = GCR.GCRQuery('healpix_pixel==%d' % hh)
@@ -127,8 +131,28 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
         dot = np.dot(xyz_cat, boresite)
         cat_valid = np.where(dot>=cos_fov)
 
+        sed_filter = {}
+        sed_filter['disk'] = None
+        sed_filter['bulge'] = None
+        for component in ('disk', 'bulge'):
+            for nn in sed_qty_names:
+                if component not in nn:
+                    continue
+                sed_data = cat.get_quantities([nn],
+                                   filters=[(lambda x: x<=29.0, 'mag_r_lsst')],
+                                   native_filters=[healpix_query])
+
+                if sed_filter[component] is None:
+                    sed_filter[component] = (sed_data[nn]>0.0)
+                else:
+                    sed_filter[component] &= (sed_data[nn]>0.0)
+
         for kk in cat_q.keys():
-            final_q[kk].append(cat_q[kk][cat_valid])
+            if kk in final_q:
+                final_q[kk].append(cat_q[kk][cat_valid])
+
+        final_q['disk_sed_filter'].append(sed_filter['disk'][cat_valid])
+        final_q['bulge_sed_filter'].append(sed_filter['bulge'][cat_valid])
 
     cat_q = {}
     list_of_keys = list(final_q.keys())
@@ -176,16 +200,7 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
         instcat_magnorm = instcat_magnorm[sorted_dex]
 
         has_component = cat_q['stellar_mass_%s' % component]>0.0
-        sed_filter = None
-        for nn in qty_names:
-            if nn.startswith('sed') and nn.endswith(component):
-                if sed_filter is None:
-                    sed_filter = (cat_q[nn]>0.0)
-                else:
-                    sed_filter &= (cat_q[nn]>0.0)
-
-        if sed_filter is not None:
-            has_component &= sed_filter
+        has_component &= cat_q['%s_sed_filter' % component]
 
         # the sprinkler will delete disks from the InstanceCatalog
         if component == 'disk':
