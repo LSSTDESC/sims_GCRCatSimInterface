@@ -14,6 +14,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir_name', type=str)
     parser.add_argument('--seed', type=int, default=4561)
+    parser.add_argument('--n_cats', type=int, default=10)
     args = parser.parse_args()
 
     rng = np.random.RandomState(args.seed)
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     log_name = 'validated_catalogs.txt'
     already_run = set()
-    while len(already_run)<4:
+    while len(already_run)<args.n_cats and len(already_run)<len(list_of_inst_cats):
         orig_file = rng.choice(list_of_inst_cats, size=1)[0]
         if orig_file in already_run:
             continue
