@@ -1,4 +1,5 @@
 import os
+import gzip
 import numpy as np
 
 import desc.sims.GCRCatSimInterface.validation as validation
@@ -8,6 +9,38 @@ import time
 import argparse
 import subprocess
 import shutil
+
+def validate_sne_seds(cat_file):
+    """
+    just validate that an SED was written for each supernova
+
+    Parameters
+    ----------
+    cat_file is the path to the sne instance catalog
+    """
+
+    sed_dir = os.path.join(os.path.dirname(cat_file))
+    if not os.path.isdir(sed_dir):
+        raise RuntimeError('\n\n%s\nis not a dir\n\n' % sed_dir)
+
+    ct = 0
+    with gzip.open(cat_file, 'rb') as in_file:
+        for line in in_file:
+            p = line.strip().split()
+            if not p[0] == b'object':
+                continue
+            full_name = os.path.join(sed_dir, p[5].decode(encoding='utf-8'))
+            if not os.path.isfile(full_name):
+                raise RuntimeError('\n\n%s\nis not a file\n\n' % full_name)
+            ct += 1
+
+    sed_list = os.listdir(os.path.join(sed_dir, 'Dynamic'))
+    if ct != len(sed_list):
+        raise RuntimeError('InstCat contains %d SNe SEDs; should have %d' %
+                           (ct, len(sed_list)))
+
+    print('checked %d SNe SEDs' % ct)
+
 
 if __name__ == "__main__":
 
@@ -64,6 +97,9 @@ if __name__ == "__main__":
 
         t_start = time.time()
         #validate_sne(cat_dir, obsid, out_file=f_out)
+        sne_cat_name = os.path.join(cat_dir, obs_dir,
+                                    'sne_cat_%d.txt.gz' % obsid)
+        validate_sne_seds(sne_cat_name)
         mag_seed = rng.randint(0,10000)
         validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
                                                         seed=mag_seed,
