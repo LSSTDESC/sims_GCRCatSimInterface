@@ -18,6 +18,9 @@ if __name__ == "__main__":
     parser.add_argument('--max_obs', type=int, default=993348,
                         help='maximum allowed obsHistID '
                         '(default = 993348, corresponding to 4 yrs of survey)')
+    parser.add_argument('--min_obs', type=int, default=-1,
+                        help='minimum allowed obsHistID; '
+                        'obsHistID must be < min_obs (default==-1)')
     parser.add_argument('--out_dir', type=str, default=None,
                         help='Where InstanceCatalogs will be written')
     args = parser.parse_args()
@@ -37,7 +40,10 @@ if __name__ == "__main__":
     with open('data/wfd_obshistid_list.txt', 'r') as in_file:
         for line in in_file:
             ii=int(line.strip())
-            if (ii <= args.max_obs) and (ii not in obs_already_done):
+            if ((ii <= args.max_obs) and
+                (ii not in obs_already_done) and
+                (ii > args.min_obs)):
+
                 obs_hist_id.append(ii)
 
     obs_hist_id = np.array(obs_hist_id)
