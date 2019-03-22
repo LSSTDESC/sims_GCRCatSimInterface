@@ -17,6 +17,7 @@ import shutil
 import json
 import time
 
+import argparse
 
 
 def copy_instcat_config(dest_dir, new_config_name):
@@ -54,3 +55,15 @@ def copy_instcat_config(dest_dir, new_config_name):
         json.dump(new_config, out_file)
 
     print('wrote %s after %e seconds' % (new_config_name, time.time()-t_start))
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dir', type=str, default=None)
+    parser.add_argument('--file', type=str, default=None)
+    args = parser.parse_args()
+
+    assert args.dir is not None
+    assert args.file is not None
+
+    copy_instcat_config(args.dir, args.file)
