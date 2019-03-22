@@ -50,6 +50,8 @@ if __name__ == "__main__":
     rng = np.random.RandomState(88123)
     rng.shuffle(obs_hist_id)
 
+    list_of_config_files = []
+
     i_file_offset = 0
     for i_file, i_start in enumerate(range(0,len(obs_hist_id), args.n_obs)):
         batch_slice = slice(i_start, i_start+args.n_obs)
@@ -71,15 +73,8 @@ if __name__ == "__main__":
                 for line in in_file:
                     out_file.write(line)
 
-            config_dir_name = os.path.join(os.environ['SCRATCH'],'config_data_%d' % file_id)
-            out_file.write('\n')
-            out_file.write('if [ -d %s ]; then\n' % config_dir_name)
-            out_file.write('    rm -rf %s\n' % config_dir_name)
-            out_file.write('fi\n')
-
             config_file_name = os.path.join('scratch_config_%d.json' % file_id)
-            out_file.write('\n')
-            out_file.write('python make_config.py %s %s\n' % (config_dir_name, config_file_name))
+            list_of_config_files.append(config_file_name)
 
             out_file.write('\n')
             out_file.write('out_dir=%s\n' % args.out_dir)
@@ -101,7 +96,9 @@ if __name__ == "__main__":
 
             out_file.write('\nwait\n')
             out_file.write("\necho 'master all done for %s (%d)'\n" % (args.out_dir, file_id))
-            out_file.write('rm %s\n' % config_file_name)
-            out_file.write('rm -rf %s\n' % config_dir_name)
             out_file.write('date\n')
-            out_file.write("echo 'cleaned up for %d'\n" % file_id)
+
+
+    print('need configs:')
+    for f_name in list_of_config_files:
+        print(f_name)
