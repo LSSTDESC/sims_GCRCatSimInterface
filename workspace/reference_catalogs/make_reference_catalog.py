@@ -37,18 +37,26 @@ def smear_ra_dec(ra_deg, dec_deg, delta_ast, rng):
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out', type=str, default=None,
+                        help='Name of file to be created')
+    args = parser.parse_args()
+    out_name = args.out
+
+    if os.path.exists(out_name):
+        raise RuntimeError('\n\n%s\nalready exits\n\n' % out_name)
+
+    if not os.path.isdir(os.path.dirname(out_name)):
+        raise RuntimeError('\n\n%s\nis not a dir\n\n' %
+                           os.path.dirname(out_name))
+
     r_mag_limit = 23.0
     star_db_name = '/global/projecta/projectdirs/lsst/groups'
     star_db_name = os.path.join(star_db_name, 'SSim/DC2/dc2_stellar_db.db')
     if not os.path.isfile(star_db_name):
         raise RuntimeError('\n\n%s\bis not a file\n' % star_db_name)
 
-    out_dir = os.path.join(os.environ['SCRATCH'], 'dc2_run2.1i_reference')
-    if not os.path.isdir(out_dir):
-        raise RuntimeError('\n\n%s\nis not a dir\n\n' % out_dir)
-
     cat_name = 'cosmoDC2_v1.1.4_image'
-    out_name = os.path.join(out_dir, 'reference_catalog_190304.txt')
 
     ast_err_deg = 0.0001/3600.0
     ast_err_rad = np.radians(ast_err_deg)/np.sqrt(2)  # 0.1 milliarcsec in radians (total)
@@ -72,10 +80,6 @@ if __name__ == "__main__":
     print('%d agn' % len(agn_galaxy_id))
 
     healpix_list = cat_config['healpix_pixels']
-
-    if os.path.exists(out_name):
-        os.unlink(out_name)
-
     q_names = ['galaxy_id', 'ra', 'dec']
     for bp in 'ugrizy':
         q_names.append('mag_%s_lsst' % bp)
