@@ -40,6 +40,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', type=str, default=None,
                         help='Name of file to be created')
+    parser.add_argument('--do_galaxies', default=False, action='store_true')
     args = parser.parse_args()
     out_name = args.out
 
@@ -184,6 +185,10 @@ if __name__ == "__main__":
                 star_r = star_cmd.fetchmany(chunk_size)
 
         print('done with stars')
+
+        if not args.do_galaxies:
+            exit()
+
         for healpix in healpix_list:
             healpix_filter = GCRQuery('healpix_pixel==%d' % healpix)
             q = cat.get_quantities(q_names, native_filters=[healpix_filter],
