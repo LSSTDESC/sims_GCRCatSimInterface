@@ -48,6 +48,8 @@ if __name__ == "__main__":
     parser.add_argument('--dir_name', type=str)
     parser.add_argument('--seed', type=int, default=4561)
     parser.add_argument('--n_cats', type=int, default=10)
+    parser.add_argument('--forced_obs', type=int, default=None,
+                        nargs='+')
     args = parser.parse_args()
 
     rng = np.random.RandomState(args.seed)
@@ -72,7 +74,14 @@ if __name__ == "__main__":
     log_name = 'validated_catalogs.txt'
     already_run = set()
     while len(already_run)<args.n_cats and len(already_run)<len(list_of_inst_cats):
-        orig_file = rng.choice(list_of_inst_cats, size=1)[0]
+        if args.forced_obs is not None and len(args.forced_obs)>0:
+            f_choice = args.forced_obs.pop()
+            orig_file = os.path.join(args.dir_name,'%.8d.tar.gz' % f_choice)
+            if not os.path.isfile(orig_file):
+                raise RuntimeError('\n\n%s\nis not a file\n\n' % orig_file)
+        else:
+            orig_file = rng.choice(list_of_inst_cats, size=1)[0]
+
         if orig_file in already_run:
             continue
         p = subprocess.Popen(['cp',orig_file,scratch_dir])
