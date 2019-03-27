@@ -1,0 +1,24 @@
+#SBATCH -t 10:00:00
+#SBATCH -q regular
+#SBATCH -A m1727
+#SBATCH --tasks-per-node=1
+#SBATCH --cpus-per-task=24
+
+date
+
+source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
+setup -j -r $HOME/sims_GCRCatSimInterface_sfd
+setup -j -r $HOME/sims_catUtils_sfd
+setup -j -r $HOME/sims_photUtils_sfd
+setup -j -r $HOME/sims_utils_sfd
+setup -j -r $HOME/Twinkles_sfd
+setup -j -r $HOME/sims_catalogs_sfd
+
+export PYTHONPATH=$HOME/gcr-catalogs_sfd/:$PYTHONPATH
+
+export OMP_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+
+export HDF5_USE_FILE_LOCKING=FALSE
+

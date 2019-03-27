@@ -1,15 +1,18 @@
 """
 This script will define classes that enable CatSim to interface with GCR
 """
-__all__ = ["DESCQAObject", "bulgeDESCQAObject", "diskDESCQAObject", "knotsDESCQAObject",
-           "deg2rad_double", "arcsec2rad", "SNeDBObject"]
+__all__ = ["DESCQAObject", "bulgeDESCQAObject",
+           "diskDESCQAObject", "knotsDESCQAObject",
+           "deg2rad_double", "arcsec2rad", "SNeDBObject",
+           "_DESCQAObject_metadata"]
 
 import numpy as np
 import healpy
+import re
+import time
 from sqlalchemy import text
 from lsst.sims.catalogs.db import CatalogDBObject, ChunkIterator
 from lsst.sims.utils import htmModule as htm
-from .SedFitter import disk_re
 
 _GCR_IS_AVAILABLE = True
 try:
@@ -27,6 +30,8 @@ except ImportError:
     from astropy.coordinates import SkyCoord
     def _angularSeparation(ra1, dec1, ra2, dec2):
         return SkyCoord(ra1, dec1, unit="radian").separation(SkyCoord(ra2, dec2, unit="radian")).radian
+
+_DESCQAObject_metadata = {}
 
 def deg2rad_double(x):
     return np.deg2rad(x).astype(np.float64)
@@ -136,6 +141,10 @@ class DESCQAChunkIterator(object):
                                          for name in self._colnames
                                          if descqa_catalog.has_quantity(self._column_map[name][0])})
 
+        return self._append_defaults(chunk)
+
+    def _append_defaults(self, chunk):
+        descqa_catalog = self._descqa_obj._catalog
         need_to_append_defaults = False
         for name in self._colnames:
             if not descqa_catalog.has_quantity(self._column_map[name][0]):
@@ -237,6 +246,139 @@ class DESCQAChunkIterator(object):
             self._chunk_size = self._data_indices.size
 
 
+class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
+    """
+    A DESCQAChunkIterator class specifically designed to work on catalogs that can
+    be subdivided by healpix_pixels.  It will only load one healpixel at a time and
+    process that in chunks before moving on to the next healpixel.
+    """
+    def __init__(self, *args, **kwargs):
+        self._loader_chunk_size = 2000000
+        self._indices_to_load = None
+        self._healpix_and_indices_list = None
+        self._healpix_filter = None
+        self._healpix_loaded = -1
+        super(DESCQAChunkIterator_healpix, self).__init__(*args, **kwargs)
+        self._descqa_obj._loaded_healpixel = -1
+
+    def _init_data_indices(self):
+        """
+        Do the spatial filtering of extragalactic catalog data.
+        """
+        self._healpix_and_indices_list = []
+        descqa_catalog = self._descqa_obj._catalog
+
+        try:
+            radius_rad = max(self._obs_metadata._boundLength[0],
+                             self._obs_metadata._boundLength[1])
+        except (TypeError, IndexError):
+            radius_rad = self._obs_metadata._boundLength
+
+        if 'healpix_pixel' not in descqa_catalog._native_filter_quantities:
+            raise RuntimeError("Somehow DESCQAChunkIterator_healppix got called "
+                               "for a catalog that does not have healpixel divisions")
+
+        ra_rad = self._obs_metadata._pointingRA
+        dec_rad = self._obs_metadata._pointingDec
+        vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                       np.cos(dec_rad)*np.sin(ra_rad),
+                       np.sin(dec_rad)])
+        healpix_list = healpy.query_disc(32, vv, radius_rad,
+                                         inclusive=True,
+                                         nest=False)
+
+        obs_id = self._obs_metadata.OpsimMetaData['obsHistID']
+        hp_rng = np.random.RandomState(121)
+        hp_rng.random_sample(obs_id)  # so that each obs shuffles differently
+        hp_rng.shuffle(healpix_list)
+
+        for hp in healpix_list:
+            healpix_filter = GCRQuery('healpix_pixel==%d' % hp)
+
+            ra_dec = descqa_catalog.get_quantities(['raJ2000', 'decJ2000', 'galaxy_id', 'mag_r_lsst'],
+                                                   native_filters=[healpix_filter])
+
+            ra = ra_dec['raJ2000']
+            dec = ra_dec['decJ2000']
+            gid = ra_dec['galaxy_id']
+
+            # Optionally apply a method that returns a list of galaxy_ids that are
+            # actually valid objects for the DESCQAObject being queried.
+            # This is especially useful for AGN simulations, as it allows us to only
+            # keep galaxies that actually contain AGN.
+            if (hasattr(self._descqa_obj, '_prefilter_galaxy_id')
+                and self._descqa_obj._do_prefiltering):
+
+                prefilter_gid = self._descqa_obj._prefilter_galaxy_id(self._obs_metadata)
+                prefilter_indices = np.in1d(gid, prefilter_gid)
+            else:
+                prefilter_indices = np.array([True]*len(ra))
+
+            ang_sep = _angularSeparation(ra, dec,
+                                         self._obs_metadata._pointingRA,
+                                         self._obs_metadata._pointingDec)
+
+            valid_indices = np.where(np.logical_and(prefilter_indices,
+                                     np.logical_and(ra_dec['mag_r_lsst']<=29.0,
+                                                    ang_sep < radius_rad)))[0]
+            if len(valid_indices)>0:
+                self._healpix_and_indices_list.append((hp, healpix_filter, valid_indices))
+
+    def __next__(self):
+
+        descqa_catalog = self._descqa_obj._catalog
+
+        if self._healpix_and_indices_list is None:
+            self._init_data_indices()
+            self._qty_name_list = [self._column_map[name][0]
+                                   for name in self._colnames
+                                   if descqa_catalog.has_quantity(self._column_map[name][0])]
+
+        if self._loaded_qties is None or self._indices_to_load is None or len(self._data_indices)==0:
+            if self._indices_to_load is None or len(self._indices_to_load) == 0:
+                try:
+                    (self._healpix_loaded,
+                     self._healpix_filter,
+                     self._indices_to_load) = self._healpix_and_indices_list.pop()
+                except IndexError:
+                    self._healpix_and_indices_list = None
+                    self._loaded_qties = None
+                    self._healpix_loaded = -1
+                    self._data_indices = None
+                    self._qty_name_list = None
+                    self._descqa_obj._loaded_healpixel = -1
+                    self._indices_to_load = None
+                    self._healpix_filter = None
+                    raise StopIteration
+
+                self._indices_to_load = np.sort(self._indices_to_load)
+                self._descqa_obj._loaded_healpixel = self._healpix_loaded
+                self._healpix_loaded = self._healpix_loaded
+                _DESCQAObject_metadata['loaded_healpixel'] = self._healpix_loaded
+
+            valid_indices = self._indices_to_load[:self._loader_chunk_size]
+            self._indices_to_load = self._indices_to_load[self._loader_chunk_size:]
+
+            self._loaded_qties = {}
+            for name in self._qty_name_list:
+                raw_qties = descqa_catalog.get_quantities(name, native_filters=[self._healpix_filter])
+                self._loaded_qties[name] = raw_qties[name][valid_indices]
+            self._data_indices = np.arange(len(valid_indices), dtype=int)
+
+        if self._chunk_size is None:
+            data_indices_this = self._data_indices
+        else:
+            data_indices_this = self._data_indices[:self._chunk_size]
+
+        with np.errstate(divide='ignore', invalid='ignore'):
+            chunk = dict_to_numpy_array({name: self._loaded_qties[self._column_map[name][0]][data_indices_this]
+                                         for name in self._colnames
+                                         if descqa_catalog.has_quantity(self._column_map[name][0])})
+
+        self._data_indices = self._data_indices[len(data_indices_this):]
+        return self._append_defaults(chunk)
+
+
 class DESCQAObject(object):
     """
     This class is meant to mimic the CatalogDBObject usually used to
@@ -259,10 +401,14 @@ class DESCQAObject(object):
     # the dtype of the value (i.e. the argument that gets
     # passed to np.dtype())
     descqaDefaultValues = {'is_sprinkled': (0, int),
-                           'internalRv_dc2': (np.NaN, float),
-                           'internalAv_dc2': (np.NaN, float),
-                           'sedFilename_dc2': (None, (str, 200)),
-                           'magNorm_dc2': (np.NaN, float),
+                           'diskInternalRv': (np.NaN, float),
+                           'diskInternalAv': (np.NaN, float),
+                           'bulgeInternalRv': (np.NaN, float),
+                           'bulgeInternalAv': (np.NaN, float),
+                           'diskSedFilename': (None, (str, 200)),
+                           'bulgeSedFilename': (None, (str, 200)),
+                           'diskMagNorm': (np.NaN, float),
+                           'bulgeMagNorm': (np.NaN, float),
                            'varParamStr': (None, (str, 500))}
 
     _columns_need_postfix = ('majorAxis', 'minorAxis', 'sindex')
@@ -292,11 +438,13 @@ class DESCQAObject(object):
                                "You do not have *GCR* installed and setup")
 
         if yaml_file_name + self._cat_cache_suffix not in _CATALOG_CACHE:
+            t_start = time.time()
             gc = GCRCatalogs.load_catalog(yaml_file_name, config_overwrite)
             additional_postfix = self._transform_catalog(gc)
             _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix] = gc
             _ADDITIONAL_POSTFIX_CACHE[yaml_file_name + self._cat_cache_suffix] = \
                                       additional_postfix
+
 
         self._catalog = _CATALOG_CACHE[yaml_file_name + self._cat_cache_suffix]
 
@@ -397,6 +545,7 @@ class DESCQAObject(object):
         # Apply flux correction for the random walk
         add_postfix = []
 
+        disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
         for name in gc.list_all_quantities():
             disk_match = disk_re.match(name)
             if disk_match is not None:
@@ -436,6 +585,12 @@ class DESCQAObject(object):
         self.columns = []
 
         for name in self._catalog.list_all_quantities(include_native=True):
+            if isinstance(name, tuple):
+                continue
+            if self._columns_need_postfix:
+                if name in self._columns_need_postfix:
+                    continue
+            assert name not in self.columnMap
             self.columnMap[name] = (name,)
             self.columns.append((name, name))
 
@@ -449,6 +604,7 @@ class DESCQAObject(object):
         if hasattr(self, 'descqaDefaultValues'):
             for col_name in self.descqaDefaultValues:
                 self.columnMap[col_name] = (col_name,)
+                self.columns.append((col_name, col_name))
 
     def _postprocess_results(self, chunk, obs_metadata):
         """
@@ -487,10 +643,15 @@ class DESCQAObject(object):
 
         limit is ignored, but needs to be here to preserve the API
         """
-        return DESCQAChunkIterator(self, self.columnMap, obs_metadata,
-                                   colnames or list(self.columnMap),
-                                   self._descqaDefaultValues,
-                                   chunk_size)
+        if 'healpix_pixel' in self._catalog._native_filter_quantities:
+            chunk_class = DESCQAChunkIterator_healpix
+        else:
+            chunk_class = DESCQAChunkIterator
+
+        return chunk_class(self, self.columnMap, obs_metadata,
+                           colnames or list(self.columnMap),
+                           self._descqaDefaultValues,
+                           chunk_size)
 
 
 class bulgeDESCQAObject(DESCQAObject):

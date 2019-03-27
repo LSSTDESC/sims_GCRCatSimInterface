@@ -1,15 +1,17 @@
 import os
 import re
 import numpy as np
+import healpy
+import h5py
 import copy
-from .SedFitter import sed_from_galacticus_mags
-from .SedFitter import sed_filter_names_from_catalog
 from lsst.utils import getPackageDir
+from desc.sims.GCRCatSimInterface import _DESCQAObject_metadata
 from lsst.sims.catalogs.definitions import InstanceCatalog
 from lsst.sims.catalogs.decorators import cached
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSersic2D
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogZPoint
 from lsst.sims.catUtils.exampleCatalogDefinitions import PhoSimCatalogSN
+from lsst.sims.utils import angularSeparation
 from lsst.sims.catUtils.mixins import VariabilityAGN
 from lsst.sims.catalogs.decorators import cached, compound
 from lsst.sims.catUtils.mixins import EBVmixin
@@ -115,6 +117,7 @@ class SubCatalogMixin(object):
         InstanceCatalog._write_recarray(self, local_recarray,
                                         self._subcat_file_handle)
 
+        self._subcat_file_handle.flush()
 
 
 class SprinklerTruthCatMixin(SubCatalogMixin):
@@ -137,6 +140,11 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
     by leaving out the parts of the directory name. Also fix name changes from
     gamma to shear.
     """
+    def get_reasonableMagNorm(self):
+        with np.errstate(invalid='ignore', divide='ignore'):
+            mn = self.column_by_name('phoSimMagNorm')
+            return np.where(mn<500.0, mn, np.NaN)
+
     def get_uniqueId(self):
         return self.column_by_name(self.refIdCol)
 
@@ -172,7 +180,7 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
                       'spatialmodel', 'internalExtinctionModel',
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
 
-    cannot_be_null = ['x0', 't0', 'z', 'shorterFileNames']
+    cannot_be_null = ['x0', 't0', 'z', 'reasonableMagNorm']
 
     default_columns = [('gamma1', 0., float), ('gamma2', 0., float), ('kappa', 0., float),
                        ('raOffset', 0., float), ('decOffset', 0., float),
@@ -183,6 +191,9 @@ class DC2PhosimCatalogSN(PhoSimCatalogSN):
 
 
 class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
+
+    # directory where the SED lookup tables reside
+    sed_lookup_dir = None
 
     # default values used if the database does not provide information
     default_columns = [('raOffset', 0.0, float), ('decOffset', 0.0, float),
@@ -201,17 +212,40 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
             if 'hasKnots' in kwargs['cannot_be_null']:
                 self.catalog_type = 'phoSim_catalog_KNOTS'
                 self.spatialModel = 'knots'
-                if 'hasDisk' not in kwargs['cannot_be_null']:
-                    kwargs['cannot_be_null'].append('hasDisk')
 
         super(PhoSimDESCQA, self).__init__(*args, **kwargs)
+
+    def get_component_type(self):
+        """
+        returns 'disk' if this is a catalog disks;
+        returns 'bulge' if this is a catalog of bulges
+        """
+        if not hasattr(self, '_lumtype'):
+
+            if ('hasDisk' in self._cannot_be_null and
+                'hasBulge' in self._cannot_be_null):
+
+                raise RuntimeError('\nUnsure whether this is a disk catalog '
+                                   'or a bulge catalog\n'
+                                   'self._cannot_be_null %s' % self._cannot_be_null)
+            elif 'hasDisk' in self._cannot_be_null:
+                self._lum_type = 'disk'
+            elif 'hasKnots' in self._cannot_be_null:
+                self._lum_type = 'knots'
+            elif 'hasBulge' in self._cannot_be_null:
+                self._lum_type = 'bulge'
+            else:
+                raise RuntimeError('\nUnsure whether this is a disk catalog '
+                                   'or a bulge catalog\n'
+                                   'self._cannot_be_null %s' % self._cannot_be_null)
+
+        return self._lum_type
 
     # below are defined getter methods used to define CatSim value-added columns
     @cached
     def get_hasDisk(self):
-        output = np.where(np.logical_and(self.column_by_name('stellar_mass_disk')>0.0,
-                                         np.isfinite(self.column_by_name('A_v_disk').astype(float))),
-                          1.0, None)
+        output = np.where(self.column_by_name('stellar_mass_disk')>0.0,
+                          1.0, np.NaN)
         return output
 
     @cached
@@ -220,123 +254,271 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
 
     @cached
     def get_hasBulge(self):
-        output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, None)
+        output = np.where(self.column_by_name('stellar_mass_bulge')>0.0, 1.0, np.NaN)
         return output
 
-    @compound('internalAv_fitted', 'internalRv_fitted')
-    def get_internalDustParams(self):
-        if ('hasDisk' in self._cannot_be_null and
-            'hasBulge' in self._cannot_be_null):
+    def _cache_sed_lookup(self, healpix_list, component_type, bandpass):
+        """
+        Load the SED lookup table information for the healpixels specified
+        in healpix_list.
 
-            raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
-        elif 'hasDisk' in self._cannot_be_null:
-            lum_type = 'disk'
-        elif 'hasBulge' in self._cannot_be_null:
-            lum_type = 'bulge'
-        else:
-             raise RuntimeError('\nUnsure whether this is a disk catalog '
-                               'or a bulge catalog\n'
-                               'self._cannot_be_null %s' % self._cannot_be_null)
+        component_type is either 'disk' or 'bulge'
 
-        # temporarily suppress divide by zero warnings
-        with np.errstate(divide='ignore', invalid='ignore'):
-            av_name = 'A_v_%s' % lum_type
-            if av_name not in self._all_available_columns:
-                av_name = 'A_v'
-            av_list = copy.copy(self.column_by_name(av_name))
+        bandpass is one of 'ugrizy'
 
-            rv_name = 'R_v_%s' % lum_type
-            if rv_name not in self._all_available_columns:
-                rv_name = 'R_v'
-            rv_list = copy.copy(self.column_by_name(rv_name))
+        Return as a dict pointing to numpy arrays with
+        keys:
 
-            min_rv = 0.01
-            rv_list = np.where(np.abs(rv_list)>min_rv, rv_list, min_rv)
+        galaxy_id
+        *_sed
+        *_magnorm
+        *_av
+        *_rv
 
-        return np.array([av_list, rv_list])
+        where * stands for either 'disk' or 'bulge'
+        """
+
+        if component_type != 'disk' and component_type != 'bulge':
+            raise RuntimeError("Do not know what component this is: %s" % component_type)
 
 
-    @compound('sedFilename_fitted', 'magNorm_fitted')
+        assert os.path.isdir(self.sed_lookup_dir)
+
+        file_root = 'sed_fit'
+        bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
+
+        out_dict = {}
+
+        raw_out_dict = {}
+        raw_out_dict['galaxy_id'] = []
+        raw_out_dict['sed_idx'] = []
+        raw_out_dict['magnorm'] = []
+        raw_out_dict['av'] = []
+        raw_out_dict['rv'] = []
+
+        for hp in healpix_list:
+            file_name = os.path.join(self.sed_lookup_dir, '%s_%d.h5' % (file_root, hp))
+            with h5py.File(file_name, 'r') as data:
+                if not hasattr(self, '_sed_lookup_names'):
+                    self._sed_lookup_names = np.copy(data['sed_names']).astype(str)
+                    self._sed_lookup_names_bytes = np.copy(data['sed_names'])
+                else:
+                    np.testing.assert_array_equal(data['sed_names'],
+                                                  self._sed_lookup_names_bytes)
+
+                dd = angularSeparation(self.obs_metadata.pointingRA,
+                                       self.obs_metadata.pointingDec,
+                                       data['ra'].value, data['dec'].value)
+                to_keep = np.where(dd<self.obs_metadata.boundLength+0.1)
+
+                raw_out_dict['galaxy_id'].append(data['galaxy_id'].value[to_keep])
+                raw_out_dict['sed_idx'].append(data['%s_sed' % component_type].value[to_keep])
+                raw_out_dict['magnorm'].append(data['%s_magnorm' % component_type].value[bp_to_int[bandpass]][to_keep])
+                raw_out_dict['av'].append(data['%s_av' % component_type].value[to_keep])
+                raw_out_dict['rv'].append(data['%s_rv' % component_type].value[to_keep])
+
+
+
+        out_dict['galaxy_id'] = np.concatenate(raw_out_dict.pop('galaxy_id'))
+
+        out_dict['%s_sed_idx'
+                 % component_type] = np.concatenate(raw_out_dict.pop('sed_idx'))
+
+        out_dict['%s_%s_magnorm'
+                 % (component_type,
+                    bandpass)] = np.concatenate(raw_out_dict.pop('magnorm'))
+
+        out_dict['%s_av'
+                 % component_type] = np.concatenate(raw_out_dict.pop('av'))
+
+        out_dict['%s_rv'
+                 % component_type] = np.concatenate(raw_out_dict.pop('rv'))
+
+        # so that we can use numpy search sorted
+        sorted_dex = np.argsort(out_dict['galaxy_id'])
+        for k in out_dict.keys():
+            out_dict[k] = out_dict[k][sorted_dex]
+
+        return out_dict
+
+    @compound('sedFilename_idx', 'magNorm_fitted',
+              'internalAv_fitted', 'internalRv_fitted')
     def get_fittedSedAndNorm(self):
 
-        if not hasattr(self, '_disk_flux_names'):
+        _knots_cutoff_i_mag = 27.0
 
-            f_params = sed_filter_names_from_catalog(self.db_obj._catalog)
+        component_type = self.get_component_type()
 
-            np.testing.assert_array_almost_equal(f_params['disk']['wav_min'],
-                                                 f_params['bulge']['wav_min'],
-                                                 decimal=10)
+        self.column_by_name('raJ2000')
+        self.column_by_name('decJ2000')
+        galaxy_id = self.column_by_name('galaxy_id')
 
-            np.testing.assert_array_almost_equal(f_params['disk']['wav_width'],
-                                                 f_params['bulge']['wav_width'],
-                                                 decimal=10)
+        if not hasattr(self, '_knots_available'):
+            self._knots_available = False
+            if 'knots_flux_ratio' in self.db_obj._catalog.list_all_quantities(include_native=True):
+                self._knots_available = True
 
-            self._disk_flux_names = f_params['disk']['filter_name']
-            self._bulge_flux_names = f_params['bulge']['filter_name']
-            self._sed_wav_min = f_params['disk']['wav_min']
-            self._sed_wav_width = f_params['disk']['wav_width']
+        if self._knots_available:
 
-        if 'hasBulge' in self._cannot_be_null and 'hasDisk' in self._cannot_be_null:
-            raise RuntimeError('\nUnsure whether this is a disk catalog or a bulge catalog.\n'
-                               'Both appear to be in self._cannot_be_null.\n'
-                               'self._cannot_be_null: %s' % self._cannot_be_null)
-        elif 'hasBulge' in self._cannot_be_null:
-            flux_names = self._bulge_flux_names
-        elif 'hasDisk' in self._cannot_be_null:
-            flux_names = self._disk_flux_names
+            if not hasattr(self, '_sprinkled_gid'):
+                twinkles_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
+                agn_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_agn_cache.csv')
+                sne_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_sne_cache.csv')
+                sprinkled_gid = []
+                for file_name in (agn_name, sne_name):
+                    with open(file_name, 'r') as in_file:
+                        for line in in_file:
+                            if line.startswith('galtileid'):
+                                continue
+                            params = line.strip().split(',')
+                            sprinkled_gid.append(int(params[0]))
+                self._sprinkled_gid = np.array(sprinkled_gid)
+
+            lsst_i_mag = self.column_by_name('mag_true_i_lsst')
+            knots_ratio = self.column_by_name('knots_flux_ratio')
+            is_sprinkled = np.in1d(galaxy_id, self._sprinkled_gid,
+                                   assume_unique=True)
+
+            knots_ratio = np.where(~is_sprinkled,
+                                   knots_ratio, 0.0)
+
+        if component_type == 'knots' and not self._knots_available:
+            raise RuntimeError("You are trying to simulate knots "
+                               "but there are no knots in your "
+                               "extragalactic catalog")
+
+        if len(galaxy_id) == 0:
+            return np.array([[],[], [], []])
+
+        if hasattr(self.db_obj, '_loaded_healpixel'):
+            healpix_list = np.array([self.db_obj._loaded_healpixel])
+        elif (hasattr(self, 'filter_on_healpix') and
+              self.filter_on_healpix is True and
+              'loaded_healpixel' in _DESCQAObject_metadata):
+
+            healpix_list = np.array([_DESCQAObject_metadata['loaded_healpixel']])
         else:
-            raise RuntimeError('\nUnsure whether this is a disk catalog or a bluge catalog.\n'
-                               'Neither appear to be in self._cannot_be_null.\n'
-                               'self._cannot_be_null: %s' % self._cannot_be_null)
+            ra_rad = self.obs_metadata._pointingRA
+            dec_rad = self.obs_metadata._pointingDec
+            vv = np.array([np.cos(dec_rad)*np.cos(ra_rad),
+                           np.cos(dec_rad)*np.sin(ra_rad),
+                           np.sin(dec_rad)])
+            radius_rad = self.obs_metadata._boundLength
+            healpix_list = np.sort(healpy.query_disc(32, vv, radius_rad,
+                                                     inclusive=True, nest=False))
 
-        with np.errstate(divide='ignore', invalid='ignore'):
-            mag_array = np.array([-2.5*np.log10(self.column_by_name(name))
-                                  for name in flux_names])
+        if component_type == 'knots':
+            cache_component_type = 'disk'
+        else:
+            cache_component_type = component_type
 
-        redshift_array = self.column_by_name('true_redshift')
+        if (not hasattr(self, '_sed_lookup_cache') or
+            not np.array_equal(healpix_list, self._sed_lookup_healpix) or
+            not component_type == self._sed_lookup_component_type or
+            not self.obs_metadata.bandpass == self._sed_lookup_bandpass):
 
-        if len(redshift_array) == 0:
-            return np.array([[], []])
+            # discard any existing cache
+            if hasattr(self, '_sed_lookup_cache'):
+                del self._sed_lookup_cache
 
-        H0 = self.db_obj._catalog.cosmology.H0.value
-        Om0 = self.db_obj._catalog.cosmology.Om0
+            self._sed_lookup_cache = self._cache_sed_lookup(healpix_list,
+                                                            cache_component_type,
+                                                            self.obs_metadata.bandpass)
+            self._sed_lookup_healpix = np.copy(healpix_list)
+            self._sed_lookup_bandpass = self.obs_metadata.bandpass
+            self._sed_lookup_component_type = component_type
 
-        (sed_names,
-         mag_norms) = sed_from_galacticus_mags(mag_array,
-                                               redshift_array,
-                                               H0, Om0,
-                                               self._sed_wav_min,
-                                               self._sed_wav_width)
+        idx = np.searchsorted(self._sed_lookup_cache['galaxy_id'],
+                              galaxy_id)
 
-        return np.array([sed_names, mag_norms])
+        # The sprinkler will add some galaxy_id that do not map to the SED
+        # lookup cache (the sprinkler will add SEDs for these galaxies, so
+        # we do not need to worry about fitting an SED to them).  These
+        # galaxies can be identified because their galaxy_id values will
+        # be larger than any galaxy in the extragalactic catalog, thus,
+        # the idx values assigned by np.searchsorted will == len(_sed_lookup_cache).
+        # We now remove those galaxies from the fitting.
+        valid_gal = np.where(idx<len(self._sed_lookup_cache['galaxy_id']))
+        idx = idx[valid_gal]
+
+        np.testing.assert_array_equal(self._sed_lookup_cache['galaxy_id'][idx],
+                                      galaxy_id[valid_gal])
+
+        n_gal = len(galaxy_id)
+        sed_idx = -1*np.ones(n_gal, dtype=int)
+        mag_norms = np.NaN*np.ones(n_gal, dtype=float)
+        av = np.NaN*np.ones(n_gal, dtype=float)
+        rv = np.NaN*np.ones(n_gal, dtype=float)
+
+        sed_idx[valid_gal] = self._sed_lookup_cache['%s_sed_idx' % cache_component_type][idx]
+        mag_norms[valid_gal] = self._sed_lookup_cache['%s_%s_magnorm' % (cache_component_type, self.obs_metadata.bandpass)][idx]
+        av[valid_gal] = self._sed_lookup_cache['%s_av' % cache_component_type][idx]
+        rv[valid_gal] = self._sed_lookup_cache['%s_rv' % cache_component_type][idx]
+
+        with np.errstate(invalid='ignore', divide='ignore'):
+            if component_type != 'bulge' and self._knots_available:
+                if component_type == 'disk':
+                    d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
+                                     -2.5*np.log10(1.0-knots_ratio), 0.0)
+                elif component_type == 'knots':
+                    d_mag = np.where(lsst_i_mag<=_knots_cutoff_i_mag,
+                                     -2.5*np.log10(knots_ratio), np.NaN)
+                else:
+                    raise RuntimeError("Not sure how to handle d_mag for component %s" % component_type)
+
+                mag_norms += d_mag
+
+        return np.array([sed_idx, mag_norms, av, rv], dtype=object)
 
     @cached
     def get_magNorm(self):
-        raw_magnorm = self.column_by_name('magNorm_dc2')
-        fitted_magnorm = self.column_by_name('magNorm_fitted')
-        preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
-        preliminary_output = np.array(preliminary_output).astype(float)
-        return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
+        if self.get_component_type() == 'bulge':
+            magnorm_name = 'bulgeMagNorm'
+        else:
+            magnorm_name = 'diskMagNorm'
+        with np.errstate(invalid='ignore', divide='ignore'):
+            raw_magnorm = self.column_by_name(magnorm_name)
+            fitted_magnorm = self.column_by_name('magNorm_fitted')
+            preliminary_output=np.where(np.isnan(raw_magnorm), fitted_magnorm, raw_magnorm)
+            preliminary_output = np.array(preliminary_output).astype(float)
+            return np.where(preliminary_output<998.0, preliminary_output, np.NaN)
 
     @cached
     def get_sedFilepath(self):
-        raw_filename = self.column_by_name('sedFilename_dc2')
-        fitted_filename = self.column_by_name('sedFilename_fitted')
+        if self.get_component_type() == 'bulge':
+            sed_name = 'bulgeSedFilename'
+        else:
+            sed_name = 'diskSedFilename'
+        raw_filename = self.column_by_name(sed_name)
+        sed_idx = self.column_by_name('sedFilename_idx')
+        if len(sed_idx)==0:
+            return np.array([])
+
+        fitted_filename = np.array([self._sed_lookup_names[ii]
+                                    if ii>=0 else 'None'
+                                    for ii in sed_idx])
+
         return np.where(np.char.find(raw_filename.astype('str'), 'None')==0,
                         fitted_filename, raw_filename)
 
     @cached
     def get_internalRv(self):
-        raw_rv = self.column_by_name('internalRv_dc2')
+        if self.get_component_type() == 'bulge':
+            rv_name = 'bulgeInternalRv'
+        else:
+            rv_name = 'diskInternalRv'
+        raw_rv = self.column_by_name(rv_name)
         fitted_rv = self.column_by_name('internalRv_fitted')
         return np.where(np.isnan(raw_rv), fitted_rv, raw_rv)
 
 
     @cached
     def get_internalAv(self):
-        raw_av = self.column_by_name('internalAv_dc2')
+        if self.get_component_type() == 'bulge':
+            av_name = 'bulgeInternalAv'
+        else:
+            av_name = 'diskInternalAv'
+        raw_av = self.column_by_name(av_name)
         fitted_av = self.column_by_name('internalAv_fitted')
         return np.where(np.isnan(raw_av), fitted_av, raw_av)
 
@@ -360,13 +542,20 @@ class PhoSimDESCQA_AGN(PhoSimCatalogZPoint, EBVmixin, VariabilityAGN):
                       'galacticExtinctionModel', 'galacticAv', 'galacticRv']
 
 
-    cannot_be_null = ['sedFilepath', 'magNormFiltered']
+    cannot_be_null = ['magNormFiltered']
+
+    @cached
+    def get_magNorm(self):
+        return self.column_by_name('agnMagNorm')
+
+    @cached
+    def get_sedFilename(self):
+        return self.column_by_name('agnSedFilename')
 
     @cached
     def get_magNormFiltered(self):
         mm = self.column_by_name('phoSimMagNorm')
-        with np.errstate(divide='ignore', invalid='ignore'):
-            return np.where(np.logical_and(np.isfinite(mm), mm<10.0), 10.0, mm)
+        return np.clip(mm, 10.0, None)
 
     @cached
     def get_prefix(self):

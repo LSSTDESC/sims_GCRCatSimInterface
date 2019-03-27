@@ -7,83 +7,12 @@ from lsst.utils import getPackageDir
 from lsst.sims.utils import defaultSpecMap
 from lsst.sims.photUtils import BandpassDict, Bandpass, Sed, CosmologyObject
 
-__all__ = ["disk_re", "bulge_re", "sed_filter_names_from_catalog", "sed_from_galacticus_mags"]
+from SedFitter import disk_re, bulge_re, sed_filter_names_from_catalog
 
-_galaxy_sed_dir = os.path.join(getPackageDir('sims_sed_library'), 'galaxySED')
-
-disk_re = re.compile(r'sed_(\d+)_(\d+)_disk_no_host_extinction$')
-bulge_re = re.compile(r'sed_(\d+)_(\d+)_bulge_no_host_extinction$')
-
-def sed_filter_names_from_catalog(catalog):
-    """
-    Takes an already-loaded GCR catalog and returns the names, wavelengths,
-    and widths of the SED-defining bandpasses
-
-    Parameters
-    ----------
-    catalog -- is a catalog loaded with GCR.load_catalog()
-
-    Returns
-    -------
-    A dict keyed to 'bulge' and 'disk'.  The values in this dict will
-    be dicts keyed to 'filter_name', 'wav_min', 'wav_width'.  The
-    corresponding values are:
-
-    filter_name -- list of the names of the columns defining the SED
-    wav_min -- list of the minimum wavelengths of SED-defining bandpasses (in nm)
-    wav_width -- list of the widths of the SED-defining bandpasses (in nm)
-
-    All outputs will be returned in order of increasing wav_min
-    """
-
-    all_quantities = catalog.list_all_quantities()
-
-    bulge_names = []
-    bulge_wav_min = []
-    bulge_wav_width = []
-
-    disk_names = []
-    disk_wav_min = []
-    disk_wav_width = []
-
-    for qty_name in all_quantities:
-        disk_match = disk_re.match(qty_name)
-        if disk_match is not None:
-            disk_names.append(qty_name)
-            disk_wav_min.append(0.1*float(disk_match[1]))  # 0.1 converts to nm
-            disk_wav_width.append(0.1*float(disk_match[2]))
-
-        bulge_match = bulge_re.match(qty_name)
-        if bulge_match is not None:
-            bulge_names.append(qty_name)
-            bulge_wav_min.append(0.1*float(bulge_match[1]))
-            bulge_wav_width.append(0.1*float(bulge_match[2]))
-
-    disk_wav_min = np.array(disk_wav_min)
-    disk_wav_width = np.array(disk_wav_width)
-    disk_names = np.array(disk_names)
-    sorted_dex = np.argsort(disk_wav_min)
-    disk_wav_width = disk_wav_width[sorted_dex]
-    disk_names = disk_names[sorted_dex]
-    disk_wav_min = disk_wav_min[sorted_dex]
-
-    bulge_wav_min = np.array(bulge_wav_min)
-    bulge_wav_width = np.array(bulge_wav_width)
-    bulge_names = np.array(bulge_names)
-    sorted_dex = np.argsort(bulge_wav_min)
-    bulge_wav_width = bulge_wav_width[sorted_dex]
-    bulge_names = bulge_names[sorted_dex]
-    bulge_wav_min = bulge_wav_min[sorted_dex]
-
-    return {'disk':{'filter_name': disk_names,
-                    'wav_min': disk_wav_min,
-                    'wav_width': disk_wav_width},
-            'bulge':{'filter_name': bulge_names,
-                     'wav_min': bulge_wav_min,
-                     'wav_width': bulge_wav_width}}
+__all__ = ["sed_from_galacticus_mags_classic"]
 
 
-def _create_sed_library_mags(wav_min, wav_width):
+def _create_sed_library_mags_classic(wav_min, wav_width):
     """
     Calculate the magnitudes of the SEDs in sims_sed_library dir in the
     tophat filters specified by wav_min, wav_width
@@ -135,8 +64,8 @@ def _create_sed_library_mags(wav_min, wav_width):
     return np.array(sed_names), np.array(sed_mag_list), np.array(sed_mag_norm)
 
 
-def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
-                             wav_min, wav_width):
+def sed_from_galacticus_mags_classic(galacticus_mags, redshift, H0, Om0,
+                                     wav_min, wav_width):
     """
     Fit SEDs from sims_sed_library to Galacticus galaxies based on the
     magnitudes in tophat filters.
@@ -173,7 +102,7 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
 
         (sed_names,
          sed_mag_list,
-         sed_mag_norm) = _create_sed_library_mags(wav_min, wav_width)
+         sed_mag_norm) = _create_sed_library_mags_classic(wav_min, wav_width)
 
 
         sed_colors = sed_mag_list[:,1:] - sed_mag_list[:,:-1]

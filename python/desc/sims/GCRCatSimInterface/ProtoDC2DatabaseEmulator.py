@@ -3,6 +3,7 @@ This script will define classes that enable CatSim to interface with GCR
 """
 import numpy as np
 import os
+import sqlite3
 
 from desc.sims.GCRCatSimInterface import DESCQAObject
 from desc.sims.GCRCatSimInterface import deg2rad_double, arcsec2rad
@@ -273,34 +274,32 @@ class AGN_postprocessing_mixin(object):
         if not os.path.exists(self.agn_params_db):
             raise RuntimeError('\n%s\n\ndoes not exist' % self.agn_params_db)
 
-        if not hasattr(self, '_agn_dbo'):
-            self._agn_dbo = DBObject(database=self.agn_params_db,
-                                     driver='sqlite')
-
-            self._agn_dtype = np.dtype([('galaxy_id', int),
-                                        ('magNorm', float),
-                                        ('varParamStr', str, 500)])
-
-
-
+        self._agn_query_results = {}
         self._cached_half_space = half_space
-        trixel_bounds = half_space.findAllTrixels(6)
+        trixel_bounds = half_space.findAllTrixels(8)
 
-        query = 'SELECT galaxy_id, magNorm, varParamStr '
-        query += 'FROM agn_params '
-        query += 'WHERE '
+        where_clause = 'WHERE '
         for i_bound, bound in enumerate(trixel_bounds):
             if i_bound>0:
-                query += 'OR '
+                where_clause += 'OR '
             if bound[0]==bound[1]:
-                query += 'htmid_6 == %d ' % bound[0]
+                where_clause += 'htmid_8 == %d ' % bound[0]
             else:
-                query += '(htmid_6 >= %d AND htmid_6 <= %d) ' % (bound[0], bound[1])
-        query += 'ORDER BY galaxy_id'
+                where_clause += '(htmid_8 >= %d AND htmid_8 <= %d) ' % (bound[0], bound[1])
 
-        self._agn_query_results = self._agn_dbo.execute_arbitrary(query,
-                                                                  dtype=self._agn_dtype)
+        where_clause += 'ORDER BY galaxy_id'
+        query = 'SELECT galaxy_id, magNorm, varParamStr '
+        query += 'FROM agn_params '
+        query += where_clause
 
+        with sqlite3.connect('file:%s?mode=ro' % self.agn_params_db,
+                             uri=True) as conn:
+            cursor = conn.cursor()
+            raw_results = np.array(cursor.execute(query).fetchall()).transpose()
+
+        self._agn_query_results['galaxy_id'] = raw_results[0].astype(int)
+        self._agn_query_results['magNorm'] = raw_results[1].astype(float)
+        self._agn_query_results['varParamStr'] = raw_results[2].astype(str)
 
     def _prefilter_galaxy_id(self, obs_metadata):
         """
@@ -331,17 +330,21 @@ class AGN_postprocessing_mixin(object):
         find the AGN varParamStr associated with each AGN
         """
 
+        if self.agn_params_db is None:
+            return(master_chunk)
+
         if self.agn_objid is None:
             gid_name = 'galaxy_id'
             varpar_name = 'varParamStr'
-            magnorm_name = 'magNorm'
         else:
             gid_name = self.agn_objid + '_' + 'galaxy_id'
+            if not gid_name in master_chunk.dtype.names:
+                gid_name = 'galaxy_id'
             varpar_name = self.agn_objid + '_' + 'varParamStr'
-            magnorm_name = self.agn_objid + '_' + 'magNorm'
+            if not varpar_name in master_chunk.dtype.names:
+                varpar_name = 'varParamStr'
 
-        if self.agn_params_db is None:
-            return(master_chunk)
+        magnorm_name = 'agnMagNorm'
 
         half_space = halfSpaceFromRaDec(obs_metadata.pointingRA,
                                         obs_metadata.pointingDec,
@@ -358,7 +361,9 @@ class AGN_postprocessing_mixin(object):
         valid_agn_dex = np.where(np.logical_and(self._agn_query_results['galaxy_id']>=gid_arr.min(),
                                                 self._agn_query_results['galaxy_id']<=gid_arr.max()))
 
-        valid_agn = self._agn_query_results[valid_agn_dex]
+        valid_agn = {}
+        for k in self._agn_query_results:
+            valid_agn[k] = self._agn_query_results[k][valid_agn_dex]
 
         # find the indices of the elements in master_chunk
         # that correspond to elements in agn_chunk
@@ -389,8 +394,8 @@ class agnDESCQAObject_protoDC2(AGN_postprocessing_mixin, DESCQAObject_protoDC2):
 
     descqaDefaultValues = {'is_sprinkled': (0, int),
                            'varParamStr': (None, (str, 500)),
-                           'magNorm': (np.NaN, np.float),
-                           'sedFilename': ('agn.spec', (str, 500)),
+                           'agnMagNorm': (np.NaN, np.float),
+                           'agnSedFilename': ('agn.spec', (str, 500)),
                            'sn_truth_params': (None, (str, 500)),
                            'sn_t0': (0.0, np.float)}
 

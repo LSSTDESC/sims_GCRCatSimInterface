@@ -137,7 +137,7 @@ if __name__ == "__main__":
     if use_direct_eddington:
         print('using native Eddington ratio')
         qty_names.append('blackHoleEddingtonRatio')
-        filters.append((lambda x:x>0.0, 'blackHoleEddingtonRatio')
+        filters.append((lambda x:x>0.0, 'blackHoleEddingtonRatio'))
 
     else:
         qty_names.append('blackHoleAccretionRate')
@@ -196,7 +196,7 @@ if __name__ == "__main__":
         m_i_grid[i_z] = ss.calcMag(bp_dict['i'])
         mag_norm_grid[i_z] = ss.calcMag(imsimband)
 
-    htmid_level = 6
+    htmid_level = 8
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
@@ -217,7 +217,7 @@ if __name__ == "__main__":
             print("    %d through %d -- took %.2e hrs; predict %.2e" %
             (i_start,i_end,duration,predicted))
 
-            selection = slice(i_start:i_end)
+            selection = slice(i_start, i_end)
             galaxy_id = galaxy_id_full[selection]
             ra = ra_full[selection]
             dec = dec_full[selection]
@@ -301,7 +301,7 @@ if __name__ == "__main__":
         assert ct_simulated == full_size
 
         print('creating index')
-        cursor.execute('CREATE INDEX htmid ON agn_params (htmid_6)')
+        cursor.execute('CREATE INDEX htmid ON agn_params (htmid_8)')
         connection.commit()
 
     print('all done')

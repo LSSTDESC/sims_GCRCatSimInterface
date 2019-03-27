@@ -1,6 +1,8 @@
 from builtins import zip
 from builtins import str
 from builtins import range
+from collections import OrderedDict
+from lsst.sims.catalogs.db import _CompoundCatalogDBObject_mixin
 from desc.sims.GCRCatSimInterface import DESCQAObject
 from desc.sims.GCRCatSimInterface import AGN_postprocessing_mixin
 
@@ -8,7 +10,7 @@ __all__ = ["CompoundDESCQAObject",
            "GalaxyCompoundDESCQAObject"]
 
 
-class CompoundDESCQAObject(DESCQAObject):
+class CompoundDESCQAObject(_CompoundCatalogDBObject_mixin, DESCQAObject):
     """
     This is a class for taking several DESCQAObject daughter classes that
     query the same catalog for the same rows (but different
@@ -46,22 +48,42 @@ class CompoundDESCQAObject(DESCQAObject):
         """
 
         self._dbObjectClassList = catalogDbObjectClassList
+        self._nameList = []
+        for ix in range(len(self._dbObjectClassList)):
+            self._nameList.append(self._dbObjectClassList[ix].objid)
+
+        self._make_columns()
+        self.columnMap = OrderedDict([(el[0], (el[1],) if el[1] else (el[0],))
+                                     for el in self.columns])
+
+        for kk in self.columnMap:
+            assert isinstance(self.columnMap[kk], tuple)
+
         self._validate_input()
         self.objectTypeId = -1  # this is just a placeholder;
                                 # the objectTypeId for the classes in
                                 # self._dbObjectClassList will actually
                                 # be used at runtime
 
-        self.columnMap = dict()
         self._descqaDefaultValues = dict()
         for dbc in self._dbObjectClassList:
             sub_cat_name = dbc.objid
             dbo = dbc()
-            for col_name in dbo.columnMap:
-                self.columnMap[sub_cat_name+'_'+col_name] = dbo.columnMap[col_name]
 
             for col_name in dbo.descqaDefaultValues:
-                self._descqaDefaultValues[sub_cat_name+'_'+col_name] = dbo.descqaDefaultValues[col_name]
+                prefix_name = '%s_%s'% (sub_cat_name, col_name)
+                query_name = self.name_map(prefix_name)
+                if (query_name in self._descqaDefaultValues and
+                    self._descqaDefaultValues[query_name] is not dbo.descqaDefaultValues[col_name] and
+                    self._descqaDefaultValues[query_name] != dbo.descqaDefaultValues[col_name]):
+
+                    val1 = self._descqaDefaultValues[query_name]
+                    val2 = dbo.descqaDefaultValues[col_name]
+
+                    raise RuntimeError("%s already in self._descqaDefaultValues with values\n%s\n%s\n" %
+                                       (query_name, str(val1), str(val2)))
+
+                self._descqaDefaultValues[query_name] = dbo.descqaDefaultValues[col_name]
 
         dbo = self._dbObjectClassList[0]()
         # need to instantiate the first one because sometimes

@@ -23,20 +23,20 @@ outdir = args.outdir1
 def random_location(Reff_src, qs, phs, ns):
     """Sample a random (x, y) location from the surface brightness
     profile of the galaxy. The input parameters are Sersic parameters for the host galaxy.
-    Parameters: 
+    Parameters:
     -----------
-    Reff_src: float 
+    Reff_src: float
         the effective radius in arcseconds, the radius within which half of the light is contained
     qs: float
         axis ratio of the source, b/a
     phs: float
         position angle of the galaxy in degrees
     ns: int
-        Sersic index 
-    
+        Sersic index
+
     Returns:
     -----------
-    dx: horizontal coordinate of random location (pixel coordinates) 
+    dx: horizontal coordinate of random location (pixel coordinates)
     dy: vertical coordinate of random location (pixel coordinates)
     """
     phs_rad = np.deg2rad(phs-90)
@@ -46,7 +46,7 @@ def random_location(Reff_src, qs, phs, ns):
     x = ss.gammaincinv(2. * ns, z)
     R = (x / bn)**ns * Reff_src
     theta = np.random.random() * 2 * np.pi
-    
+
     xp, yp = R * np.cos(theta), R * np.sin(theta)
     xt = xp * np.sqrt(qs)
     yt = yp / np.sqrt(qs)
@@ -58,7 +58,7 @@ def random_location(Reff_src, qs, phs, ns):
 
 def check_random_locations():
     """Defines a random location to compare to"""
-    
+
     npoints = 100000
     Reff_disk = 0.2
     qs_disk = 0.3
@@ -134,7 +134,7 @@ def check_random_locations():
 
     axHistx.set_xlim(axScatter.get_xlim())
     axHisty.set_ylim(axScatter.get_ylim())
-    
+
     return 0
 
 def load_in_data_sne():
@@ -143,22 +143,24 @@ def load_in_data_sne():
 
     Returns:
     -----------
-    slc_purged: data array for lenses.  Includes t0, x, y, sigma, gamma, e, theta_e     
-    shb_purged: Data array for galaxy bulges.  Includes prefix, uniqueId, raPhoSim, decPhoSim, phosimMagNorm   
+    slc_purged: data array for lenses.  Includes t0, x, y, sigma, gamma, e, theta_e
+    shb_purged: Data array for galaxy bulges.  Includes prefix, uniqueId, raPhoSim, decPhoSim, phosimMagNorm
     shd_purged: Data array for galaxy disks.  Includes prefix, uniqueId, raPhoSim, decPhoSim, phosimMagNorm
 
     """
 
-    sne_host_bulge = pd.read_csv(os.path.join(data_dir,'cosmoDC2_v1.0_bulge_sne_host.csv'))
-    sne_host_disk = pd.read_csv(os.path.join(data_dir,'cosmoDC2_v1.0_disk_sne_host.csv'))
-    
+    sne_host_bulge = pd.read_csv(os.path.join(twinkles_data_dir,
+                                 'cosmoDC2_v1.1.4_bulge_sne_host.csv'))
+    sne_host_disk = pd.read_csv(os.path.join(twinkles_data_dir,
+                                'cosmoDC2_v1.1.4_disk_sne_host.csv'))
+
     idx = sne_host_bulge['image_number'] == 0
     shb_purged = sne_host_bulge[:][idx]
     shd_purged = sne_host_disk[:][idx]
     sne_lens_cats = pd.read_csv(os.path.join(twinkles_data_dir,
-                                             'cosmoDC2_v1.0_sne_cat.csv'))
+                                             'cosmoDC2_v1.1.4_sne_cat.csv'))
     idx = sne_lens_cats['imno'] == 0
-    
+
     slc_purged = sne_lens_cats[:][idx]
 
     return slc_purged, shb_purged, shd_purged
@@ -166,8 +168,8 @@ def load_in_data_sne():
 
 def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
     """
-    Takes input catalogs and isolates lensing parameters as well as ra and dec of lens     
-    Parameters: 
+    Takes input catalogs and isolates lensing parameters as well as ra and dec of lens
+    Parameters:
     -----------
     index: int
         Index for pandas data frame
@@ -176,7 +178,7 @@ def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
     ahb_list:
         row of data frame that contains lens galaxy parameters for the galactic bulge
     ahd_list:
-        row of data frame that contains lens galaxy parameters for the galactic disk 
+        row of data frame that contains lens galaxy parameters for the galactic disk
 
     Returns:
     -----------
@@ -185,12 +187,12 @@ def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
     srcsP_disk: Data array that includes parameters for galactic disk
 
     """
-  
+
     twinkles_ID = ahb_list['twinkles_system'][index]
     UID_lens = ahb_list['uniqueId_lens'][index]
     Ra_lens = ahb_list['raPhoSim_lens'][index]
     Dec_lens = ahb_list['decPhoSim_lens'][index]
-        
+
     idx = hdu_list['twinkles_sysno'] == twinkles_ID
     lid = hdu_list['sysno'][idx].values[0]
     xl1 = 0.0
@@ -230,7 +232,7 @@ def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
     ns_d = ahd_list['sindex'][index]
     zs_d = ahd_list['redshift'][index]
     sed_src_d = ahd_list['sedFilepath'][index]
-    
+
     dys2, dys1 = random_location(Reff_src_d, qs_d, phs_d, ns_d)
     ys1 = hdu_list['snx'][idx].values[0] - dys1    # needed more discussion
     ys2 = hdu_list['sny'][idx].values[0] - dys2    # needed more discussion
@@ -245,7 +247,7 @@ def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
                   'zs'           : zs_d,
                   'sed_src'      : sed_src_d,
                   'components'   : 'disk'}
-    
+
     #----------------------------------------------------------------------------
 
     mag_src_b = ahb_list['phosimMagNorm'][index]
@@ -255,7 +257,7 @@ def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
     ns_b = ahb_list['sindex'][index]
     zs_b = ahb_list['redshift'][index]
     sed_src_b = ahb_list['sedFilepath'][index]
-    
+
     srcsP_bulge = {'ys1'          : ys1,
                    'ys2'          : ys2,
                    'mag_src'      : mag_src_b,
@@ -264,15 +266,15 @@ def create_cats_sne(index, hdu_list, ahb_list, ahd_list):
                    'phs'          : phs_b,
                    'ns'           : ns_b,
                    'zs'           : zs_b,
-                   'sed_src'      : sed_src_b,                         
+                   'sed_src'      : sed_src_b,
                    'components'   : 'bulge'}
-    
+
 
     return lens_cat, srcsP_bulge, srcsP_disk
 
 
 def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
-    """Defines a magnitude of lensed host galaxy using 2d Sersic profile 
+    """Defines a magnitude of lensed host galaxy using 2d Sersic profile
     Parameters:
     -----------
     xi1: x-position of lens (pixel coordinates)
@@ -306,15 +308,15 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
 
 
 def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
-    """Does ray tracing of light from host galaxies using a non-singular isothermal ellipsoid profile.  
-    Ultimately writes out a FITS image of the result of the ray tracing.      
+    """Does ray tracing of light from host galaxies using a non-singular isothermal ellipsoid profile.
+    Ultimately writes out a FITS image of the result of the ray tracing.
     Parameters:
     -----------
     xi1: x-position of lens (pixel coordinates)
     xi2: y-position of lens (pixel coordinates)
-    lens_P: Data array of lens parameters (takes output from create_cats_sne)  
-    srcP_b: Data array of source bulge parameters (takes output from create_cats_sne) 
-    srcP_d: Data array of source disk parameters (takes output from create_cats_sne) 
+    lens_P: Data array of lens parameters (takes output from create_cats_sne)
+    srcP_b: Data array of source bulge parameters (takes output from create_cats_sne)
+    srcP_d: Data array of source disk parameters (takes output from create_cats_sne)
 
     Returns:
     -----------
@@ -335,7 +337,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
     eang = lens_P['phg']                # position angle of external shear
     ekpa = 0.0                          # external convergence
 
-    ximg, yimg = cross_check_with_lensed_sne(lens_P['twinklesid'])
+    #ximg, yimg = cross_check_with_lensed_sne(lens_P['twinklesid'])
 
     #----------------------------------------------------------------------
     ai1, ai2 = ole.alphas_sie(xlc1, xlc2, phl, ql, rle, le, eshr, eang, ekpa, xi1, xi2)
@@ -371,27 +373,28 @@ def cross_check_with_lensed_sne(twinkles_ID):
     Parameters:
     -----------
     twinkles_ID: int
-        ID that identifies a particular system   
-    
+        ID that identifies a particular system
+
     Returns:
     -----------
-    ximgs: 5-element data array containing position of lensed host and image number  
-    yimgs: 5-element data array containing position of lensed points and image number
+    ximgs: nimg-element data array containing position of lensed host and image number
+    yimgs: nimg-element data array containing position of lensed points and image number
 
     """
     sne_lens_cats = pd.read_csv(os.path.join(twinkles_data_dir,
-                                             'dc2_sne_cat.csv'))
-    ximgs = np.zeros((5))
-    yimgs = np.zeros((5))
-        
+                                             'cosmoDC2_v1.1.4_sne_cat.csv'))
+
     idx = sne_lens_cats['twinkles_sysno'] == twinkles_ID
-        
+
     imgnos = sne_lens_cats['imno'][idx]
     nimgs = len(sne_lens_cats['imno'][idx])
-    
+
+    ximgs = np.zeros(nimgs, dtype=float)
+    yimgs = np.zeros(nimgs, dtype=float)
+
     ximgs[:nimgs] = sne_lens_cats['x'][idx].values
     yimgs[:nimgs] = sne_lens_cats['y'][idx].values
-    
+
     return ximgs, yimgs
 
 if __name__ == '__main__':
@@ -409,4 +412,4 @@ if __name__ == '__main__':
             print ("working on system ", i , "of", max(ahb.index))
             message_row += message_freq
         lensP, srcPb, srcPd = create_cats_sne(i, hdulist, ahb, ahd)
-        generate_lensed_host(xi1, xi2, lensP, srcPb, srcPd)      
+        generate_lensed_host(xi1, xi2, lensP, srcPb, srcPd)

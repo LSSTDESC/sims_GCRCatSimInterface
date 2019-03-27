@@ -12,13 +12,25 @@ twinkles_sn_sed_dir = 'spectra_files'
 twinkles_spec_map = psmp
 twinkles_spec_map.subdir_map['(^specFile_)'] = twinkles_sn_sed_dir
 
-_twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_defs.csv')
+_twinkles_defs_file = os.path.join(os.environ['TWINKLES_DIR'],
+                                   'data', 'dc2_defs.csv')
 
-_agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_agn_cache.csv')
-_sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data', 'dc2_sne_cache.csv')
+_agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'],
+                               'data', 'cosmoDC2_v1.1.4_agn_cache.csv')
 
-assert os.path.exists(_agn_cache_file)
-assert os.path.exists(_sne_cache_file)
+_sne_cache_file = os.path.join(os.environ['TWINKLES_DIR'],
+                               'data', 'cosmoDC2_v1.1.4_sne_cache.csv')
+
+_sne_cat_file = os.path.join(os.environ['TWINKLES_DIR'],
+                             'data', 'cosmoDC2_v1.1.4_sne_cat.csv')
+
+_om10_cat_file = os.path.join(os.environ['TWINKLES_DIR'],
+                              'data', 'cosmoDC2_v1.1.4_matched_AGN.fits')
+
+#assert os.path.isfile(_agn_cache_file)
+#assert os.path.isfile(_sne_cache_file)
+#assert os.path.isfile(_sne_cat_file)
+#assert os.path.isfile(_om10_cat_file)
 
 __all__ = ["TwinklesCompoundInstanceCatalog_DC2",
            "sprinklerCompound_DC2",
@@ -33,7 +45,9 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
     cached_sprinkling = True
     agn_cache_file = _agn_cache_file
     sne_cache_file = _sne_cache_file
+    sne_cat_file = _sne_cat_file
     defs_file = _twinkles_defs_file
+    om10_cat = _om10_cat_file
     _write_sn_sed = True
     sed_dir = 'Dynamic'
 
@@ -45,14 +59,19 @@ class sprinklerCompound_DC2(GalaxyCompoundDESCQAObject):
 
     def _final_pass(self, results):
         #Use Sprinkler now
-        sp = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
-                       density_param=1.0,
-                       cached_sprinkling=self.cached_sprinkling,
-                       agn_cache_file=self.agn_cache_file,
-                       sne_cache_file=self.sne_cache_file,
-                       defs_file=self.defs_file,
-                       write_sn_sed=self._write_sn_sed)
-        results = sp.sprinkle()
+        if not hasattr(self, '_sprinkler'):
+            self._sprinkler = sprinkler(results, self.mjd, self.specFileMap, self.sed_dir,
+                                        density_param=1.0,
+                                        cached_sprinkling=self.cached_sprinkling,
+                                        agn_cache_file=self.agn_cache_file,
+                                        sne_cache_file=self.sne_cache_file,
+                                        sne_cat=self.sne_cat_file,
+                                        defs_file=self.defs_file,
+                                        om10_cat=self.om10_cat,
+                                        write_sn_sed=self._write_sn_sed)
+
+        self._sprinkler.visit_mjd = self.mjd
+        results = self._sprinkler.sprinkle(results, self.obs_metadata.bandpass)
 
         return results
 
@@ -154,7 +173,10 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
                     try:
                         compound_dbo = self._compoundDBclass(dbObjClassList)
                     except:
-                        compound_dbo = default_compound_dbo(dbObjClassList)
+                        if default_compound_dbo is not CompoundCatalogDBObject:
+                            compound_dbo = default_compound_dbo(dbObjClassList)
+                        else:
+                            raise
                 else:
                     compound_dbo = None
                     for candidate in self._compoundDBclass:
@@ -180,6 +202,7 @@ class TwinklesCompoundInstanceCatalog_DC2(CompoundDESCQAInstanceCatalog):
                 compound_dbo.mjd = self._obs_metadata.mjd.TAI
                 compound_dbo.specFileMap = twinkles_spec_map
                 compound_dbo.sed_dir = self.sed_dir
+                compound_dbo.obs_metadata = self._obs_metadata
 
                 self._write_compound(catList, compound_dbo, filename,
                                      chunk_size=chunk_size, write_header=write_header,
