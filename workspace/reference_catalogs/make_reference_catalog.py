@@ -37,6 +37,10 @@ def smear_ra_dec(ra_deg, dec_deg, delta_ast, rng):
 
 if __name__ == "__main__":
 
+    stellar_dmag_name = 'data/dc2_stellar_dmag_stats.txt'
+    if not os.path.isfile(stellar_dmag_name):
+        raise RuntimeError('\n\n%s\nis not a file\n' % stellar_dmag_name)
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', type=str, default=None,
                         help='Name of file to be created')
@@ -50,6 +54,20 @@ if __name__ == "__main__":
     if not os.path.isdir(os.path.dirname(out_name)):
         raise RuntimeError('\n\n%s\nis not a dir\n\n' %
                            os.path.dirname(out_name))
+
+    # load stellar variability data
+    dt_list = [('simobjid', int)]
+    for bp in 'ugrizy':
+        dt_list += [('%s_mean' % bp, float), ('%s_rms' % bp, float)]
+    dt = np.dtype(dt_list)
+    stellar_dmag_data = np.genfromtxt(stellar_dmag_name, dtype=dt)
+    sorted_dex = np.argsort(stellar_dmag_data['simobjid'])
+    stellar_dmag_data = stellar_dmag_data[sorted_dex]
+    # fix rms data
+    for bp in 'ugrizy':
+        stellar_dmag_data['%s_rms' % bp] = np.sqrt(stellar_dmag_data['%s_rms' % bp]**2
+                                                   - stellar_dmag_data['%s_mean' % bp]**2)
+        assert not np.isnan(stellar_dmag_data['%s_rms' % bp]).any()
 
     r_mag_limit = 23.0
     star_db_name = '/global/projecta/projectdirs/lsst/groups'
@@ -99,7 +117,9 @@ if __name__ == "__main__":
         out_file.write('# id ra dec sigma_ra sigma_dec ra_smeared dec_smeared ')
         out_file.write('u sigma_u g sigma_g r sigma_r i sigma_i z sigma_z ')
         out_file.write('y sigma_y u_smeared g_smeared r_smeared i_smeared ')
-        out_file.write('z_smeared y_smeared isresolved isagn ')
+        out_file.write('z_smeared y_smeared ')
+        out_file.write('u_rms g_rms r_rms i_rms z_rms y_rms ')
+        out_file.write('isresolved isagn ')
         out_file.write('properMotionRa properMotionDec parallax radialVelocity\n')
 
         ebv_gen = EBVbase()
@@ -126,7 +146,8 @@ if __name__ == "__main__":
 
             star_cmd = star_cursor.execute('SELECT simobjid, ra, decl, '
                                            + 'sedFilename, magNorm FROM stars '
-                                           + where_clause)
+                                           + where_clause
+                                           + ' ORDER BY simobjid')
 
             star_r = star_cmd.fetchmany(chunk_size)
             tot_stars = 0
@@ -134,8 +155,19 @@ if __name__ == "__main__":
                 n_stars = len(star_r)
                 tot_stars += n_stars
                 print('n_stars %d tot %d of %d' % (n_stars, tot_stars, final_ct))
+
                 star_r = np.array(star_r).transpose()
-                unq = star_r[0].astype(int)*1024 + 2
+
+                simobjid = star_r[0].astype(int)
+
+                # match to variability data
+                dmag_dex = np.searchsorted(stellar_dmag_data['simobjid'],
+                                           simobjid)
+
+                if not np.array_equal(stellar_dmag_data['simobjid'][dmag_dex], simobjid):
+                    raise RuntimeError("Associating to dmag data failed")
+
+                unq = simobjid*1024 + 2
                 ra = star_r[1].astype(float)
                 dec = star_r[2].astype(float)
                 sed_name =star_r[3].astype(str)
@@ -164,6 +196,9 @@ if __name__ == "__main__":
                     spec.addDust(a_x, b_x, ebv=ebv[ii], R_v=3.1)
                     mags[ii] = bp_dict.magListForSed(spec)
 
+                for jj, bp in enumerate('ugrizy'):
+                    mags[:,jj] += stellar_dmag_data['%s_mean' % bp][dmag_dex]
+
                 for ii in range(n_stars):
                     if mags[ii][2]>r_mag_limit:
                         continue
@@ -179,6 +214,9 @@ if __name__ == "__main__":
                     for ibp in range(6):
                         out_file.write('%.5f, ' %
                                        (mags[ii][ibp]+delta_mag[ii][ibp]))
+                    for bp in 'ugrizy':
+                        out_file.write('%.6f, ' % (stellar_dmag_data['%s_rms' % bp][ii]))
+
                     out_file.write('0, 0, 0.0, 0.0, 0.0, 0.0\n')
 
                 duration = time.time()-t_start_stars
