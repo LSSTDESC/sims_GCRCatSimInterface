@@ -215,7 +215,7 @@ if __name__ == "__main__":
                         out_file.write('%.5f, ' %
                                        (mags[ii][ibp]+delta_mag[ii][ibp]))
                     for bp in 'ugrizy':
-                        out_file.write('%.6f, ' % (stellar_dmag_data['%s_rms' % bp][ii]))
+                        out_file.write('%.6g, ' % (stellar_dmag_data['%s_rms' % bp][ii]))
 
                     out_file.write('0, 0, 0.0, 0.0, 0.0, 0.0\n')
 
