@@ -109,8 +109,13 @@ if __name__ == "__main__":
 
         bp_dict = photUtils.BandpassDict.loadTotalBandpassesFromFiles()
 
-        where_clause = 'WHERE ra>=47.72 AND ra<=75.98 '
-        where_clause += 'AND decl>=-46.61 AND decl<=-24.594'
+        ra_min=49.91
+        ra_max=73.80
+        dec_min=-44.32
+        dec_max=-27.24
+
+        where_clause = 'WHERE ra>=%.2f AND ra<=%.2f ' % (ra_min, ra_max)
+        where_clause += 'AND decl>=%.2f AND decl<=%.2f' % (dec_min, dec_max)
 
         with sqlite3.connect(star_db_name) as star_conn:
             t_start_stars = time.time()
