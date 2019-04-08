@@ -261,4 +261,6 @@ if __name__ == "__main__":
                 for i_bp, bp in enumerate('ugrizy'):
                     out_file.write('%.5f, ' %
                                    (q['mag_%s_lsst' % bp][ii]+delta_mag[i_bp][ii]))
+                for i_bp in range(6):
+                    out_file.write('-999, ')
                 out_file.write('1, %d, 0.0, 0.0, 0.0, 0.0\n' % is_agn[ii])
