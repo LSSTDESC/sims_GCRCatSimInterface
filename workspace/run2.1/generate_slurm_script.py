@@ -11,8 +11,11 @@ if __name__ == "__main__":
     parser.add_argument('--n_obs', type=int, default=1000,
                         help='Number of pointings per slurm script '
                         '(default=1000)')
-    parser.add_argument('--d_obs', type=int, default=7,
-                        help='Number of pointings per node (default=7)')
+    parser.add_argument('--n_groups', type=int, default=7,
+                        help='number of parallel groups to run per node '
+                        '(default 7)')
+    parser.add_argument('--d_obs', type=int, default=28,
+                        help='Number of pointings per node (default=28)')
     parser.add_argument('--already_done', type=str, default=None,
                         help='file containing list of completed obsHistID')
     parser.add_argument('--max_obs', type=int, default=993348,
@@ -64,7 +67,7 @@ if __name__ == "__main__":
 
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
-            n_srun = int(np.ceil(len(batch)/args.d_obs))
+            n_srun = int(np.ceil(len(batch)/args.n_groups))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
             out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % file_id)
@@ -89,7 +92,8 @@ if __name__ == "__main__":
                 these_obs = batch[s]
                 out_file.write('\n')
                 out_file.write('srun -N 1 -n 1 -c 24 --exclusive \\\n')
-                out_file.write('bash instcat_runner.sh ${out_dir} ${config_file} 1')
+                out_file.write('bash instcat_runner.sh ${out_dir} ')
+                out_file.write('${config_file} %d' % args.n_groups)
                 for ii in these_obs:
                     out_file.write(' %d' % ii)
                 out_file.write(' &\n\n')
