@@ -89,7 +89,7 @@ if __name__ == "__main__":
                 these_obs = batch[s]
                 out_file.write('\n')
                 out_file.write('srun -N 1 -n 1 -c 24 --exclusive \\\n')
-                out_file.write('bash instcat_runner.sh ${out_dir} ${config_file}')
+                out_file.write('bash instcat_runner.sh ${out_dir} ${config_file} 1')
                 for ii in these_obs:
                     out_file.write(' %d' % ii)
                 out_file.write(' &\n\n')
