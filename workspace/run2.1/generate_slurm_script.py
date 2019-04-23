@@ -68,8 +68,10 @@ if __name__ == "__main__":
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
             n_srun = int(np.ceil(len(batch)/args.d_obs))
+            n_hrs = 5*int(np.ceil(args.d_obs/args.n_groups))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
+            out_file.write('#SBATCH -t %d:00:00\n' % n_hrs)
             out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % file_id)
             out_file.write('#SBATCH -e slurm_err/batch_%d_err.txt\n' % file_id)
             with open('header.txt', 'r') as in_file:
