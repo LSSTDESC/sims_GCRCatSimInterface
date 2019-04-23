@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
-            n_srun = int(np.ceil(len(batch)/args.n_groups))
+            n_srun = int(np.ceil(len(batch)/args.d_obs))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
             out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % file_id)
