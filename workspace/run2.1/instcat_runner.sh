@@ -22,7 +22,7 @@ do
     python -W'ignore' $SIMS_GCRCATSIMINTERFACE_DIR/bin.src/generateInstCat.py \
     --out_dir ${out_dir} \
     --config_file ${config_file} \
-    --ids ${id_list[@]} --n_jobs ${n_parallel_jobs} --suppress_warnings \
+    --ids ${id_list[@]} --n_jobs 1 --suppress_warnings \
     --host_data_dir $TWINKLES_DIR/data/ --enable_sprinkler &
 done
 wait
