@@ -259,6 +259,8 @@ class InstanceCatalogWriter(object):
             sub-catalogs that did not complete.
         """
 
+        print('process %d doing %d' % (os.getpid(), obsHistID))
+
         if out_dir is None:
             raise RuntimeError("must specify out_dir")
 
