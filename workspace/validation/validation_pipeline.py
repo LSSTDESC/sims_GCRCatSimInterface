@@ -35,9 +35,14 @@ def validate_sne_seds(cat_file):
             ct += 1
 
     sed_list = os.listdir(os.path.join(sed_dir, 'Dynamic'))
-    if ct != len(sed_list):
+    ct_valid = 0
+    for sed_name in sed_list:
+        if 'GLSN' not in sed_name:
+           ct_valid += 1
+
+    if ct != ct_valid:
         raise RuntimeError('InstCat contains %d SNe SEDs; should have %d' %
-                           (ct, len(sed_list)))
+                           (ct, ct_valid))
 
     print('checked %d SNe SEDs' % ct)
 
