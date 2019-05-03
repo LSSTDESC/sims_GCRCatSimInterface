@@ -3,9 +3,22 @@ import os
 import sqlite3
 import lsst.sims.utils as sims_utils
 
+import argparse
+
 if __name__ == "__main__":
 
-    cadence_file_name = 'ddf_test_cadence.sqlite'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--out_file', type=str, default=None)
+    parser.add_argument('--in_file', type=str, default=None)
+    args = parser.parse_args()
+
+    if args.out_file is None:
+        raise RuntimeError("Must specify out_file")
+
+    if args.in_file is None:
+        raise RuntimeError("Must specify in_file")
+
+    cadence_file_name = args.out_file
     if os.path.exists(cadence_file_name):
         os.unlink(cadence_file_name)
 
@@ -13,7 +26,7 @@ if __name__ == "__main__":
                       ('mjd', float), ('rawSeeing', float),
                       ('filter', str, 1), ('rotSkyPos', float)])
 
-    data_file = 'data/def_pointings.csv'
+    data_file = args.in_file
     data = np.genfromtxt(data_file, dtype=dtype, delimiter=',',
                          skip_header=1)
 
