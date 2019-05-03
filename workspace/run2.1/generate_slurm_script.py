@@ -8,6 +8,8 @@ if __name__ == "__main__":
     out_name_root = 'slurm_scripts/batch_script_'
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--candidate_file', type=str,
+                        default='data/wfd_obshistid_list.txt')
     parser.add_argument('--n_obs', type=int, default=1000,
                         help='Number of pointings per slurm script '
                         '(default=1000)')
@@ -40,7 +42,7 @@ if __name__ == "__main__":
 
     print('N already done %d' % (len(obs_already_done)))
     obs_hist_id = []
-    with open('data/wfd_obshistid_list.txt', 'r') as in_file:
+    with open(args.candidate_file, 'r') as in_file:
         for line in in_file:
             ii=int(line.strip())
             if ((ii <= args.max_obs) and
