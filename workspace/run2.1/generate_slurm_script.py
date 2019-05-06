@@ -46,13 +46,13 @@ if __name__ == "__main__":
         for line in in_file:
             try:
                 ii=int(line.strip().split(',')[0])
+                if ((ii <= args.max_obs) and
+                    (ii not in obs_already_done) and
+                    (ii > args.min_obs)):
+
+                    obs_hist_id.append(ii)
             except ValueError:
                 pass
-            if ((ii <= args.max_obs) and
-                (ii not in obs_already_done) and
-                (ii > args.min_obs)):
-
-                obs_hist_id.append(ii)
 
     assert len(obs_hist_id) > 0
 
