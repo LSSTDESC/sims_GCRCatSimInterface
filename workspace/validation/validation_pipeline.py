@@ -3,6 +3,7 @@ import gzip
 import numpy as np
 
 import desc.sims.GCRCatSimInterface.validation as validation
+from desc.twinkles.validation import validation_pipeline as twinkles_validation
 
 import time
 
@@ -129,6 +130,12 @@ if __name__ == "__main__":
         validation.validate_agn_mags(cat_dir, obsid, agn_db,
                                      opsim_db=args.opsim_db)
         print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
+
+        print('running Twinkles validation')
+        twinkles_validation(os.path.join(cat_dir, obs_dir),
+                            obsid,
+                            os.path.join(cat_dir, obs_dir))
+
         already_run.add(orig_file)
         with open(log_name, 'a') as out_file:
             out_file.write('%d validated\n' % obsid)
