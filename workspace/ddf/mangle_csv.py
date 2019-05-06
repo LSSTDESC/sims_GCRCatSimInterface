@@ -31,5 +31,5 @@ with open(out_file_name, 'w') as out_file:
                 assert ii not in id_used
                 id_used.add(ii)
                 rot = rng.random_sample()*2.0*np.pi
-                out_file.write('%s,0.925184,-0.4789,%s,%s,%s,%.5f\n' %
+                out_file.write('%s,0.92721,-0.49044,%s,%s,%s,%.5f\n' %
                 (p[4],p[0],p[3],p[1],rot))
