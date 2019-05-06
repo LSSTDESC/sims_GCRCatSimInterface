@@ -37,6 +37,9 @@ with open(out_file_name, 'w') as out_file:
 
     max_id = max(id_used)
     min_id = min(id_used)
+
+    assert max_id < 3000000
+
     full_name = os.path.join(cadence_dir, 'def_pointings.csv')
     assert os.path.isfile(full_name)
     with open(full_name, 'r') as in_file:
@@ -45,7 +48,7 @@ with open(out_file_name, 'w') as out_file:
                 continue
             line = line.replace(',0.925184,-0.4789,',',0.92721,-0.49044,')
             p = line.strip().split(',')
-            ii = int(p[0])+max_id
+            ii = int(p[0]) + 3000000
             assert ii not in id_used
             id_used.add(ii)
             line = line.replace('%s,' % p[0], '%d,' % ii, 1)
