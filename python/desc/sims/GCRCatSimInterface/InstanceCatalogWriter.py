@@ -221,7 +221,9 @@ class InstanceCatalogWriter(object):
             if os.path.exists(host_image_dir):
                 self.host_image_dir = host_image_dir
             else:
-                raise IOError("Path to host image directory does not exist.")
+                raise IOError("Path to host image directory"
+                              + "\n\n%s\n\n" % host_image_dir
+                              + "does not exist.")
 
         if host_data_dir is None and self.sprinkler is not False:
             raise IOError("Need to specify the name of the host data directory.")
