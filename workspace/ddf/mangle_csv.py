@@ -12,7 +12,8 @@ assert os.path.isdir(cadence_dir)
 file_name_list = ['dc2_blocks1_v2.csv', 'dc2_blocks2_v2.csv']
 
 out_file_name = os.path.join(cadence_dir, 'dc2_block_cadences.csv')
-assert not os.path.isfile(out_file_name)
+if os.path.isfile(out_file_name):
+    raise RuntimeError("\n\n%s\n\nalready exists\n" % out_file_name)
 
 rng = np.random.RandomState(815)
 
