@@ -51,10 +51,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir_name', type=str)
+    parser.add_argument('--fov_deg', type=float, default=2.1)
     parser.add_argument('--seed', type=int, default=4561)
     parser.add_argument('--n_cats', type=int, default=10)
     parser.add_argument('--forced_obs', type=int, default=None,
                         nargs='+')
+    parser.add_argument('--opsim_db', type=str,
+                        default=os.path.join('/global/projecta/projectdirs',
+                                       'lsst/groups/SSim/DC2',
+                                        'minion_1016_desc_dithered_v4_sfd.db'))
     args = parser.parse_args()
 
     rng = np.random.RandomState(args.seed)
@@ -118,8 +123,11 @@ if __name__ == "__main__":
         validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
                                                         seed=mag_seed,
                                                         nrows=10000)
-        validation.validate_instance_catalog_positions(cat_dir, obsid, 2.1)
-        validation.validate_agn_mags(cat_dir, obsid, agn_db)
+        validation.validate_instance_catalog_positions(cat_dir, obsid,
+                                                       args.fov_deg,
+                                                       opsim_db=args.opsim_db)
+        validation.validate_agn_mags(cat_dir, obsid, agn_db,
+                                     opsim_db=args.opsim_db)
         print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
         already_run.add(orig_file)
         with open(log_name, 'a') as out_file:

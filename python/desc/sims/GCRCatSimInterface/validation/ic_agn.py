@@ -14,7 +14,10 @@ import argparse
 
 __all__ = ["validate_agn_mags"]
 
-def validate_agn_mags(cat_dir, obsid, agn_db):
+def validate_agn_mags(cat_dir, obsid, agn_db,
+                 opsim_db = os.path.join('/global/projecta/projectdirs/lsst',
+                                     'groups/SSim/DC2/',
+                                     'minion_1016_desc_dithered_v4_sfd.db')):
     """
     Parameters
     ----------
@@ -23,6 +26,8 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
     obsid is the obsHistID of the pointing (an int)
 
     agn_db is the database of AGN parameters
+
+    opsim_db is the path to the cadence database
     """
     if not os.path.isfile(agn_db):
         raise RuntimeError('\n%s\nis not a file\n' % agn_db)
@@ -59,9 +64,6 @@ def validate_agn_mags(cat_dir, obsid, agn_db):
 
     if vistime is None:
         raise RuntimeError("Did not read vistime")
-
-    opsim_db = os.path.join('/global/projecta/projectdirs/lsst',
-                            'groups/SSim/DC2/minion_1016_desc_dithered_v4_sfd.db')
 
     if not os.path.isfile(opsim_db):
         raise RuntimeError('\n%s\nis not a file' % opsim_db)

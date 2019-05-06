@@ -11,7 +11,10 @@ from lsst.sims.catUtils.utils import ObservationMetaDataGenerator
 
 __all__ = ["validate_instance_catalog_positions"]
 
-def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
+def validate_instance_catalog_positions(cat_dir, obsid, fov_deg,
+                  opsim_db = os.path.join('/global', 'projecta', 'projectdirs',
+                                      'lsst', 'groups', 'SSim', 'DC2',
+                                      'minion_1016_desc_dithered_v4_sfd.db')):
     """
     Parameters
     ----------
@@ -20,6 +23,8 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
     obsid is the obsHistID of the pointing (an int)
 
     fov_deg is the radius of the field of view in degrees
+
+    opsim_db is the path to the cadence database
     """
     agn_cache_file = os.path.join(os.environ['TWINKLES_DIR'], 'data',
                                   'cosmoDC2_v1.1.4_agn_cache.csv')
@@ -72,10 +77,6 @@ def validate_instance_catalog_positions(cat_dir, obsid, fov_deg):
     sprinkled_knots = np.in1d(knots_gid, sprinkled_gid)
     if sprinkled_knots.any():
         raise RuntimeError("There were knots in sprinkled systems")
-
-    opsim_db = os.path.join('/global', 'projecta', 'projectdirs',
-                            'lsst', 'groups', 'SSim', 'DC2',
-                             'minion_1016_desc_dithered_v4_sfd.db')
 
     if not os.path.isfile(opsim_db):
         raise RuntimeError('\n%s\nis not a file\n' % opsim_db)
