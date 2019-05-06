@@ -44,12 +44,17 @@ if __name__ == "__main__":
     obs_hist_id = []
     with open(args.candidate_file, 'r') as in_file:
         for line in in_file:
-            ii=int(line.strip())
+            try:
+                ii=int(line.strip().split(',')[0])
+            except ValueError:
+                pass
             if ((ii <= args.max_obs) and
                 (ii not in obs_already_done) and
                 (ii > args.min_obs)):
 
                 obs_hist_id.append(ii)
+
+    assert len(obs_hist_id) > 0
 
     obs_hist_id = np.array(obs_hist_id)
     rng = np.random.RandomState(88123)
