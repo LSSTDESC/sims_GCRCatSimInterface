@@ -317,6 +317,9 @@ class InstanceCatalogWriter(object):
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
 
+        if obs_md is None:
+            return
+
         if has_status_file:
             with open(status_file, 'a') as out_file:
                 out_file.write('got obs_md in %e hours\n' %
@@ -673,9 +676,16 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     -------
     lsst.sims.utils.ObservationMetaData object
     """
-    obs_md = obs_gen.getObservationMetaData(obsHistID=obsHistID,
-                                            boundType='circle',
-                                            boundLength=fov)[0]
+    obs_md_list = obs_gen.getObservationMetaData(obsHistID=obsHistID,
+                                                 boundType='circle',
+                                                 boundLength=fov)
+
+    if len(obs_md_list) == 0:
+        print("There is no obsHistID == %d" % obsHistID)
+        return None
+
+    obs_md = obs_md_list[0]
+
     if dither:
         obs_md.pointingRA \
             = np.degrees(obs_md.OpsimMetaData['descDitheredRA'])
