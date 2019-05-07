@@ -8,6 +8,7 @@ import multiprocessing
 import numbers
 import json
 from astropy._erfa import ErfaWarning
+from astropy.utils.iers import conf as astropy_conf
 
 import desc.sims.GCRCatSimInterface.validation as ic_valid
 
@@ -130,6 +131,8 @@ def generate_instance_catalog(args=None, lock=None):
 
 
 if __name__ == "__main__":
+
+    astropy_conf.auto_max_age = None
 
     parser = argparse.ArgumentParser(description='Instance catalog generator')
     parser.add_argument('--config_file', type=str, default=None,
