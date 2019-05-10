@@ -165,7 +165,12 @@ if __name__ == "__main__":
                                            simobjid)
 
                 if not np.array_equal(stellar_dmag_data['simobjid'][dmag_dex], simobjid):
-                    raise RuntimeError("Associating to dmag data failed")
+                    msg = "\n\nAssociating to dmag data failed\n"
+                    msg += "stellar len %d unq %d\n" % (len(stellar_dmag_data['simobjid']),len(np.unique(stellar_dmag_data['simobjid'])))
+                    contained = np.in1d(stellar_dmag_data['simobjid'], simobjid)
+                    msg += "n not contained %d\n" % len(np.where(~contained)[0])
+                    msg += "\n\n"
+                    raise RuntimeError(msg)
 
                 unq = simobjid*1024 + 2
                 ra = star_r[1].astype(float)
