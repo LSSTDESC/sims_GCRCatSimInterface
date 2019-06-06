@@ -82,6 +82,7 @@ if __name__ == "__main__":
     scratch_dir = os.path.join(os.environ['SCRATCH'], 'test_validation')
     assert os.path.isdir(scratch_dir)
 
+    t_start = time.time()
     log_name = 'validated_catalogs.txt'
     already_run = set()
     while len(already_run)<args.n_cats and len(already_run)<len(list_of_inst_cats):
@@ -115,7 +116,6 @@ if __name__ == "__main__":
 
         cat_dir = os.path.join(scratch_dir)
 
-        t_start = time.time()
         #validate_sne(cat_dir, obsid, out_file=f_out)
         sne_cat_name = os.path.join(cat_dir, obs_dir,
                                     'sne_cat_%d.txt.gz' % obsid)
@@ -142,3 +142,4 @@ if __name__ == "__main__":
 
         os.unlink(copied_instcat_name)
         shutil.rmtree(untarred_instcat_name)
+        print('that took %e seconds' % (time.time()-t_start))
