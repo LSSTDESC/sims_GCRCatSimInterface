@@ -57,6 +57,8 @@ if __name__ == "__main__":
     parser.add_argument('--n_cats', type=int, default=10)
     parser.add_argument('--forced_obs', type=int, default=None,
                         nargs='+')
+    parser.add_argument('--just_twinkles', default=False,
+                        action='store_true')
     parser.add_argument('--opsim_db', type=str,
                         default=os.path.join('/global/projecta/projectdirs',
                                        'lsst/groups/SSim/DC2',
@@ -116,20 +118,21 @@ if __name__ == "__main__":
 
         cat_dir = os.path.join(scratch_dir)
 
-        #validate_sne(cat_dir, obsid, out_file=f_out)
-        sne_cat_name = os.path.join(cat_dir, obs_dir,
-                                    'sne_cat_%d.txt.gz' % obsid)
-        validate_sne_seds(sne_cat_name)
-        mag_seed = rng.randint(0,10000)
-        validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
-                                                        seed=mag_seed,
-                                                        nrows=10000)
-        validation.validate_instance_catalog_positions(cat_dir, obsid,
-                                                       args.fov_deg,
-                                                       opsim_db=args.opsim_db)
-        validation.validate_agn_mags(cat_dir, obsid, agn_db,
-                                     opsim_db=args.opsim_db)
-        print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
+        if not args.just_twinkles:
+            #validate_sne(cat_dir, obsid, out_file=f_out)
+            sne_cat_name = os.path.join(cat_dir, obs_dir,
+                                        'sne_cat_%d.txt.gz' % obsid)
+            validate_sne_seds(sne_cat_name)
+            mag_seed = rng.randint(0,10000)
+            validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
+                                                            seed=mag_seed,
+                                                            nrows=10000)
+            validation.validate_instance_catalog_positions(cat_dir, obsid,
+                                                           args.fov_deg,
+                                                           opsim_db=args.opsim_db)
+            validation.validate_agn_mags(cat_dir, obsid, agn_db,
+                                         opsim_db=args.opsim_db)
+            print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
 
         print('running Twinkles validation')
         twinkles_validation(os.path.join(cat_dir, obs_dir),
