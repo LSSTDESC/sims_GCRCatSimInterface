@@ -37,6 +37,8 @@ from . import DC2PhosimCatalogSN, SNeDBObject
 from . import hostImage
 from .TwinklesClasses import twinkles_spec_map
 
+from lsst.sims.catalogs.definitions import InstanceCatalog
+
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
 
@@ -461,7 +463,20 @@ class InstanceCatalogWriter(object):
                                        (obsHistID, duration))
         else:
 
-            class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
+            class SprinkledTruthMixin(object):
+                column_outputs = ['galaxy_id',
+                                  'raJ2000', 'decJ2000',
+                                  'redshift', 'sedFilepath',
+                                  'magNorm', 'internalAv', 'internalRv',
+                                  'galacticAv', 'galacticRv',
+                                  'varParamStr', 'is_sprinkled']
+
+                transformations = {'raJ2000': np.degrees,
+                                   'decJ2000': np.degrees}
+
+            class SprinkledBulgeCat(SprinkledTruthMixin,
+                                    SubCatalogMixin,
+                                    self.instcats.DESCQACat_Bulge):
                 subcat_prefix = 'bulge_'
 
                 # must add catalog_type to fool InstanceCatalog registry into
@@ -470,14 +485,55 @@ class InstanceCatalogWriter(object):
                 # for multiple ObsHistIDs)
                 catalog_type = 'sprinkled_bulge_%d' % obs_md.OpsimMetaData['obsHistID']
 
-            class SprinkledDiskCat(SubCatalogMixin, self.instcats.DESCQACat_Disk):
+                def write_header(self, file_handle):
+                    InstanceCatalog.write_header(self, file_handle)
+
+                def get_varParamStr(self):
+                    n_obj = len(self.column_by_name('majorAxis'))
+                    self.column_by_name('minorAxis')
+                    self.column_by_name('positionAngle')
+                    self.column_by_name('sindex')
+                    self.column_by_name('gamma1')
+                    self.column_by_name('gamma2')
+                    self.column_by_name('kappa')
+                    return np.array([None]*n_obj)
+
+            class SprinkledDiskCat(SprinkledTruthMixin,
+                                   SubCatalogMixin,
+                                   self.instcats.DESCQACat_Disk):
                 subcat_prefix = 'disk_'
                 catalog_type = 'sprinkled_disk_%d' % obs_md.OpsimMetaData['obsHistID']
 
-            class SprinkledAgnCat(SubCatalogMixin, self.instcats.DESCQACat_Twinkles):
+                def write_header(self, file_handle):
+                    InstanceCatalog.write_header(self, file_handle)
+
+                def get_varParamStr(self):
+                    n_obj = len(self.column_by_name('majorAxis'))
+                    self.column_by_name('minorAxis')
+                    self.column_by_name('positionAngle')
+                    self.column_by_name('sindex')
+                    self.column_by_name('gamma1')
+                    self.column_by_name('gamma2')
+                    self.column_by_name('kappa')
+                    return np.array([None]*n_obj)
+
+            class SprinkledAgnCat(SprinkledTruthMixin,
+                                  SubCatalogMixin,
+                                  self.instcats.DESCQACat_Twinkles):
                 subcat_prefix = 'agn_'
                 catalog_type = 'sprinkled_agn_%d' % obs_md.OpsimMetaData['obsHistID']
                 _agn_threads = self._agn_threads
+
+                def write_header(self, file_handle):
+                    InstanceCatalog.write_header(self, file_handle)
+
+                def get_internalRv(self):
+                    ra = self.column_by_name('raJ2000')
+                    return np.zeros(len(ra), dtype=int)
+
+                def get_internalAv(self):
+                    ra = self.column_by_name('raJ2000')
+                    return np.zeros(len(ra), dtype=int)
 
             if do_sprinkled:
 
@@ -511,7 +567,7 @@ class InstanceCatalogWriter(object):
                 written_catalog_names.append('disk_'+gal_name)
                 written_catalog_names.append('agn_'+gal_name)
                 gal_cat.write_catalog(os.path.join(full_out_dir, gal_name), chunk_size=5000,
-                                      write_header=False)
+                                      write_header=True)
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
                         duration = (time.time()-self.t_start)/3600.0
@@ -564,15 +620,6 @@ class InstanceCatalogWriter(object):
         make_instcat_header(self.star_db, obs_md,
                             os.path.join(full_out_dir, phosim_cat_name),
                             object_catalogs=written_catalog_names)
-
-        if os.path.exists(os.path.join(full_out_dir, gal_name)):
-            full_name = os.path.join(full_out_dir, gal_name)
-            with open(full_name, 'r') as in_file:
-                gal_lines = in_file.readlines()
-                if len(gal_lines) > 0:
-                    raise RuntimeError("%d lines in\n%s\nThat file should be empty" %
-                                       (len(gal_lines), full_name))
-            os.unlink(full_name)
 
         # gzip the object files.
         gzip_process_list = []
