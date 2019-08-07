@@ -221,7 +221,9 @@ class InstanceCatalogWriter(object):
             if os.path.exists(host_image_dir):
                 self.host_image_dir = host_image_dir
             else:
-                raise IOError("Path to host image directory does not exist.")
+                raise IOError("Path to host image directory"
+                              + "\n\n%s\n\n" % host_image_dir
+                              + "does not exist.")
 
         if host_data_dir is None and self.sprinkler is not False:
             raise IOError("Need to specify the name of the host data directory.")
@@ -258,6 +260,8 @@ class InstanceCatalogWriter(object):
             This job will resume where that one left off, only simulating
             sub-catalogs that did not complete.
         """
+
+        print('process %d doing %d' % (os.getpid(), obsHistID))
 
         if out_dir is None:
             raise RuntimeError("must specify out_dir")
@@ -312,6 +316,9 @@ class InstanceCatalogWriter(object):
                     out_file.write('%s: %s\n' % (kk, self.config_dict[kk]))
 
         obs_md = get_obs_md(self.obs_gen, obsHistID, fov, dither=self.dither)
+
+        if obs_md is None:
+            return
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
@@ -669,9 +676,16 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     -------
     lsst.sims.utils.ObservationMetaData object
     """
-    obs_md = obs_gen.getObservationMetaData(obsHistID=obsHistID,
-                                            boundType='circle',
-                                            boundLength=fov)[0]
+    obs_md_list = obs_gen.getObservationMetaData(obsHistID=obsHistID,
+                                                 boundType='circle',
+                                                 boundLength=fov)
+
+    if len(obs_md_list) == 0:
+        print("There is no obsHistID == %d" % obsHistID)
+        return None
+
+    obs_md = obs_md_list[0]
+
     if dither:
         obs_md.pointingRA \
             = np.degrees(obs_md.OpsimMetaData['descDitheredRA'])

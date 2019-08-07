@@ -3,6 +3,7 @@ import gzip
 import numpy as np
 
 import desc.sims.GCRCatSimInterface.validation as validation
+from desc.twinkles.validation import validation_pipeline as twinkles_validation
 
 import time
 
@@ -35,9 +36,14 @@ def validate_sne_seds(cat_file):
             ct += 1
 
     sed_list = os.listdir(os.path.join(sed_dir, 'Dynamic'))
-    if ct != len(sed_list):
+    ct_valid = 0
+    for sed_name in sed_list:
+        if 'GLSN' not in sed_name:
+           ct_valid += 1
+
+    if ct != ct_valid:
         raise RuntimeError('InstCat contains %d SNe SEDs; should have %d' %
-                           (ct, len(sed_list)))
+                           (ct, ct_valid))
 
     print('checked %d SNe SEDs' % ct)
 
@@ -46,10 +52,17 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir_name', type=str)
+    parser.add_argument('--fov_deg', type=float, default=2.1)
     parser.add_argument('--seed', type=int, default=4561)
     parser.add_argument('--n_cats', type=int, default=10)
     parser.add_argument('--forced_obs', type=int, default=None,
                         nargs='+')
+    parser.add_argument('--just_twinkles', default=False,
+                        action='store_true')
+    parser.add_argument('--opsim_db', type=str,
+                        default=os.path.join('/global/projecta/projectdirs',
+                                       'lsst/groups/SSim/DC2',
+                                        'minion_1016_desc_dithered_v4_sfd.db'))
     args = parser.parse_args()
 
     rng = np.random.RandomState(args.seed)
@@ -71,6 +84,7 @@ if __name__ == "__main__":
     scratch_dir = os.path.join(os.environ['SCRATCH'], 'test_validation')
     assert os.path.isdir(scratch_dir)
 
+    t_start = time.time()
     log_name = 'validated_catalogs.txt'
     already_run = set()
     while len(already_run)<args.n_cats and len(already_run)<len(list_of_inst_cats):
@@ -104,21 +118,31 @@ if __name__ == "__main__":
 
         cat_dir = os.path.join(scratch_dir)
 
-        t_start = time.time()
-        #validate_sne(cat_dir, obsid, out_file=f_out)
-        sne_cat_name = os.path.join(cat_dir, obs_dir,
-                                    'sne_cat_%d.txt.gz' % obsid)
-        validate_sne_seds(sne_cat_name)
-        mag_seed = rng.randint(0,10000)
-        validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
-                                                        seed=mag_seed,
-                                                        nrows=10000)
-        validation.validate_instance_catalog_positions(cat_dir, obsid, 2.1)
-        validation.validate_agn_mags(cat_dir, obsid, agn_db)
-        print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
+        if not args.just_twinkles:
+            #validate_sne(cat_dir, obsid, out_file=f_out)
+            sne_cat_name = os.path.join(cat_dir, obs_dir,
+                                        'sne_cat_%d.txt.gz' % obsid)
+            validate_sne_seds(sne_cat_name)
+            mag_seed = rng.randint(0,10000)
+            validation.validate_instance_catalog_magnitudes(cat_dir, obsid,
+                                                            seed=mag_seed,
+                                                            nrows=10000)
+            validation.validate_instance_catalog_positions(cat_dir, obsid,
+                                                           args.fov_deg,
+                                                           opsim_db=args.opsim_db)
+            validation.validate_agn_mags(cat_dir, obsid, agn_db,
+                                         opsim_db=args.opsim_db)
+            print('\n\nvalidated agn after %e seconds' % (time.time()-t_start))
+
+        print('running Twinkles validation')
+        twinkles_validation(os.path.join(cat_dir, obs_dir),
+                            obsid,
+                            os.path.join(cat_dir, obs_dir))
+
         already_run.add(orig_file)
         with open(log_name, 'a') as out_file:
             out_file.write('%d validated\n' % obsid)
 
         os.unlink(copied_instcat_name)
         shutil.rmtree(untarred_instcat_name)
+        print('that took %e seconds' % (time.time()-t_start))

@@ -8,11 +8,16 @@ if __name__ == "__main__":
     out_name_root = 'slurm_scripts/batch_script_'
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--candidate_file', type=str,
+                        default='data/wfd_obshistid_list.txt')
     parser.add_argument('--n_obs', type=int, default=1000,
                         help='Number of pointings per slurm script '
                         '(default=1000)')
-    parser.add_argument('--d_obs', type=int, default=7,
-                        help='Number of pointings per node (default=7)')
+    parser.add_argument('--n_groups', type=int, default=7,
+                        help='number of parallel groups to run per node '
+                        '(default 7)')
+    parser.add_argument('--d_obs', type=int, default=28,
+                        help='Number of pointings per node (default=28)')
     parser.add_argument('--already_done', type=str, default=None,
                         help='file containing list of completed obsHistID')
     parser.add_argument('--max_obs', type=int, default=993348,
@@ -37,14 +42,19 @@ if __name__ == "__main__":
 
     print('N already done %d' % (len(obs_already_done)))
     obs_hist_id = []
-    with open('data/wfd_obshistid_list.txt', 'r') as in_file:
+    with open(args.candidate_file, 'r') as in_file:
         for line in in_file:
-            ii=int(line.strip())
-            if ((ii <= args.max_obs) and
-                (ii not in obs_already_done) and
-                (ii > args.min_obs)):
+            try:
+                ii=int(line.strip().split(',')[0])
+                if ((ii <= args.max_obs) and
+                    (ii not in obs_already_done) and
+                    (ii > args.min_obs)):
 
-                obs_hist_id.append(ii)
+                    obs_hist_id.append(ii)
+            except ValueError:
+                pass
+
+    assert len(obs_hist_id) > 0
 
     obs_hist_id = np.array(obs_hist_id)
     rng = np.random.RandomState(88123)
@@ -65,8 +75,10 @@ if __name__ == "__main__":
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
             n_srun = int(np.ceil(len(batch)/args.d_obs))
+            n_hrs = 5*int(np.ceil(args.d_obs/args.n_groups))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
+            out_file.write('#SBATCH -t %d:00:00\n' % n_hrs)
             out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % file_id)
             out_file.write('#SBATCH -e slurm_err/batch_%d_err.txt\n' % file_id)
             with open('header.txt', 'r') as in_file:
@@ -89,7 +101,8 @@ if __name__ == "__main__":
                 these_obs = batch[s]
                 out_file.write('\n')
                 out_file.write('srun -N 1 -n 1 -c 24 --exclusive \\\n')
-                out_file.write('bash instcat_runner.sh ${out_dir} ${config_file}')
+                out_file.write('bash instcat_runner.sh ${out_dir} ')
+                out_file.write('${config_file} %d' % args.n_groups)
                 for ii in these_obs:
                     out_file.write(' %d' % ii)
                 out_file.write(' &\n\n')
