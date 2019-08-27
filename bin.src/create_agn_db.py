@@ -290,7 +290,7 @@ if __name__ == "__main__":
             vals = ((int(ii), int(hh), mm, '{"m": "applyAgn", '
                           + '"p": {"seed": %d, "agn_tau": %.3e, "agn_sfu": %.3e, ' % (ss, tt, sfu)
                           + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
-                          + '"agn_sfz": %.3e, "agn_sfy": %.3e}},' % (sfz, sfy), mi)
+                          + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy), mi)
                      for ii, hh, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy, mi in
                      zip(galaxy_id, htmid, mag_norm, seed_arr, tau,
                          sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
