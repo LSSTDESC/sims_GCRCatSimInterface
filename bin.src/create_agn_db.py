@@ -200,7 +200,7 @@ if __name__ == "__main__":
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
-                          (galaxy_id int, htmid_%d int, magNorm real, varParamStr text)''' % htmid_level)
+                          (galaxy_id int, htmid_%d int, magNorm real, varParamStr text, M_i real)''' % htmid_level)
 
         connection.commit()
 
@@ -281,6 +281,7 @@ if __name__ == "__main__":
             interpolated_m_i = np.interp(redshift, z_grid, m_i_grid)
             interpolated_mag_norm = np.interp(redshift, z_grid, mag_norm_grid)
             mag_norm = interpolated_mag_norm + (obs_mag_i - interpolated_m_i)
+            assert len(mag_norm) == len(abs_mag_i)
 
             seed_arr = rng.randint(1,high=10000000, size=len(tau))
 
@@ -289,13 +290,14 @@ if __name__ == "__main__":
             vals = ((int(ii), int(hh), mm, '{"m": "applyAgn", '
                           + '"p": {"seed": %d, "agn_tau": %.3e, "agn_sfu": %.3e, ' % (ss, tt, sfu)
                           + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
-                          + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
-                     for ii, hh, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
+                          + '"agn_sfz": %.3e, "agn_sfy": %.3e}},' % (sfz, sfy), mi)
+                     for ii, hh, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy, mi in
                      zip(galaxy_id, htmid, mag_norm, seed_arr, tau,
                          sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
-                         sf_dict['z'], sf_dict['y']))
+                         sf_dict['z'], sf_dict['y'], abs_mag_i))
 
-            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
+            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?, ?)',
+                               vals)
             connection.commit()
 
         assert ct_simulated == full_size
