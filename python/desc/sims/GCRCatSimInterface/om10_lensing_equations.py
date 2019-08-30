@@ -199,8 +199,15 @@ def sersic_2d(xi1,xi2,xc1,xc2,Reff_arc,ql,pha,ndex):
     bn = 2.0*ndex-1/3.0+0.009876/ndex
     (xi1new,xi2new) = xy_rotate(xi1, xi2, xc1, xc2, pha)
     R_scale = np.sqrt((xi1new**2)*ql+(xi2new**2)/ql)/Reff_arc
-    res = np.exp(-bn*((R_scale)**(1.0/ndex)-1.0))
+    img = np.exp(-bn*((R_scale)**(1.0/ndex)-1.0))
+    R_in = 0.1 # in the units of Reff_arc
+    img_max = np.exp(-bn*((R_in)**(1.0/ndex)-1.0))
+    img[np.where(R_scale<R_in)] = img_max
+    res = img/img_max
+    R_out= 5.0 # in the units of Reff_arc
+    res[np.where(R_scale>R_out)] = 0.0
     return res
+
     """Produces a 2-D Sersic profile, Peak = 1.0"""   
 
     """Parameters

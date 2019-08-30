@@ -302,7 +302,7 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
     g_limage = ole.sersic_2d(yi1,yi2,ysc1,ysc2,Reff_arc,qs,phs,ndex)
     g_source = ole.sersic_2d(xi1,xi2,ysc1,ysc2,Reff_arc,qs,phs,ndex)
 
-    mag_lensed = mag_tot - 2.5*np.log(np.sum(g_limage)/np.sum(g_source))
+    mag_lensed = mag_tot - 2.5*np.log10(np.sum(g_limage)/np.sum(g_source))
 
     return mag_lensed, g_limage
 
