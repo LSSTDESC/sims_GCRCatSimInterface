@@ -20,7 +20,7 @@ import argparse
 
 def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
                       lsst_mag_array, out_dict, tag):
-    pid = os.getPid()
+    pid = os.getpid()
     print('starting ',pid,len(redshift))
     (sed_names,
      mag_norms,
