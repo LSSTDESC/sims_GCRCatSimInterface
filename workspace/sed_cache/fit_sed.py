@@ -20,7 +20,8 @@ import argparse
 
 def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
                       lsst_mag_array, out_dict, tag):
-
+    pid = os.getPid()
+    print('starting ',pid,len(redshift))
     (sed_names,
      mag_norms,
      av_arr,
@@ -78,6 +79,7 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
             lsst_fit_fluxes[i_bp][ii] = ff
 
     out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
+    print('done with ',pid)
 
 
 def do_fitting(cat, component, healpix, lim, n_threads):
@@ -129,6 +131,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
                                    for ff in lsst_filter_names])
 
 
+    print('getting sed_from_galacticus_mags')
     redshift = qties['redshift_true'][:lim]
     (sed_names,
      mag_norms,
@@ -139,10 +142,13 @@ def do_fitting(cat, component, healpix, lim, n_threads):
                                         wav_min, wav_width,
                                         lsst_mag_array[:,:2])
 
+    print('got sed_from_galacticus_mags')
+
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
     d_gal = len(redshift)//n_threads
     p_list = []
+    print('should start calling parallel_fitting')
     for i_start in range(0, len(redshift), d_gal):
         s = slice(i_start, i_start+d_gal)
         p = multiprocessing.Process(target=_parallel_fitting,
@@ -156,6 +162,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     for p in p_list:
         p.join()
 
+    print('done running parallel fitting')
     sed_names = np.empty(len(redshift), dtype=(str,200))
     mag_norms = np.zeros((6,len(redshift)), dtype=float)
     av_arr = np.zeros(len(redshift), dtype=float)
@@ -170,6 +177,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
         rv_arr[s] = out_dict[i_start][3]
         lsst_fluxes[:,s] = out_dict[i_start][4]
 
+    print('done slicing')
     return (redshift, qties['galaxy_id'][:lim],
             sed_names, mag_norms, av_arr, rv_arr, lsst_fluxes)
 
@@ -208,6 +216,7 @@ if __name__ == "__main__":
 
     out_file_name = os.path.join(args.out_dir,args.out_name)
 
+    t_start = time.time()
     ########## actually fit SED, magNorm, and dust parameters to disks and bulges
 
     t0 = 1539899570.0
@@ -286,4 +295,6 @@ if __name__ == "__main__":
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
 
-    print('all done %d at %.2f' % (args.healpix, time.time()-t0))
+    duration = (time.time()-t_start)/3600.0
+    print('all done %d at %.2f duration %.2f hrs' %
+          (args.healpix, time.time()-t0, duration))
