@@ -119,7 +119,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     healpix_query = GCRQuery('healpix_pixel==%d' % healpix)
 
     qties = cat.get_quantities(list(filter_names) + list(lsst_filter_names) +
-                              ['redshift_true', 'galaxy_id'],
+                              ['redshift', 'galaxy_id'],
                                native_filters=[healpix_query])
 
     print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
@@ -132,7 +132,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
 
 
     print('getting sed_from_galacticus_mags')
-    redshift = qties['redshift_true'][:lim]
+    redshift = qties['redshift'][:lim]
     (sed_names,
      mag_norms,
      av_arr,
