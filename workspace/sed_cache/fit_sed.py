@@ -295,6 +295,9 @@ if __name__ == "__main__":
         out_file.create_dataset('disk_rv', data=disk_rv)
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
+        out_file.create_dataset('bulge_fluxes', data=bulge_lsst_fluxes)
+        out_file.create_dataset('disk_fluxes', data=disk_lsst_fluxes)
+        out_file.create_dataset('tot_fluxes', data=tot_lsst_fluxes)
 
     duration = (time.time()-t_start)/3600.0
     print('all done %d at %.2f duration %.4f hrs' %
