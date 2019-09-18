@@ -94,7 +94,7 @@ def sed_filter_names_from_catalog(catalog):
 
 def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                             av_grid, rv_grid, bandpass_dict,
-                            out_dict):
+                            out_dict, out_lock):
 
     n_obj = 0
     for i_av, av in enumerate(av_grid):
@@ -107,6 +107,13 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
     imsim_bp.imsimBandpass()
 
     t_start = time.time()
+
+    sed_names_out = []
+    rv_out_list_out = []
+    av_out_list_out = []
+    sed_mag_norm_out = []
+    sed_mag_list_out = []
+
     for i_sed, sed_file_name in enumerate(sed_file_name_list):
         base_spec = Sed()
         base_spec.readSED_flambda(os.path.join(_galaxy_sed_dir, sed_file_name))
@@ -118,7 +125,7 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
         rv_out_list = np.zeros(n_obj, dtype=float)
         av_out_list = np.zeros(n_obj, dtype=float)
         sed_mag_norm = mag_norm*np.ones(n_obj, dtype=float)
-        sed_mag_list = []
+        sed_mag_list = np.zeros((n_obj, len(bandpass_dict)), dtype=float)
 
         i_obj = 0
         for i_av, av in enumerate(av_grid):
@@ -129,12 +136,21 @@ def _create_library_one_sed(_galaxy_sed_dir, sed_file_name_list,
                 spec.addDust(ax, bx, A_v=av, R_v=rv)
                 av_out_list[i_obj] = av
                 rv_out_list[i_obj] = rv
-                sed_mag_list.append(tuple(bandpass_dict.magListForSed(spec)))
+                sed_mag_list[i_obj][:] = bandpass_dict.magListForSed(spec)
                 i_obj += 1
 
-        out_dict[sed_file_name] = (sed_names, sed_mag_norm, sed_mag_list,
-                                   av_out_list, rv_out_list)
+        sed_names_out.append(sed_names)
+        sed_mag_norm_out.append(sed_mag_norm)
+        sed_mag_list_out.append(sed_mag_list)
+        av_out_list_out.append(av_out_list)
+        rv_out_list_out.append(rv_out_list)
 
+    with out_lock:
+        out_dict['sed_names'] += sed_names_out
+        out_dict['sed_mag_norm'] += sed_mag_norm_out
+        out_dict['sed_mag_list'] += sed_mag_list_out
+        out_dict['av_out_list'] += av_out_list_out
+        out_dict['rv_out_list'] += rv_out_list_out
 
 def _create_sed_library_mags(wav_min, wav_width):
     """
@@ -195,16 +211,16 @@ def _create_sed_library_mags(wav_min, wav_width):
     n_tot = len(list_of_files)*n_dust
     t_start = time.time()
 
-    sed_names = np.empty(n_tot, dtype=(str, 200))
-    sed_mag_list = np.zeros((n_tot, len(bp_list)), dtype=float)
-    sed_mag_norm = np.zeros(n_tot, dtype=float)
-    av_out_list = np.zeros(n_tot, dtype=float)
-    rv_out_list = np.zeros(n_tot, dtype=float)
-
     p_list = []
     n_proc = 30
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
+    out_dict['sed_names'] = []
+    out_dict['sed_mag_norm'] = []
+    out_dict['sed_mag_list'] = []
+    out_dict['av_out_list'] = []
+    out_dict['rv_out_list'] = []
+    out_lock = mgr.Lock()
     i_stored = 0
     d_start = len(list_of_files)//n_proc
     i_start_list = range(0, len(list_of_files), d_start)
@@ -217,7 +233,8 @@ def _create_sed_library_mags(wav_min, wav_width):
                                     args=(_galaxy_sed_dir,
                                           list_of_files[i_start:i_end],
                                           av_grid, rv_grid,
-                                          bandpass_dict, out_dict))
+                                          bandpass_dict, out_dict,
+                                          out_lock))
 
         p.start()
         p_list.append(p)
@@ -226,15 +243,17 @@ def _create_sed_library_mags(wav_min, wav_width):
         p.join()
 
     t_start = time.time()
-    n_kk = len(list(out_dict.keys()))
-    for i_kk, kk in enumerate(out_dict.keys()):
-        n_out = len(out_dict[kk][1])
-        sed_names[i_stored:i_stored+n_out] = out_dict[kk][0]
-        sed_mag_norm[i_stored:i_stored+n_out] = out_dict[kk][1]
-        sed_mag_list[i_stored:i_stored+n_out][:] = out_dict[kk][2]
-        av_out_list[i_stored:i_stored+n_out] = out_dict[kk][3]
-        rv_out_list[i_stored:i_stored+n_out] = out_dict[kk][4]
-        i_stored += n_out
+    sed_names = np.concatenate(out_dict['sed_names'])
+    sed_mag_norm = np.concatenate(out_dict['sed_mag_norm'])
+    sed_mag_list = np.concatenate(out_dict['sed_mag_list'])
+    av_out_list = np.concatenate(out_dict['av_out_list'])
+    rv_out_list = np.concatenate(out_dict['rv_out_list'])
+
+    assert sed_mag_list.shape == (n_tot, len(bp_list))
+    assert sed_names.shape == (n_tot, )
+    assert sed_mag_norm.shape == (n_tot, )
+    assert av_out_list.shape == (n_tot, )
+    assert rv_out_list.shape == (n_tot, )
 
     return (sed_names, sed_mag_list, sed_mag_norm,
             av_out_list, rv_out_list)
