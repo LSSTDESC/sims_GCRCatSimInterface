@@ -245,7 +245,7 @@ if __name__ == "__main__":
     ############ get true values of magnitudes from extragalactic catalog;
     ############ adjust magNorm to demand agreement
 
-    q_list = ['galaxy_id', 'ra', 'dec']
+    q_list = ['galaxy_id', 'ra', 'dec', 'redshift']
     for bp in 'ugrizy':
         q_list.append('mag_true_%s_lsst' % bp)
 
@@ -302,3 +302,22 @@ if __name__ == "__main__":
     duration = (time.time()-t_start)/3600.0
     print('all done %d at %.2f duration %.4f hrs' %
           (args.healpix, time.time()-t0, duration))
+
+    print("doing some validation")
+    sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
+    (tot_bp_dict,
+     bp_dict) = BandpassDict.loadBandpassesFromFiles()
+    for ii in range(10):
+        disk_name = os.path.join(sed_dir,
+                                 sed_names[disk_sed_idx[ii]].decode())
+        for i_bp, bp in enumerate('ugrizy'):
+            spec = Sed()
+            spec.readSED_flambda(disk_name)
+            fnorm = getImsimFluxNorm(spec, disk_magnorm[i_bp][ii])
+            spec.multiplyFluxNorm(fnorm)
+            ax, bx = spec.setupCCM_ab()
+            spec.addDust(ax, bx, A_v=disk_av[ii], R_v=disk_rv[ii])
+            spec.redshiftSED(control_qties['redshift'][ii], dimming=True)
+            flux = spec.calcFlux(bp_dict[bp])
+            print(bp,flux,disk_lsst_fluxes[i_bp][ii],
+                  flux/disk_lsst_fluxes[i_bp][ii])
