@@ -169,6 +169,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     rv_arr = np.zeros(len(redshift), dtype=float)
     lsst_fluxes = np.zeros((6,len(redshift)), dtype=float)
 
+    t_start_slicing = time.time()
     for i_start in out_dict.keys():
         s = slice(i_start, i_start+d_gal)
         sed_names[s] = out_dict[i_start][0]
@@ -177,7 +178,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
         rv_arr[s] = out_dict[i_start][3]
         lsst_fluxes[:,s] = out_dict[i_start][4]
 
-    print('done slicing')
+    print('done slicing %e' % (time.time()-t_start_slicing))
     return (redshift, qties['galaxy_id'][:lim],
             sed_names, mag_norms, av_arr, rv_arr, lsst_fluxes)
 
@@ -296,5 +297,5 @@ if __name__ == "__main__":
         out_file.create_dataset('bulge_rv', data=bulge_rv)
 
     duration = (time.time()-t_start)/3600.0
-    print('all done %d at %.2f duration %.2f hrs' %
+    print('all done %d at %.2f duration %.4f hrs' %
           (args.healpix, time.time()-t0, duration))
