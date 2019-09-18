@@ -114,6 +114,10 @@ def calculate_fluxes(in_name, out_name, healpix_id, my_lock):
     galaxy_id_z = galaxy_id_z[sorted_dex_z]
     redshift = redshift[sorted_dex_z]
 
+    if len(galaxy_id_z) != len(galaxy_id_disk):
+        galaxy_id_z = galaxy_id_z[:len(galaxy_id_disk)]
+        redshift = redshift[:len(galaxy_id_disk)]
+
     np.testing.assert_array_equal(galaxy_id_z, galaxy_id_disk)
 
     (disk_fluxes,
