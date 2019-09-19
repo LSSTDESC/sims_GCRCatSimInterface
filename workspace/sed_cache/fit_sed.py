@@ -18,7 +18,8 @@ from lsst.utils import getPackageDir
 import argparse
 
 
-def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
+def _parallel_fitting(mag_array, redshift, redshift_true,
+                      H0, Om0, wav_min, wav_width,
                       lsst_mag_array, out_dict, tag):
     pid = os.getpid()
     print('starting ',pid,len(redshift))
@@ -119,7 +120,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     healpix_query = GCRQuery('healpix_pixel==%d' % healpix)
 
     qties = cat.get_quantities(list(filter_names) + list(lsst_filter_names) +
-                              ['redshift', 'galaxy_id'],
+                              ['redshift', 'redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
     print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
@@ -133,11 +134,13 @@ def do_fitting(cat, component, healpix, lim, n_threads):
 
     print('getting sed_from_galacticus_mags')
     redshift = qties['redshift'][:lim]
+    redshift_true = qties['redshift_true'][:lim]
     (sed_names,
      mag_norms,
      av_arr,
      rv_arr) = sed_from_galacticus_mags(mag_array[:,:2],
                                         redshift[:2],
+                                        redshift_true[:2],
                                         H0, Om0,
                                         wav_min, wav_width,
                                         lsst_mag_array[:,:2])
@@ -153,6 +156,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
         s = slice(i_start, i_start+d_gal)
         p = multiprocessing.Process(target=_parallel_fitting,
                                     args=(mag_array[:,s], redshift[s],
+                                          redshift_true[s],
                                           H0, Om0, wav_min, wav_width,
                                           lsst_mag_array[:,s],
                                           out_dict, i_start))

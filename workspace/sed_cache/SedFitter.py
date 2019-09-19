@@ -259,7 +259,9 @@ def _create_sed_library_mags(wav_min, wav_width):
             av_out_list, rv_out_list)
 
 
-def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
+def sed_from_galacticus_mags(galacticus_mags,
+                             redshift, redshift_true,
+                             H0, Om0,
                              wav_min, wav_width, obs_lsst_mags):
     """
     Fit SEDs from sims_sed_library to Galacticus galaxies based on the
@@ -273,6 +275,10 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     where the bandpasses are ordered in ascending order of minimum wavelength.
 
     redshift is an array of redshifts for the galaxies being fit
+    (includes cosmology and proper motion)
+
+    redshift_true is an array of cosmologicla redshifts for the galaxies
+    being fit
 
     H0 is the Hubbleparameter in units of km/s/Mpc
 
@@ -337,7 +343,8 @@ def sed_from_galacticus_mags(galacticus_mags, redshift, H0, Om0,
     sed_idx = np.where(sed_idx<len(sed_from_galacticus_mags._sed_names),
                        sed_idx, 0)
 
-    distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(redshift=redshift)
+    distance_modulus = sed_from_galacticus_mags._cosmo.distanceModulus(
+                                                       redshift=redshift_true)
 
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
 
