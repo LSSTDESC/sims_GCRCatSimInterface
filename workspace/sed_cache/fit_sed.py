@@ -44,7 +44,6 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
     imsim_bp.imsimBandpass()
     n04_ln10 = -0.4*np.log(10)
 
-    max_offset = -1.0
     for ii in range(len(sed_names)):
         av_val = av_arr[ii]
         rv_val = rv_arr[ii]
@@ -79,24 +78,8 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
             ff = spec.calcFlux(lsst_bp_dict[bp])
             lsst_fit_fluxes[i_bp][ii] = ff
 
-            sed_2 = Sed()
-            sed_2.readSED_flambda(os.path.join(sed_dir, sed_names[ii]))
-            fnorm = getImsimFluxNorm(sed_2, m_norm)
-            sed_2.multiplyFluxNorm(fnorm)
-            a_x, b_x = sed_2.setupCCM_ab()
-            sed_2.addDust(a_x, b_x, A_v=av_val, R_v=rv_val)
-            sed_2.redshiftSED(redshift[ii], dimming=True)
-            ff_2 = sed_2.calcFlux(lsst_bp_dict[bp])
-            offset = np.abs(1.0-(ff/ff_2))
-            if offset>max_offset:
-                max_offset = offset
-            if np.abs(1.0-(ff/ff_2))>1.0e-5:
-                raise RuntimeError("bp flux off %s %e" %
-                   (bp,ff/ff_2))
-
     out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
     print('done with ',pid)
-    print('max offset _parallel_fitting %e' % max_offset)
 
 
 def do_fitting(cat, component, healpix, lim, n_threads):
@@ -123,8 +106,6 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     Av
     Rv
     """
-
-    max_offset = -1.0
 
     filter_data = sed_filter_names_from_catalog(cat)
     filter_names = filter_data[component]['filter_name']
@@ -197,25 +178,6 @@ def do_fitting(cat, component, healpix, lim, n_threads):
         rv_arr[s] = out_dict[i_start][3]
         lsst_fluxes[:,s] = out_dict[i_start][4]
 
-    (dummy,
-     hw_bp_dict) = BandpassDict.loadBandpassesFromFiles()
-    sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
-    for ii in range(len(av_arr)):
-        for i_bp, bp in enumerate('ugrizy'):
-            sed_2 = Sed()
-            sed_2.readSED_flambda(os.path.join(sed_dir, sed_names[ii]))
-            fnorm = getImsimFluxNorm(sed_2, mag_norms[i_bp,ii])
-            sed_2.multiplyFluxNorm(fnorm)
-            ax, bx = sed_2.setupCCM_ab()
-            sed_2.addDust(ax, bx, A_v=av_arr[ii], R_v=rv_arr[ii])
-            sed_2.redshiftSED(redshift[ii], dimming=True)
-            flux_2 = sed_2.calcFlux(hw_bp_dict[bp])
-            offset = np.abs(1.0-(flux_2/lsst_fluxes[i_bp,ii]))
-
-            if offset>max_offset:
-                max_offset = offset
-    print('max_offset in do_fitting %e' % max_offset)
-
     print('done slicing %e' % (time.time()-t_start_slicing))
     return (redshift, qties['galaxy_id'][:lim],
             sed_names, mag_norms, av_arr, rv_arr, lsst_fluxes)
@@ -279,40 +241,6 @@ if __name__ == "__main__":
     np.testing.assert_array_equal(disk_redshift, bulge_redshift)
 
     tot_lsst_fluxes = bulge_lsst_fluxes + disk_lsst_fluxes
-
-    max_offset = -1.0
-    sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
-    (dummy,
-     hw_bp_dict) = BandpassDict.loadBandpassesFromFiles()
-    for ii in range(len(disk_redshift)):
-        for i_bp, bp in enumerate('ugrizy'):
-            ss = Sed()
-            ss.readSED_flambda(os.path.join(sed_dir, disk_sed_name[ii]))
-            fnorm = getImsimFluxNorm(ss, disk_magnorm[i_bp, ii])
-            ss.multiplyFluxNorm(fnorm)
-            ax, bx = ss.setupCCM_ab()
-            ss.addDust(ax, bx, A_v=disk_av[ii], R_v=disk_rv[ii])
-            ss.redshiftSED(disk_redshift[ii],dimming=True)
-            ff = ss.calcFlux(hw_bp_dict[bp])
-            offset = np.abs(1.0-(ff/disk_lsst_fluxes[i_bp,ii]))
-            if offset>max_offset:
-                max_offset=offset
-
-    for ii in range(len(bulge_redshift)):
-        for i_bp, bp in enumerate('ugrizy'):
-            ss = Sed()
-            ss.readSED_flambda(os.path.join(sed_dir, bulge_sed_name[ii]))
-            fnorm = getImsimFluxNorm(ss, bulge_magnorm[i_bp, ii])
-            ss.multiplyFluxNorm(fnorm)
-            ax, bx = ss.setupCCM_ab()
-            ss.addDust(ax, bx, A_v=bulge_av[ii], R_v=bulge_rv[ii])
-            ss.redshiftSED(bulge_redshift[ii],dimming=True)
-            ff = ss.calcFlux(hw_bp_dict[bp])
-            offset = np.abs(1.0-(ff/bulge_lsst_fluxes[i_bp,ii]))
-            if offset>max_offset:
-                max_offset=offset
-
-    print('max_offset after amassing tot_flux %e' % max_offset)
 
     ############ get true values of magnitudes from extragalactic catalog;
     ############ adjust magNorm to demand agreement
