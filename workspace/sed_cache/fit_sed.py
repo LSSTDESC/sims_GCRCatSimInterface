@@ -305,9 +305,10 @@ if __name__ == "__main__":
 
     print("doing some validation")
     n_to_validate = 5000
-    val_rng = np.random.RandomState(88)
+    validate_rng = np.random.RandomState(88)
     dexes_to_validate = validate_rng.choice(
-             np.arange(len(control_qties['redshift'])), replace=False)
+             np.arange(len(control_qties['redshift'])), replace=False,
+             size=n_to_validate)
     max_offset = -1.0
     sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
     (tot_bp_dict,
