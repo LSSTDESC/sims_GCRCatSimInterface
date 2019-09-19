@@ -33,8 +33,7 @@ def _parallel_fitting(mag_array, redshift, redshift_true,
                                         wav_min, wav_width,
                                         lsst_mag_array)
 
-    (tot_bp_dict,
-     lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
+    tot_bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
 
     sed_dir = getPackageDir('sims_sed_library')
     lsst_fit_fluxes = np.zeros((6,len(sed_names)), dtype=float)
@@ -77,7 +76,7 @@ def _parallel_fitting(mag_array, redshift, redshift_true,
                 raise
             spec.multiplyFluxNorm(fnorm)
             spec.redshiftSED(redshift[ii], dimming=True)
-            ff = spec.calcFlux(lsst_bp_dict[bp])
+            ff = spec.calcFlux(tot_bp_dict[bp])
             lsst_fit_fluxes[i_bp][ii] = ff
 
     out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
@@ -315,13 +314,17 @@ if __name__ == "__main__":
         print("doing some validation")
         n_to_validate = args.validate
         validate_rng = np.random.RandomState(88)
-        dexes_to_validate = validate_rng.choice(
-                 np.arange(len(control_qties['redshift'])), replace=False,
-                 size=n_to_validate)
+        if n_to_validate < len(control_qties['redshift']):
+            dexes_to_validate = validate_rng.choice(
+                       np.arange(len(control_qties['redshift']), dtype=int),
+                       replace=False,
+                       size=n_to_validate)
+        else:
+            dexes_to_validate = np.arange(len(control_qties['redshift']),
+                                          dtype=int)
         max_offset = -1.0
         sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
-        (tot_bp_dict,
-         bp_dict) = BandpassDict.loadBandpassesFromFiles()
+        tot_bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
         for ii in dexes_to_validate:
             disk_name = os.path.join(sed_dir,
                                      sed_names[disk_sed_idx[ii]].decode())
@@ -335,7 +338,7 @@ if __name__ == "__main__":
                 ax, bx = disk_s.setupCCM_ab()
                 disk_s.addDust(ax, bx, A_v=disk_av[ii], R_v=disk_rv[ii])
                 disk_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
-                disk_f = disk_s.calcFlux(bp_dict[bp])
+                disk_f = disk_s.calcFlux(tot_bp_dict[bp])
 
                 bulge_s = Sed()
                 bulge_s.readSED_flambda(bulge_name)
@@ -344,7 +347,7 @@ if __name__ == "__main__":
                 ax, bx = bulge_s.setupCCM_ab()
                 bulge_s.addDust(ax, bx, A_v=bulge_av[ii], R_v=bulge_rv[ii])
                 bulge_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
-                bulge_f = bulge_s.calcFlux(bp_dict[bp])
+                bulge_f = bulge_s.calcFlux(tot_bp_dict[bp])
 
                 tot_f = disk_f+bulge_f
                 f_true = dummy_spec.fluxFromMag(control_qties['mag_true_%s_lsst' % bp][ii])
