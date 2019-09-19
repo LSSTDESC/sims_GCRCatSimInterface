@@ -199,6 +199,9 @@ if __name__ == "__main__":
     parser.add_argument('--catalog', type=str, default='cosmoDC2_v1.0_image',
                         help='The name of the extragalactic catalog '
                              '(defaults to cosmoDC2_v1.0_image)')
+    parser.add_argument('--validate', type=int, default=0,
+                        help='number of galaxies to randomly validate '
+                        '(defaults to zero)')
 
     args = parser.parse_args()
     assert args.healpix is not None
@@ -303,43 +306,44 @@ if __name__ == "__main__":
     print('all done %d at %.2f duration %.4f hrs' %
           (args.healpix, time.time()-t0, duration))
 
-    print("doing some validation")
-    n_to_validate = 5000
-    validate_rng = np.random.RandomState(88)
-    dexes_to_validate = validate_rng.choice(
-             np.arange(len(control_qties['redshift'])), replace=False,
-             size=n_to_validate)
-    max_offset = -1.0
-    sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
-    (tot_bp_dict,
-     bp_dict) = BandpassDict.loadBandpassesFromFiles()
-    for ii in dexes_to_validate:
-        disk_name = os.path.join(sed_dir,
-                                 sed_names[disk_sed_idx[ii]].decode())
-        bulge_name = os.path.join(sed_dir,
-                                  sed_names[bulge_sed_idx[ii]].decode())
-        for i_bp, bp in enumerate('ugrizy'):
-            disk_s = Sed()
-            disk_s.readSED_flambda(disk_name)
-            fnorm = getImsimFluxNorm(disk_s, disk_magnorm[i_bp][ii])
-            disk_s.multiplyFluxNorm(fnorm)
-            ax, bx = disk_s.setupCCM_ab()
-            disk_s.addDust(ax, bx, A_v=disk_av[ii], R_v=disk_rv[ii])
-            disk_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
-            disk_f = disk_s.calcFlux(bp_dict[bp])
+    if args.validate > 0:
+        print("doing some validation")
+        n_to_validate = args.validate
+        validate_rng = np.random.RandomState(88)
+        dexes_to_validate = validate_rng.choice(
+                 np.arange(len(control_qties['redshift'])), replace=False,
+                 size=n_to_validate)
+        max_offset = -1.0
+        sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
+        (tot_bp_dict,
+         bp_dict) = BandpassDict.loadBandpassesFromFiles()
+        for ii in dexes_to_validate:
+            disk_name = os.path.join(sed_dir,
+                                     sed_names[disk_sed_idx[ii]].decode())
+            bulge_name = os.path.join(sed_dir,
+                                      sed_names[bulge_sed_idx[ii]].decode())
+            for i_bp, bp in enumerate('ugrizy'):
+                disk_s = Sed()
+                disk_s.readSED_flambda(disk_name)
+                fnorm = getImsimFluxNorm(disk_s, disk_magnorm[i_bp][ii])
+                disk_s.multiplyFluxNorm(fnorm)
+                ax, bx = disk_s.setupCCM_ab()
+                disk_s.addDust(ax, bx, A_v=disk_av[ii], R_v=disk_rv[ii])
+                disk_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
+                disk_f = disk_s.calcFlux(bp_dict[bp])
 
-            bulge_s = Sed()
-            bulge_s.readSED_flambda(bulge_name)
-            fnorm = getImsimFluxNorm(bulge_s, bulge_magnorm[i_bp][ii])
-            bulge_s.multiplyFluxNorm(fnorm)
-            ax, bx = bulge_s.setupCCM_ab()
-            bulge_s.addDust(ax, bx, A_v=bulge_av[ii], R_v=bulge_rv[ii])
-            bulge_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
-            bulge_f = bulge_s.calcFlux(bp_dict[bp])
+                bulge_s = Sed()
+                bulge_s.readSED_flambda(bulge_name)
+                fnorm = getImsimFluxNorm(bulge_s, bulge_magnorm[i_bp][ii])
+                bulge_s.multiplyFluxNorm(fnorm)
+                ax, bx = bulge_s.setupCCM_ab()
+                bulge_s.addDust(ax, bx, A_v=bulge_av[ii], R_v=bulge_rv[ii])
+                bulge_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
+                bulge_f = bulge_s.calcFlux(bp_dict[bp])
 
-            tot_f = disk_f+bulge_f
-            f_true = dummy_spec.fluxFromMag(control_qties['mag_true_%s_lsst' % bp][ii])
-            offset = np.abs(1.0-(tot_f/f_true))
-            if offset>max_offset:
-                print('final max_offset %e' % offset)
-                max_offset = offset
+                tot_f = disk_f+bulge_f
+                f_true = dummy_spec.fluxFromMag(control_qties['mag_true_%s_lsst' % bp][ii])
+                offset = np.abs(1.0-(tot_f/f_true))
+                if offset>max_offset:
+                    print('final max_offset %e' % offset)
+                    max_offset = offset
