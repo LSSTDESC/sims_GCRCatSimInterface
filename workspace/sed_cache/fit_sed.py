@@ -28,6 +28,7 @@ def _parallel_fitting(mag_array, redshift, redshift_true,
      av_arr,
      rv_arr) = sed_from_galacticus_mags(mag_array,
                                         redshift,
+                                        redshift_true,
                                         H0, Om0,
                                         wav_min, wav_width,
                                         lsst_mag_array)
