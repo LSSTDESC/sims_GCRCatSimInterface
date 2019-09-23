@@ -16,7 +16,7 @@ header = '''#!/bin/bash -l
 header += '\n#SBATCH -N %d\n\n' % len(healpix_pixels)
 
 header += '''
-source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
+python /global/common/software/lsst/common/miniconda/start-kernel-cli.py desc-stack
 setup -j -r $HOME/sims_GCRCatSimInterface_master
 setup -j -r $HOME/sims_catUtils
 setup -j -r $HOME/sims_photUtils
