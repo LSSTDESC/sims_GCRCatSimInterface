@@ -22,7 +22,6 @@ def _parallel_fitting(mag_array, redshift, redshift_true,
                       H0, Om0, wav_min, wav_width,
                       lsst_mag_array, out_dict, tag):
     pid = os.getpid()
-    print('starting ',pid,len(redshift))
     (sed_names,
      mag_norms,
      av_arr,
@@ -80,7 +79,6 @@ def _parallel_fitting(mag_array, redshift, redshift_true,
             lsst_fit_fluxes[i_bp][ii] = ff
 
     out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
-    print('done with ',pid)
 
 
 def do_fitting(cat, component, healpix, lim, n_threads):
@@ -123,7 +121,6 @@ def do_fitting(cat, component, healpix, lim, n_threads):
                               ['redshift', 'redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
-    print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
     with np.errstate(divide='ignore', invalid='ignore'):
         mag_array = np.array([-2.5*np.log10(qties[ff][:lim])
                               for ff in filter_names])
@@ -132,7 +129,6 @@ def do_fitting(cat, component, healpix, lim, n_threads):
                                    for ff in lsst_filter_names])
 
 
-    print('getting sed_from_galacticus_mags')
     redshift = qties['redshift'][:lim]
     redshift_true = qties['redshift_true'][:lim]
     (sed_names,
@@ -145,13 +141,10 @@ def do_fitting(cat, component, healpix, lim, n_threads):
                                         wav_min, wav_width,
                                         lsst_mag_array[:,:2])
 
-    print('got sed_from_galacticus_mags')
-
     mgr = multiprocessing.Manager()
     out_dict = mgr.dict()
     d_gal = len(redshift)//n_threads
     p_list = []
-    print('should start calling parallel_fitting')
     for i_start in range(0, len(redshift), d_gal):
         s = slice(i_start, i_start+d_gal)
         p = multiprocessing.Process(target=_parallel_fitting,
@@ -166,7 +159,6 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     for p in p_list:
         p.join()
 
-    print('done running parallel fitting')
     sed_names = np.empty(len(redshift), dtype=(str,200))
     mag_norms = np.zeros((6,len(redshift)), dtype=float)
     av_arr = np.zeros(len(redshift), dtype=float)
@@ -182,7 +174,6 @@ def do_fitting(cat, component, healpix, lim, n_threads):
         rv_arr[s] = out_dict[i_start][3]
         lsst_fluxes[:,s] = out_dict[i_start][4]
 
-    print('done slicing %e' % (time.time()-t_start_slicing))
     return (redshift, qties['galaxy_id'][:lim],
             sed_names, mag_norms, av_arr, rv_arr, lsst_fluxes)
 
@@ -235,14 +226,10 @@ if __name__ == "__main__":
                                                       args.healpix, args.lim,
                                                       args.n_threads)
 
-    print("fit disks %d at %.2f" % (args.healpix, time.time()-t0))
-
     (bulge_redshift, bulge_id, bulge_sed_name, bulge_magnorm,
      bulge_av, bulge_rv, bulge_lsst_fluxes) = do_fitting(cat, 'bulge',
                                                          args.healpix, args.lim,
                                                          args.n_threads)
-
-    print("fit bulges %d at %.2f" % (args.healpix, time.time()-t0))
 
     np.testing.assert_array_equal(disk_id, bulge_id)
     np.testing.assert_array_equal(disk_redshift, bulge_redshift)
@@ -259,8 +246,6 @@ if __name__ == "__main__":
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
     for kk in control_qties:
         control_qties[kk] = control_qties[kk][:args.lim]
-
-    print("got controls %d at %.2f" % (args.healpix, time.time()-t0))
 
     np.testing.assert_array_equal(control_qties['galaxy_id'], disk_id)
 
