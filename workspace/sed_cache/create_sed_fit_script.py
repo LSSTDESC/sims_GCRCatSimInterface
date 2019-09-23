@@ -11,6 +11,7 @@ header = '''#!/bin/bash -l
 #SBATCH --cpus-per-task=24
 #SBATCH -o sed_cache_v1.1.4_output.txt
 #SBATCH -e sed_cache_v1.1.4_err.txt
+#SBATCH -C haswell
 '''
 
 header += '\n#SBATCH -N %d\n\n' % len(healpix_pixels)
