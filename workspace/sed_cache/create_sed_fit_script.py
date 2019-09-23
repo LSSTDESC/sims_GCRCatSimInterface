@@ -17,12 +17,14 @@ header += '\n#SBATCH -N %d\n\n' % len(healpix_pixels)
 
 header += '''
 python /global/common/software/lsst/common/miniconda/start-kernel-cli.py desc-stack
+setup -j -r $HOME/sims_data
 setup -j -r $HOME/sims_GCRCatSimInterface_master
+setup -j -r $HOME/sims_catalogs
+setup -j -r $HOME/sims_utils
 setup -j -r $HOME/sims_catUtils
 setup -j -r $HOME/sims_photUtils
-setup -j -r $HOME/sims_utils
-
-export PYTHONPATH=$HOME/gcr-catalogs-desc/:$PYTHONPATH
+setup -j -r $HOME/Twinkles
+setup -j -r $HOME/throughputs
 
 export HDF5_USE_FILE_LOCKING=FALSE
 
