@@ -97,6 +97,9 @@ def calculate_fluxes(in_name, out_name, healpix_id, my_lock):
                 disk_magnorm[ii] = disk_magnorm[ii][sorted_dex]
             disk_av = in_file['disk_av'][()][sorted_dex]
             disk_rv = in_file['disk_rv'][()][sorted_dex]
+            disk_fluxes_in = in_file['disk_fluxes'][()]
+            for ii in range(6):
+                disk_fluxes_in[ii] = disk_fluxes_in[ii][sorted_dex]
 
         print('ra ',ra.min(),ra.max())
         print('dec ',dec.min(), dec.max())
@@ -130,6 +133,10 @@ def calculate_fluxes(in_name, out_name, healpix_id, my_lock):
                                            disk_magnorm,
                                            my_lock)
 
+    for i_bp, bp in enumerate('ugrizy'):
+        d_flux_ratio = disk_fluxes_noMW[bp]/disk_fluxes_in[i_bp]
+        print(bp,' disk flux ratio ',d_flux_ratio.max(),d_flux_ratio.min())
+
     del disk_sed
     del disk_av
     del disk_rv
@@ -144,6 +151,9 @@ def calculate_fluxes(in_name, out_name, healpix_id, my_lock):
             bulge_sed = in_file['bulge_sed'][()][sorted_dex]
             bulge_av = in_file['bulge_av'][()][sorted_dex]
             bulge_rv = in_file['bulge_rv'][()][sorted_dex]
+            bulge_fluxes_in = in_file['bulge_fluxes'][()]
+            for ii in range(6):
+                bulge_fluxes_in[ii] = bulge_fluxes_in[ii][sorted_dex]
             bulge_magnorm = in_file['bulge_magnorm'][()]
             for ii in range(6):
                 bulge_magnorm[ii] = bulge_magnorm[ii][sorted_dex]
@@ -159,6 +169,11 @@ def calculate_fluxes(in_name, out_name, healpix_id, my_lock):
                                             bulge_rv,
                                             bulge_magnorm,
                                             my_lock)
+
+    for i_bp, bp in enumerate('ugrizy'):
+        bulge_flux_ratio = bulge_fluxes_in[i_bp]/bulge_fluxes_noMW[bp]
+        print(bp,' bulge flux ratio ',np.nanmax(bulge_flux_ratio),
+              np.nanmin(bulge_flux_ratio))
 
 
     with my_lock as context:
