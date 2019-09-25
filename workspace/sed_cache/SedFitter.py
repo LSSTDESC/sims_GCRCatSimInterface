@@ -348,8 +348,8 @@ def sed_from_galacticus_mags(galacticus_mags,
 
     output_names = sed_from_galacticus_mags._sed_names[sed_idx]
 
-    (tot_bp_dict,
-     lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
+    (lsst_bp_dict,
+     dummy_bp_dict) = BandpassDict.loadBandpassesFromFiles()
 
     output_mag_norm = np.zeros((6, len(output_names)), dtype=float)
     base_norm = sed_from_galacticus_mags._mag_norm[sed_idx]
