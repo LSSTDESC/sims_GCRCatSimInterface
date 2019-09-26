@@ -1,7 +1,7 @@
 import GCRCatalogs
 image_cat_config = GCRCatalogs.get_catalog_config('cosmoDC2_v1.1.4_image')
 
-healpix_pixels = image_cat_config['healpix_pixels']
+healpix_pixels = image_cat_config['healpix_pixels'][:10]
 
 header = '''#!/bin/bash -l
 #SBATCH -t 4:00:00
@@ -48,7 +48,7 @@ with open('sed_fitting_script.sl', 'w') as out_file:
         out_file.write('--catalog cosmoDC2_v1.1.4_image \\\n')
         out_file.write('--out_dir ${out_dir} \\\n')
         out_file.write('--out_name sed_fit_%d.h5 \\\n' % hp)
-        out_file.write('--n_threads 24 &\n')
+        out_file.write('--n_threads 24 --lim 240000 &\n')
         out_file.write('\n')
 
     out_file.write('wait\n')
