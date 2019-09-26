@@ -207,9 +207,10 @@ if __name__ == "__main__":
 
     sed_dir = getPackageDir('sims_sed_library')
 
+    print('loading %s' % args.catalog)
     cat = GCRCatalogs.load_catalog(args.catalog)
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
-    if args.lim is None:
+    if args.lim is None or args.lim<0:
         gid = cat.get_quantities('galaxy_id', native_filters=[h_query])['galaxy_id']
         args.lim = 2*len(gid)
 
