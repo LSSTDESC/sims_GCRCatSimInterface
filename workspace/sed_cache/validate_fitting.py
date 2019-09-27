@@ -5,6 +5,7 @@ import lsst.sims.photUtils as photUtils
 import GCRCatalogs
 from GCR import GCRQuery
 
+import time
 import argparse
 
 import multiprocessing
@@ -88,6 +89,7 @@ if __name__ == "__main__":
     parser.add_argument('--in_dir', type=str, default=None)
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--nsamples', type=int, default=1000000)
+    parser.add_argument('--n_threads', type=int, default=10)
 
     args = parser.parse_args()
     if args.healpix is None:
@@ -96,6 +98,10 @@ if __name__ == "__main__":
         raise RuntimeError("invalid in_dir")
     if args.seed is None:
         raise RuntimeError("must specify seed")
+
+    cache_dir = os.path.join(os.environ['HOME'],'workspace','sed_cache')
+    photUtils.cache_LSST_seds(wavelen_min=0.0, wavelen_max=1500.0,
+                              cache_dir=cache_dir)
 
     mgr = multiprocessing.Manager()
     my_lock = mgr.Lock()
@@ -111,15 +117,58 @@ if __name__ == "__main__":
                               native_filters=[h_query])
     print('got catalog')
 
-    sub_sample = slice(0, 1000)
-    mag_in = {}
-    for bp in 'ugrizy':
-        mag_in[bp] = data['mag_true_%s_lsst' % bp][sub_sample]
+    if args.nsamples>0:
+        rng = np.random.RandomState(args.seed)
+        sub_dexes = rng.choice(np.arange(len(data['galaxy_id']), dtype=int),
+                              size=args.nsamples,
+                              replace=False)
 
-    validate_chunk(data['galaxy_id'][sub_sample],
-                   data['redshift'][sub_sample],
-                   mag_in, args.in_dir, args.healpix,
-                   my_lock, output_dict)
+        for k in data.keys():
+            data[k] = data[k][sub_dexes]
+
+        sorted_dex = np.argsort(data['galaxy_id'])
+        for k in data.keys():
+            data[k] = data[k][sorted_dex]
+
+    print('n galaxies %e' % len(data['galaxy_id']))
+
+    t_start = time.time()
+    d_gal = 10000
+    p_list = []
+    ct = 0
+    for i_start in range(0,len(data['galaxy_id']), d_gal):
+        sub_sample = slice(i_start, i_start+d_gal)
+
+        mag_in = {}
+        for bp in 'ugrizy':
+            mag_in[bp] = data['mag_true_%s_lsst' % bp][sub_sample]
+
+        p = multiprocessing.Process(target=validate_chunk,
+                                    args=(data['galaxy_id'][sub_sample],
+                                          data['redshift'][sub_sample],
+                                          mag_in, args.in_dir, args.healpix,
+                                          my_lock, output_dict))
+
+        p.start()
+        p_list.append(p)
+        while len(p_list)>=args.n_threads:
+            exit_list = []
+            for p in p_list:
+                exit_list.append(p.exitcode)
+            was_popped = False
+            for ii in range(len(p_list)-1,-1,-1):
+                if exit_list[ii] is not None:
+                    p_list.pop(ii)
+                    ct += d_gal
+                    was_popped = True
+            if was_popped:
+                duration = (time.time()-t_start)/3600.0
+                per = duration/ct
+                pred = len(data['galaxy_id'])*per
+                print('checked %d in %.2e; pred %.2e' % (ct, duration, pred))
+
+    for p in p_list:
+        p.join()
 
     for bp in output_dict.keys():
         print('%s %e' % (bp, output_dict[bp]))
