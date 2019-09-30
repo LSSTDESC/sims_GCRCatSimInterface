@@ -12,7 +12,7 @@ import multiprocessing
 
 def validate_chunk(galaxy_id, redshift, mag_in,
                    in_dir, healpix,
-                   my_lock, output_dict):
+                   read_lock, write_lock, output_dict):
 
     sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
 
@@ -20,7 +20,7 @@ def validate_chunk(galaxy_id, redshift, mag_in,
 
     fit_file = os.path.join(in_dir, 'sed_fit_%d.h5' % healpix)
     assert os.path.isfile(fit_file)
-    with my_lock:
+    with read_lock:
         with h5py.File(fit_file, 'r') as in_file:
             sed_names = in_file['sed_names'][()]
             galaxy_id_fit = in_file['galaxy_id'][()]
@@ -77,7 +77,7 @@ def validate_chunk(galaxy_id, redshift, mag_in,
             if bp not in local_worst or delta_flux>local_worst[bp]:
                 local_worst[bp] = delta_flux
 
-    with my_lock:
+    with write_lock:
         for bp in 'ugrizy':
             if bp not in output_dict or local_worst[bp]>output_dict[bp]:
                 output_dict[bp] = local_worst[bp]
@@ -104,7 +104,8 @@ if __name__ == "__main__":
                               cache_dir=cache_dir)
 
     mgr = multiprocessing.Manager()
-    my_lock = mgr.Lock()
+    read_lock = mgr.Lock()
+    write_lock = mgr.Lock()
     output_dict = mgr.dict()
 
     print('loading catalog')
@@ -147,7 +148,7 @@ if __name__ == "__main__":
                                     args=(data['galaxy_id'][sub_sample],
                                           data['redshift'][sub_sample],
                                           mag_in, args.in_dir, args.healpix,
-                                          my_lock, output_dict))
+                                          read_lock, write_lock, output_dict))
 
         p.start()
         p_list.append(p)
