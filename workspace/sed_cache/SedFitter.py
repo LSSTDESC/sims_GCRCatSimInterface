@@ -277,7 +277,7 @@ def sed_from_galacticus_mags(galacticus_mags,
     redshift is an array of redshifts for the galaxies being fit
     (includes cosmology and proper motion)
 
-    redshift_true is an array of cosmologicla redshifts for the galaxies
+    redshift_true is an array of cosmological redshifts for the galaxies
     being fit
 
     H0 is the Hubbleparameter in units of km/s/Mpc
