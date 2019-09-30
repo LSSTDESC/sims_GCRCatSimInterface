@@ -90,6 +90,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--nsamples', type=int, default=1000000)
     parser.add_argument('--n_threads', type=int, default=10)
+    parser.add_argument('--d_gal', type=int, default=10000)
 
     args = parser.parse_args()
     if args.healpix is None:
@@ -134,11 +135,10 @@ if __name__ == "__main__":
     print('n galaxies %e' % len(data['galaxy_id']))
 
     t_start = time.time()
-    d_gal = 10000
     p_list = []
     ct = 0
-    for i_start in range(0,len(data['galaxy_id']), d_gal):
-        sub_sample = slice(i_start, i_start+d_gal)
+    for i_start in range(0,len(data['galaxy_id']), args.d_gal):
+        sub_sample = slice(i_start, i_start+args.d_gal)
 
         mag_in = {}
         for bp in 'ugrizy':
@@ -160,7 +160,7 @@ if __name__ == "__main__":
             for ii in range(len(p_list)-1,-1,-1):
                 if exit_list[ii] is not None:
                     p_list.pop(ii)
-                    ct += d_gal
+                    ct += args.d_gal
                     was_popped = True
             if was_popped:
                 duration = (time.time()-t_start)/3600.0
