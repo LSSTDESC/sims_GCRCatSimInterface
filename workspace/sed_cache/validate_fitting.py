@@ -84,6 +84,8 @@ def validate_chunk(galaxy_id, redshift, mag_in,
 
 if __name__ == "__main__":
 
+    t_start = time.time()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--healpix', type=int, default=None)
     parser.add_argument('--in_dir', type=str, default=None)
@@ -134,7 +136,6 @@ if __name__ == "__main__":
 
     print('n galaxies %e' % len(data['galaxy_id']))
 
-    t_start = time.time()
     p_list = []
     ct = 0
     for i_start in range(0,len(data['galaxy_id']), args.d_gal):
@@ -162,14 +163,16 @@ if __name__ == "__main__":
                     p_list.pop(ii)
                     ct += args.d_gal
                     was_popped = True
-            if was_popped:
-                duration = (time.time()-t_start)/3600.0
-                per = duration/ct
-                pred = len(data['galaxy_id'])*per
-                print('checked %d in %.2e; pred %.2e' % (ct, duration, pred))
+            #if was_popped:
+            #    duration = (time.time()-t_start)/3600.0
+            #    per = duration/ct
+            #    pred = len(data['galaxy_id'])*per
+            #    print('checked %d in %.2e; pred %.2e' % (ct, duration, pred))
 
     for p in p_list:
         p.join()
 
     for bp in output_dict.keys():
         print('hp %d %s %e' % (args.healpix, bp, output_dict[bp]))
+    print('hp %d that took %.2e hrs' %
+          (args.healpix, (time.time()-t_start)/3600.0))
