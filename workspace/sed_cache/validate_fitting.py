@@ -172,4 +172,4 @@ if __name__ == "__main__":
         p.join()
 
     for bp in output_dict.keys():
-        print('%s %e' % (bp, output_dict[bp]))
+        print('hp %d %s %e' % (args.healpix, bp, output_dict[bp]))
