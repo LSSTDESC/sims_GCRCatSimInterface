@@ -10,9 +10,28 @@ import argparse
 
 import multiprocessing
 
-def validate_chunk(galaxy_id, redshift, mag_in,
+def validate_chunk(data_in,
                    in_dir, healpix,
                    read_lock, write_lock, output_dict):
+
+    galaxy_id = data_in['galaxy_id']
+    redshift = data_in['redshift']
+    mag_in = {}
+    for bp in 'ugrizy':
+        mag_in[bp] = data_in['mag_true_%s_lsst' % bp]
+
+    eps = 1.0e-20
+    disk_to_bulge = {}
+    for bp in 'ugrizy':
+        disk_name = 'LSST_filters/diskLuminositiesStellar:'
+        disk_name += 'LSST_%s:observed:dustAtlas' % bp
+
+        bulge_name = 'LSST_filters/spheroidLuminositiesStellar:'
+        bulge_name += 'LSST_%s:observed:dustAtlas' % bp
+
+        denom = np.where(data_in[bulge_name]>0.0, data_in[bulge_name], eps)
+        disk_to_bulge[bp] = data_in[disk_name]/denom
+        assert np.isfinite(disk_to_bulge[bp]).sum()==len(disk_to_bulge[bp])
 
     sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
 
@@ -41,6 +60,7 @@ def validate_chunk(galaxy_id, redshift, mag_in,
     sed_names = [name.decode() for name in sed_names]
 
     local_worst = {}
+    local_worst_ratio = {}
     ccm_w = None
     dummy_sed = photUtils.Sed()
     for i_obj in range(len(disk_av)):
@@ -71,6 +91,15 @@ def validate_chunk(galaxy_id, redshift, mag_in,
             b_sed.redshiftSED(redshift[i_obj], dimming=True)
             b_flux = b_sed.calcFlux(tot_bp_dict[bp])
 
+            flux_ratio = d_flux/max(b_flux, eps)
+
+            if flux_ratio<1.0e3 or disk_to_bulge[bp][i_obj]<1.0e3:
+                delta_ratio = np.abs(flux_ratio-disk_to_bulge[bp][i_obj])
+                if disk_to_bulge[bp][i_obj]>eps:
+                    delta_ratio /= disk_to_bulge[bp][i_obj]
+                if bp not in local_worst_ratio or delta_ratio>local_worst_ratio[bp]:
+                    local_worst_ratio[bp] = delta_ratio
+
             tot_flux = b_flux + d_flux
             true_flux = dummy_sed.fluxFromMag(mag_in[bp][i_obj])
             delta_flux = np.abs(1.0-tot_flux/true_flux)
@@ -81,6 +110,10 @@ def validate_chunk(galaxy_id, redshift, mag_in,
         for bp in 'ugrizy':
             if bp not in output_dict or local_worst[bp]>output_dict[bp]:
                 output_dict[bp] = local_worst[bp]
+            ratio_name = '%s_ratio' % bp
+            if (ratio_name not in output_dict
+                or local_worst_ratio[bp]>output_dict[ratio_name]):
+                output_dict[ratio_name] = local_worst_ratio[bp]
 
 if __name__ == "__main__":
 
@@ -150,10 +183,13 @@ if __name__ == "__main__":
         for bp in 'ugrizy':
             mag_in[bp] = data['mag_true_%s_lsst' % bp][sub_sample]
 
+        sub_data = {}
+        for k in data:
+            sub_data[k] = data[k][sub_sample]
+
         p = multiprocessing.Process(target=validate_chunk,
-                                    args=(data['galaxy_id'][sub_sample],
-                                          data['redshift'][sub_sample],
-                                          mag_in, args.in_dir, args.healpix,
+                                    args=(sub_data,
+                                          args.in_dir, args.healpix,
                                           read_lock, write_lock, output_dict))
 
         p.start()
