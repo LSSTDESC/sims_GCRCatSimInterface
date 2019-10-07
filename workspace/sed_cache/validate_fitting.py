@@ -111,13 +111,18 @@ if __name__ == "__main__":
     write_lock = mgr.Lock()
     output_dict = mgr.dict()
 
+    col_names = ['galaxy_id', 'redshift']
+    for bp in 'ugrizy':
+        col_names.append('mag_true_%s_lsst' % bp)
+        col_names.append('LSST_filters/diskLuminositiesStellar:'
+                         'LSST_%s:observed:dustAtlas' % bp)
+        col_names.append('LSST_filters/spheroidLuminositiesStellar:'
+                         'LSST_%s:observed:dustAtlas' % bp)
+
     print('loading catalog')
     cat = GCRCatalogs.load_catalog('cosmoDC2_v1.1.4_image')
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
-    data = cat.get_quantities(['galaxy_id', 'redshift',
-                               'mag_true_u_lsst', 'mag_true_g_lsst',
-                               'mag_true_r_lsst', 'mag_true_i_lsst',
-                               'mag_true_z_lsst', 'mag_true_y_lsst'],
+    data = cat.get_quantities(col_names,
                               native_filters=[h_query])
     print('got catalog')
 
