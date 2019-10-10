@@ -360,7 +360,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
 
     os.makedirs(os.path.join(outdir,'sne_lensed_disks'), exist_ok=True)
 
-    fits_limg_d = os.path.join(outdir,'sne_lensed_disks/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_b) + "_disk.fits" #\
+    fits_limg_d = os.path.join(outdir,'sne_lensed_disks/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_d) + "_disk.fits" #\
 
     pyfits.writeto(fits_limg_d, lensed_image_d.astype("float32"), overwrite=True)
 
