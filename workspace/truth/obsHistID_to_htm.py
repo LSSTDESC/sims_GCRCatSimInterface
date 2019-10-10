@@ -19,7 +19,8 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
     """
     chunk will be the result of sqlite3.fetchmany() on the OpSim database;
 
-    each row will be (obsHistID, descDitheredRA, descDitheredDec)
+    each row will be (obsHistID, descDitheredRA, descDitheredDec,
+                      descDitheredRotTelPos, expMJD)
 
     hs_list is a list of HalfSpaces defining DC2
 
@@ -28,10 +29,19 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
     radius = 2.1  # in degrees
     local_lookup = {}
     local_dex = {}
+    obsHistID_arr = []
+    mjd_arr = []
+    ra_arr = []
+    dec_arr = []
+    rotTelPos_arr = []
     for pointing in chunk:
         obs_id = int(pointing[0])
-        obs_hs = htmModule.halfSpaceFromRaDec(np.degrees(float(pointing[1])),
-                                              np.degrees(float(pointing[2])),
+        ra = float(pointing[1])
+        dec = float(pointing[2])
+        rotTelPos = float(pointing[3])
+        mjd = float(pointing[4])
+        obs_hs = htmModule.halfSpaceFromRaDec(np.degrees(ra),
+                                              np.degrees(dec),
                                               radius)
 
         is_valid_pointing = True
@@ -43,6 +53,7 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
         if not is_valid_pointing:
             continue
 
+        logged_metadata = False
         obs_bounds = obs_hs.findAllTrixels(htmid_level)
         for bound in obs_bounds:
             for htmid in range(bound[0], bound[1]+1, 1):
@@ -52,11 +63,35 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
                 local_lookup[htmid][local_dex[htmid]] = obs_id
                 local_dex[htmid] += 1
 
+                if not logged_metadata:
+                    obsHistID_arr.append(obs_id)
+                    ra_arr.append(ra)
+                    dec_arr.append(dec)
+                    mjd_arr.append(mjd)
+                    rotTelPos_arr.append(rotTelPos)
+                    logged_metadata = True
+
+    obsHistID_arr = np.array(obsHistID_arr)
+    ra_arr = np.array(ra_arr)
+    dec_arr = np.array(dec_arr)
+    mjd_arr = np.array(mjd_arr)
+    rotTelPos_arr = np.array(rotTelPos_arr)
+
     with my_lock:
         for htmid in local_lookup:
             if htmid in output_dict:
                 valid = np.where(local_lookup[htmid]>=0)
                 output_dict[htmid].append(local_lookup[htmid][valid])
+                if len(output_dict['obsHistID'])>0:
+                    proto_obs = np.concatenate(output_dict['obsHistID'])
+                    valid = ~np.isin(obsHistID_arr, proto_obs)
+                else:
+                    valid = np.array([True]*len(obsHistID_arr))
+                output_dict['obsHistID'].append(obsHistID_arr[valid])
+                output_dict['ra'].append(ra_arr[valid])
+                output_dict['dec'].append(dec_arr[valid])
+                output_dict['mjd'].append(mjd_arr[valid])
+                output_dict['rotTelPos'].append(rotTelPos_arr[valid])
 
 if __name__ == "__main__":
 
@@ -75,10 +110,21 @@ if __name__ == "__main__":
     pt_inside = (60.0, -30.0)
 
     hs_list = []
-    hs_list.append(htmModule.halfSpaceFromPoints(ne_corner, nw_corner, pt_inside))
-    hs_list.append(htmModule.halfSpaceFromPoints(ne_corner, se_corner, pt_inside))
-    hs_list.append(htmModule.halfSpaceFromPoints(se_corner, sw_corner, pt_inside))
-    hs_list.append(htmModule.halfSpaceFromPoints(sw_corner, nw_corner, pt_inside))
+    hs_list.append(htmModule.halfSpaceFromPoints(ne_corner,
+                                                 nw_corner,
+                                                 pt_inside))
+
+    hs_list.append(htmModule.halfSpaceFromPoints(ne_corner,
+                                                 se_corner,
+                                                 pt_inside))
+
+    hs_list.append(htmModule.halfSpaceFromPoints(se_corner,
+                                                 sw_corner,
+                                                 pt_inside))
+
+    hs_list.append(htmModule.halfSpaceFromPoints(sw_corner,
+                                                 nw_corner,
+                                                 pt_inside))
 
     dc2_bound = None
     for hs in hs_list:
@@ -102,9 +148,16 @@ if __name__ == "__main__":
         assert hh not in out_dict
         out_dict[hh] = mgr.list()
 
+    out_dict['obsHistID'] = mgr.list()
+    out_dict['mjd'] = mgr.list()
+    out_dict['ra'] = mgr.list()
+    out_dict['dec'] = mgr.list()
+    out_dict['rotTelPos'] = mgr.list()
+
     n_threads = 40
-    chunk_size = 10000
-    query = "SELECT obsHistID, descDitheredRA, descDitheredDec "
+    chunk_size = 100000
+    query = "SELECT obsHistID, descDitheredRA, descDitheredDec, "
+    query += "descDitheredRotTelPos, expMJD "
     query += "FROM Summary GROUP BY obsHistID "
 
     t_start = time.time()
@@ -139,10 +192,21 @@ if __name__ == "__main__":
     for p in p_list:
         p.join()
 
+    meta_key_list = ['obsHistID', 'ra', 'dec', 'mjd', 'rotTelPos']
+
     with h5py.File(out_name, 'w') as out_file:
         for htmid in out_dict:
+            if htmid in meta_key_list:
+                continue
             data = np.sort(np.concatenate(out_dict[htmid])).astype(int)
             out_file.create_dataset('%d' % htmid, data=data)
+
+        out_file.create_dataset('obsHistID',
+                        data=np.concatenate(out_dict['obsHistID']).astype(int))
+
+        for meta_key in ['mjd', 'ra', 'dec', 'rotTelPos']:
+            out_file.create_dataset(meta_key,
+                                    data=np.concatenate(out_dict[meta_key]))
 
     #with open('check_trixels.txt', 'w') as out_file:
     #    for hh in htmid_list:
