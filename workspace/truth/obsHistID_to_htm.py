@@ -60,6 +60,14 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
 
 if __name__ == "__main__":
 
+    data_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
+    assert os.path.isdir(data_dir)
+    opsim_name = os.path.join(data_dir, 'minion_1016_desc_dithered_v4_sfd.db')
+    assert os.path.isfile(opsim_name)
+
+    out_name = os.path.join(data_dir, 'htmid_6_to_obsHistID_lookup.h5')
+    assert not os.path.isfile(out_name)
+
     ne_corner = (71.46, -27.25)
     nw_corner = (52.25, -27.25)
     se_corner = (73.79, -44.33)
@@ -86,11 +94,60 @@ if __name__ == "__main__":
         for ii in range(bound[0], bound[1]+1, 1):
             htmid_list.append(ii)
 
-    print(len(htmid_list))
-    with open('check_trixels.txt', 'w') as out_file:
-        for hh in htmid_list:
-            t = htmModule.trixelFromHtmid(hh)
-            xyz = np.array(t.corners).transpose()
-            ra, dec = ra_dec_from_xyz(xyz[0], xyz[1], xyz[2])
-            for rr, dd in zip(ra, dec):
-                out_file.write('%e %e\n' % (rr,dd))
+    print('N htmid: %d ' % len(htmid_list))
+    mgr = multiprocessing.Manager()
+    my_lock = mgr.Lock()
+    out_dict = mgr.dict()
+    for hh in htmid_list:
+        assert hh not in out_dict
+        out_dict[hh] = mgr.list()
+
+    n_threads = 40
+    chunk_size = 10000
+    query = "SELECT obsHistID, descDitheredRA, descDitheredDec "
+    query += "FROM Summary GROUP BY obsHistID "
+
+    t_start = time.time()
+    p_list = []
+    n_chunks = 0
+    with sqlite3.connect(opsim_name) as connection:
+        cursor = connection.cursor()
+        iterator = cursor.execute(query)
+        chunk = iterator.fetchmany(chunk_size)
+        while len(chunk) > 0:
+            p = multiprocessing.Process(
+                      target=make_lookup,
+                      args=(chunk, hs_list, my_lock, out_dict))
+            p.start()
+            p_list.append(p)
+            chunk = iterator.fetchmany(chunk_size)
+            while len(p_list)>=n_threads:
+                exit_list = []
+                for p in p_list:
+                    exit_list.append(p.exitcode)
+                was_popped = False
+                for ii in range(len(p_list)-1,-1,-1):
+                    if exit_list[ii] is not None:
+                        p_list.pop(ii)
+                        was_popped = True
+                        n_chunks += 1
+                if was_popped:
+                    duration = (time.time()-t_start)/3600.0
+                    per = duration/n_chunks
+                    print(n_chunks,duration,per)
+
+    for p in p_list:
+        p.join()
+
+    with h5py.File(out_name, 'w') as out_file:
+        for htmid in out_dict:
+            data = np.sort(np.concatenate(out_dict[htmid])).astype(int)
+            out_file.create_dataset('%d' % htmid, data=data)
+
+    #with open('check_trixels.txt', 'w') as out_file:
+    #    for hh in htmid_list:
+    #        t = htmModule.trixelFromHtmid(hh)
+    #        xyz = np.array(t.corners).transpose()
+    #        ra, dec = ra_dec_from_xyz(xyz[0], xyz[1], xyz[2])
+    #        for rr, dd in zip(ra, dec):
+    #            out_file.write('%e %e\n' % (rr,dd))
