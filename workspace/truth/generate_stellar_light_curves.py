@@ -97,8 +97,19 @@ def do_photometry(chunk, my_lock, output_dict):
 
     t_start = time.time()
     var_gen = VariabilityGenerator(chunk)
-    dmag = var_gen.applyVariability(var_gen.varParamStr,
-                                    expmjd=metadata_dict['mjd'])
+    dmag_raw = var_gen.applyVariability(var_gen.varParamStr,
+                                        expmjd=metadata_dict['mjd'])
+
+    dmag_raw = dmag_raw.transpose([1,2,0]) # make the columns (star, mjd, filter)
+    assert dmag_raw.shape == (len(chunk), len(metadata_dict['mjd']), 6)
+
+    dmag = np.zeros((len(chunk), len(metadata_dict['mjd'])),
+                    dtype=float)
+
+    for i_mjd in range(len(metadata_dict['mjd'])):
+        dmag[:,i_mjd] = dmag_raw[:,i_mjd,metadata_dict['filter'][i_mjd]]
+
+    del dmag_raw
 
     t_dmag = time.time()-t_start
     print('generated dmag in %e seconds' % t_dmag)
