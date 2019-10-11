@@ -73,7 +73,10 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
 def do_photometry(chunk, my_lock, output_dict):
     """
     make sure that chunk is all from one htmid_6
+
+    output_dict will accumulate metadata
     """
+    dummy_sed = sims_photUtils.Sed()
     data_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
     assert os.path.isdir(data_dir)
     htmid_lookup_name = os.path.join(data_dir, 'htmid_6_to_obsHistID_lookup.h5')
@@ -110,6 +113,10 @@ def do_photometry(chunk, my_lock, output_dict):
         dmag[:,i_mjd] = dmag_raw[:,i_mjd,metadata_dict['filter'][i_mjd]]
 
     del dmag_raw
+
+    quiescent_fluxes = {}
+    for bp in 'ugrizy':
+        quiescent_fluxes[bp] = dummy_sed.fluxFromMag(var_gen.column_by_name('quiescent_%s' % bp))
 
     t_dmag = time.time()-t_start
     print('generated dmag in %e seconds' % t_dmag)
@@ -185,6 +192,12 @@ if __name__ == "__main__":
     mgr = multiprocessing.Manager()
     my_lock = mgr.Lock()
     output_dict = mgr.dict()
+    metadata_keys = ['ra', 'dec', 'simobjid']
+    for bp in 'ugrizy':
+        metadata_keys.append('flux_%s' % bp)
+
+    for k in metadata_keys:
+        output_dict[k] = mgr.list()
 
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
