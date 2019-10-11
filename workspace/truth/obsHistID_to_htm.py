@@ -101,7 +101,8 @@ if __name__ == "__main__":
     assert os.path.isfile(opsim_name)
 
     out_name = os.path.join(data_dir, 'htmid_6_to_obsHistID_lookup.h5')
-    assert not os.path.isfile(out_name)
+    if os.path.isfile(out_name):
+        raise RuntimeError("\n\n%s\nalready exists\n" % out_name)
 
     ne_corner = (71.46, -27.25)
     nw_corner = (52.25, -27.25)
