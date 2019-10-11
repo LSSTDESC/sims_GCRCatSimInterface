@@ -20,12 +20,14 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
     chunk will be the result of sqlite3.fetchmany() on the OpSim database;
 
     each row will be (obsHistID, descDitheredRA, descDitheredDec,
-                      descDitheredRotTelPos, expMJD)
+                      descDitheredRotTelPos, expMJD, filter)
 
     hs_list is a list of HalfSpaces defining DC2
 
     output_dict will need to be initialized with the valid values of htmid
     """
+    bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
+
     radius = 2.1  # in degrees
     local_lookup = {}
     local_dex = {}
@@ -34,12 +36,14 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
     ra_arr = []
     dec_arr = []
     rotTelPos_arr = []
+    filter_arr = []
     for pointing in chunk:
         obs_id = int(pointing[0])
         ra = float(pointing[1])
         dec = float(pointing[2])
         rotTelPos = float(pointing[3])
         mjd = float(pointing[4])
+        bp = bp_to_int[pointing[5]]
         obs_hs = htmModule.halfSpaceFromRaDec(np.degrees(ra),
                                               np.degrees(dec),
                                               radius)
@@ -69,6 +73,7 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
                     dec_arr.append(dec)
                     mjd_arr.append(mjd)
                     rotTelPos_arr.append(rotTelPos)
+                    filter_arr.append(bp)
                     logged_metadata = True
 
     obsHistID_arr = np.array(obsHistID_arr)
@@ -76,6 +81,7 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
     dec_arr = np.array(dec_arr)
     mjd_arr = np.array(mjd_arr)
     rotTelPos_arr = np.array(rotTelPos_arr)
+    filter_arr = np.array(filter_arr)
 
     with my_lock:
         for htmid in local_lookup:
@@ -92,6 +98,7 @@ def make_lookup(chunk, hs_list, my_lock, output_dict):
                 output_dict['dec'].append(dec_arr[valid])
                 output_dict['mjd'].append(mjd_arr[valid])
                 output_dict['rotTelPos'].append(rotTelPos_arr[valid])
+                output_dict['filter'].append(filter_arr[valid])
 
 if __name__ == "__main__":
 
@@ -154,11 +161,12 @@ if __name__ == "__main__":
     out_dict['ra'] = mgr.list()
     out_dict['dec'] = mgr.list()
     out_dict['rotTelPos'] = mgr.list()
+    out_dict['filter'] = mgr.list()
 
     n_threads = 40
     chunk_size = 100000
     query = "SELECT obsHistID, descDitheredRA, descDitheredDec, "
-    query += "descDitheredRotTelPos, expMJD "
+    query += "descDitheredRotTelPos, expMJD, filter "
     query += "FROM Summary GROUP BY obsHistID "
 
     t_start = time.time()
@@ -193,7 +201,7 @@ if __name__ == "__main__":
     for p in p_list:
         p.join()
 
-    meta_key_list = ['obsHistID', 'ra', 'dec', 'mjd', 'rotTelPos']
+    meta_key_list = ['obsHistID', 'ra', 'dec', 'mjd', 'rotTelPos', 'filter']
 
     with h5py.File(out_name, 'w') as out_file:
         for htmid in out_dict:
@@ -206,6 +214,8 @@ if __name__ == "__main__":
         sorted_dex = np.argsort(obs_id)
         obs_id = obs_id[sorted_dex].astype(int)
         out_file.create_dataset('obsHistID', data=obs_id)
+        out_file.create_dataset('filter',
+               data=np.concatenate(out_dict['filter'])[sorted_dex].astype(int))
 
         for meta_key in ['mjd', 'ra', 'dec', 'rotTelPos']:
             out_file.create_dataset(meta_key,
