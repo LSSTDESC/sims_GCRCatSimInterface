@@ -202,12 +202,14 @@ if __name__ == "__main__":
             data = np.sort(np.concatenate(out_dict[htmid])).astype(int)
             out_file.create_dataset('%d' % htmid, data=data)
 
-        out_file.create_dataset('obsHistID',
-                        data=np.concatenate(out_dict['obsHistID']).astype(int))
+        obs_id = np.concatenate(out_dict['obsHistID'])
+        sorted_dex = np.argsort(obs_id)
+        obs_id = obs_id[sorted_dex].astype(int)
+        out_file.create_dataset('obsHistID', data=obs_id)
 
         for meta_key in ['mjd', 'ra', 'dec', 'rotTelPos']:
             out_file.create_dataset(meta_key,
-                                    data=np.concatenate(out_dict[meta_key]))
+                       data=np.concatenate(out_dict[meta_key])[sorted_dex])
 
     #with open('check_trixels.txt', 'w') as out_file:
     #    for hh in htmid_list:
