@@ -18,6 +18,7 @@ echo $MKL_NUM_THREADS
 echo 'starting to process'
 
 python validate_fitting.py --healpix $1 --seed 119 \
---in_dir $SCRATCH/sed_test_190927 --d_gal 20000 \
---nsamples 2000000 --n_threads 60
+--in_dir /global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/sedLookup \
+--d_gal 20000 \
+--nsamples -1 --n_threads 60
 

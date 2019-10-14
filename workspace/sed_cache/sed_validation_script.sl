@@ -1,12 +1,12 @@
 #!/bin/bash -l
 #SBATCH --image=docker:lsstdesc/stack-jupyter:prod
-#SBATCH -t 0:30:00
-#SBATCH -q debug
+#SBATCH -t 3:00:00
+#SBATCH -q regular
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=64
-#SBATCH -o sed_validation_output.txt
-#SBATCH -e sed_validation_err.txt
+#SBATCH -o sed_full_validation_output.txt
+#SBATCH -e sed_full_validation_err.txt
 #SBATCH -C haswell
 
 #SBATCH -N 25
