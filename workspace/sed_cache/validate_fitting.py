@@ -179,10 +179,6 @@ if __name__ == "__main__":
     for i_start in range(0,len(data['galaxy_id']), args.d_gal):
         sub_sample = slice(i_start, i_start+args.d_gal)
 
-        mag_in = {}
-        for bp in 'ugrizy':
-            mag_in[bp] = data['mag_true_%s_lsst' % bp][sub_sample]
-
         sub_data = {}
         for k in data:
             sub_data[k] = data[k][sub_sample]
