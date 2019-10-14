@@ -273,7 +273,6 @@ class InstanceCatalogWriter(object):
         do_knots = True
         do_bulges = True
         do_disks = True
-        do_agn = True
         do_sprinkled = True
         do_hosts = True
         do_sne = True
@@ -288,8 +287,6 @@ class InstanceCatalogWriter(object):
                         do_bulges = False
                     if 'wrote disk' in line:
                         do_disks = False
-                    if 'wrote agn' in line:
-                        do_agn = False
                     if 'wrote galaxy catalogs with sprinkling' in line:
                         do_sprinkled = False
                     if 'wrote lensing host' in line:
@@ -435,23 +432,6 @@ class InstanceCatalogWriter(object):
                         duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote disk catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
-
-            if do_agn:
-                agn_db = agnDESCQAObject(self.descqa_catalog)
-                agn_db._do_prefiltering = True
-                agn_db.field_ra = self.protoDC2_ra
-                agn_db.field_dec = self.protoDC2_dec
-                agn_db.agn_params_db = self.agn_db_name
-                cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
-                cat._agn_threads = self._agn_threads
-                cat.lsstBandpassDict = self.bp_dict
-                cat.photParams = self.phot_params
-                cat_name = 'agn_'+gal_name
-                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,
-                                  write_header=False)
-                written_catalog_names.append(cat_name)
-                del cat
-                del agn_db
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
