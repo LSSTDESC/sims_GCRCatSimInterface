@@ -15,7 +15,6 @@ setup -j -r $HOME/throughputs
 echo $OMP_NUM_THREADS
 echo $NUMEXPR_NUM_THREADS
 echo $MKL_NUM_THREADS
-echo 'starting to process'
 
 python validate_fitting.py --healpix $1 --seed 119 \
 --in_dir /global/projecta/projectdirs/lsst/groups/SSim/DC2/cosmoDC2_v1.1.4/sedLookup \
