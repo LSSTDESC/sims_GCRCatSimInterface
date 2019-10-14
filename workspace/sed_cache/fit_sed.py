@@ -18,20 +18,21 @@ from lsst.utils import getPackageDir
 import argparse
 
 
-def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
+def _parallel_fitting(mag_array, redshift, redshift_true,
+                      H0, Om0, wav_min, wav_width,
                       lsst_mag_array, out_dict, tag):
-
+    pid = os.getpid()
     (sed_names,
      mag_norms,
      av_arr,
      rv_arr) = sed_from_galacticus_mags(mag_array,
                                         redshift,
+                                        redshift_true,
                                         H0, Om0,
                                         wav_min, wav_width,
                                         lsst_mag_array)
 
-    (tot_bp_dict,
-     lsst_bp_dict) = BandpassDict.loadBandpassesFromFiles()
+    tot_bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
 
     sed_dir = getPackageDir('sims_sed_library')
     lsst_fit_fluxes = np.zeros((6,len(sed_names)), dtype=float)
@@ -74,7 +75,7 @@ def _parallel_fitting(mag_array, redshift, H0, Om0, wav_min, wav_width,
                 raise
             spec.multiplyFluxNorm(fnorm)
             spec.redshiftSED(redshift[ii], dimming=True)
-            ff = spec.calcFlux(lsst_bp_dict[bp])
+            ff = spec.calcFlux(tot_bp_dict[bp])
             lsst_fit_fluxes[i_bp][ii] = ff
 
     out_dict[tag] = (sed_names, mag_norms, av_arr, rv_arr, lsst_fit_fluxes)
@@ -117,10 +118,9 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     healpix_query = GCRQuery('healpix_pixel==%d' % healpix)
 
     qties = cat.get_quantities(list(filter_names) + list(lsst_filter_names) +
-                              ['redshift_true', 'galaxy_id'],
+                              ['redshift', 'redshift_true', 'galaxy_id'],
                                native_filters=[healpix_query])
 
-    print("testing on %d of %d" % (lim, len(qties['galaxy_id'])))
     with np.errstate(divide='ignore', invalid='ignore'):
         mag_array = np.array([-2.5*np.log10(qties[ff][:lim])
                               for ff in filter_names])
@@ -129,12 +129,14 @@ def do_fitting(cat, component, healpix, lim, n_threads):
                                    for ff in lsst_filter_names])
 
 
-    redshift = qties['redshift_true'][:lim]
+    redshift = qties['redshift'][:lim]
+    redshift_true = qties['redshift_true'][:lim]
     (sed_names,
      mag_norms,
      av_arr,
      rv_arr) = sed_from_galacticus_mags(mag_array[:,:2],
                                         redshift[:2],
+                                        redshift_true[:2],
                                         H0, Om0,
                                         wav_min, wav_width,
                                         lsst_mag_array[:,:2])
@@ -147,6 +149,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
         s = slice(i_start, i_start+d_gal)
         p = multiprocessing.Process(target=_parallel_fitting,
                                     args=(mag_array[:,s], redshift[s],
+                                          redshift_true[s],
                                           H0, Om0, wav_min, wav_width,
                                           lsst_mag_array[:,s],
                                           out_dict, i_start))
@@ -162,6 +165,7 @@ def do_fitting(cat, component, healpix, lim, n_threads):
     rv_arr = np.zeros(len(redshift), dtype=float)
     lsst_fluxes = np.zeros((6,len(redshift)), dtype=float)
 
+    t_start_slicing = time.time()
     for i_start in out_dict.keys():
         s = slice(i_start, i_start+d_gal)
         sed_names[s] = out_dict[i_start][0]
@@ -190,6 +194,9 @@ if __name__ == "__main__":
     parser.add_argument('--catalog', type=str, default='cosmoDC2_v1.0_image',
                         help='The name of the extragalactic catalog '
                              '(defaults to cosmoDC2_v1.0_image)')
+    parser.add_argument('--validate', type=int, default=0,
+                        help='number of galaxies to randomly validate '
+                        '(defaults to zero)')
 
     args = parser.parse_args()
     assert args.healpix is not None
@@ -200,14 +207,16 @@ if __name__ == "__main__":
 
     sed_dir = getPackageDir('sims_sed_library')
 
+    print('loading %s' % args.catalog)
     cat = GCRCatalogs.load_catalog(args.catalog)
     h_query = GCRQuery('healpix_pixel==%d' % args.healpix)
-    if args.lim is None:
+    if args.lim is None or args.lim<0:
         gid = cat.get_quantities('galaxy_id', native_filters=[h_query])['galaxy_id']
         args.lim = 2*len(gid)
 
     out_file_name = os.path.join(args.out_dir,args.out_name)
 
+    t_start = time.time()
     ########## actually fit SED, magNorm, and dust parameters to disks and bulges
 
     t0 = 1539899570.0
@@ -218,14 +227,10 @@ if __name__ == "__main__":
                                                       args.healpix, args.lim,
                                                       args.n_threads)
 
-    print("fit disks %d at %.2f" % (args.healpix, time.time()-t0))
-
     (bulge_redshift, bulge_id, bulge_sed_name, bulge_magnorm,
      bulge_av, bulge_rv, bulge_lsst_fluxes) = do_fitting(cat, 'bulge',
                                                          args.healpix, args.lim,
                                                          args.n_threads)
-
-    print("fit bulges %d at %.2f" % (args.healpix, time.time()-t0))
 
     np.testing.assert_array_equal(disk_id, bulge_id)
     np.testing.assert_array_equal(disk_redshift, bulge_redshift)
@@ -235,15 +240,13 @@ if __name__ == "__main__":
     ############ get true values of magnitudes from extragalactic catalog;
     ############ adjust magNorm to demand agreement
 
-    q_list = ['galaxy_id', 'ra', 'dec']
+    q_list = ['galaxy_id', 'ra', 'dec', 'redshift']
     for bp in 'ugrizy':
         q_list.append('mag_true_%s_lsst' % bp)
 
     control_qties = cat.get_quantities(q_list, native_filters=[h_query])
     for kk in control_qties:
         control_qties[kk] = control_qties[kk][:args.lim]
-
-    print("got controls %d at %.2f" % (args.healpix, time.time()-t0))
 
     np.testing.assert_array_equal(control_qties['galaxy_id'], disk_id)
 
@@ -285,5 +288,56 @@ if __name__ == "__main__":
         out_file.create_dataset('disk_rv', data=disk_rv)
         out_file.create_dataset('bulge_av', data=bulge_av)
         out_file.create_dataset('bulge_rv', data=bulge_rv)
+        out_file.create_dataset('bulge_fluxes', data=bulge_lsst_fluxes)
+        out_file.create_dataset('disk_fluxes', data=disk_lsst_fluxes)
+        out_file.create_dataset('tot_fluxes', data=tot_lsst_fluxes)
 
-    print('all done %d at %.2f' % (args.healpix, time.time()-t0))
+    duration = (time.time()-t_start)/3600.0
+    print('all done %d at %.2f duration %.4f hrs' %
+          (args.healpix, time.time()-t0, duration))
+
+    if args.validate > 0:
+        print("doing some validation")
+        n_to_validate = args.validate
+        validate_rng = np.random.RandomState(88)
+        if n_to_validate < len(control_qties['redshift']):
+            dexes_to_validate = validate_rng.choice(
+                       np.arange(len(control_qties['redshift']), dtype=int),
+                       replace=False,
+                       size=n_to_validate)
+        else:
+            dexes_to_validate = np.arange(len(control_qties['redshift']),
+                                          dtype=int)
+        max_offset = -1.0
+        sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
+        tot_bp_dict = BandpassDict.loadTotalBandpassesFromFiles()
+        for ii in dexes_to_validate:
+            disk_name = os.path.join(sed_dir,
+                                     sed_names[disk_sed_idx[ii]].decode())
+            bulge_name = os.path.join(sed_dir,
+                                      sed_names[bulge_sed_idx[ii]].decode())
+            for i_bp, bp in enumerate('ugrizy'):
+                disk_s = Sed()
+                disk_s.readSED_flambda(disk_name)
+                fnorm = getImsimFluxNorm(disk_s, disk_magnorm[i_bp][ii])
+                disk_s.multiplyFluxNorm(fnorm)
+                ax, bx = disk_s.setupCCM_ab()
+                disk_s.addDust(ax, bx, A_v=disk_av[ii], R_v=disk_rv[ii])
+                disk_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
+                disk_f = disk_s.calcFlux(tot_bp_dict[bp])
+
+                bulge_s = Sed()
+                bulge_s.readSED_flambda(bulge_name)
+                fnorm = getImsimFluxNorm(bulge_s, bulge_magnorm[i_bp][ii])
+                bulge_s.multiplyFluxNorm(fnorm)
+                ax, bx = bulge_s.setupCCM_ab()
+                bulge_s.addDust(ax, bx, A_v=bulge_av[ii], R_v=bulge_rv[ii])
+                bulge_s.redshiftSED(control_qties['redshift'][ii], dimming=True)
+                bulge_f = bulge_s.calcFlux(tot_bp_dict[bp])
+
+                tot_f = disk_f+bulge_f
+                f_true = dummy_spec.fluxFromMag(control_qties['mag_true_%s_lsst' % bp][ii])
+                offset = np.abs(1.0-(tot_f/f_true))
+                if offset>max_offset:
+                    print('final max_offset %e' % offset)
+                    max_offset = offset

@@ -1,7 +1,7 @@
 import GCRCatalogs
 image_cat_config = GCRCatalogs.get_catalog_config('cosmoDC2_v1.1.4_image')
 
-healpix_pixels = image_cat_config['healpix_pixels']
+healpix_pixels = image_cat_config['healpix_pixels'][:10]
 
 header = '''#!/bin/bash -l
 #SBATCH -t 4:00:00
@@ -11,18 +11,21 @@ header = '''#!/bin/bash -l
 #SBATCH --cpus-per-task=24
 #SBATCH -o sed_cache_v1.1.4_output.txt
 #SBATCH -e sed_cache_v1.1.4_err.txt
+#SBATCH -C haswell
 '''
 
 header += '\n#SBATCH -N %d\n\n' % len(healpix_pixels)
 
 header += '''
-source /global/common/software/lsst/cori-haswell-gcc/Run2.0p_setup_test.bash
+python /global/common/software/lsst/common/miniconda/start-kernel-cli.py desc-stack
+setup -j -r $HOME/sims_data
 setup -j -r $HOME/sims_GCRCatSimInterface_master
+setup -j -r $HOME/sims_catalogs
+setup -j -r $HOME/sims_utils
 setup -j -r $HOME/sims_catUtils
 setup -j -r $HOME/sims_photUtils
-setup -j -r $HOME/sims_utils
-
-export PYTHONPATH=$HOME/gcr-catalogs-desc/:$PYTHONPATH
+setup -j -r $HOME/Twinkles
+setup -j -r $HOME/throughputs
 
 export HDF5_USE_FILE_LOCKING=FALSE
 
@@ -45,7 +48,7 @@ with open('sed_fitting_script.sl', 'w') as out_file:
         out_file.write('--catalog cosmoDC2_v1.1.4_image \\\n')
         out_file.write('--out_dir ${out_dir} \\\n')
         out_file.write('--out_name sed_fit_%d.h5 \\\n' % hp)
-        out_file.write('--n_threads 24 &\n')
+        out_file.write('--n_threads 24 --lim 240000 &\n')
         out_file.write('\n')
 
     out_file.write('wait\n')
