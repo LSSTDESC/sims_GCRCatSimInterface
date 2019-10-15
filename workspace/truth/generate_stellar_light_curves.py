@@ -37,8 +37,10 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
         self.parallax = np.zeros(len(chunk), dtype=float)
         self.ebv = np.zeros(len(chunk), dtype=float)
         self.varParamStr = np.empty(len(chunk), dtype=(str,100))
+        self.simobjid = np.empty(len(chunk), dtype=int)
         ccm_wav = None
         for i_star, star in enumerate(chunk):
+            self.simobjid[i_star] = int(star[0])
             full_file_name = os.path.join(sed_dir,
                                           defaultSpecMap[star[2]])
             spec = sims_photUtils.Sed()
@@ -67,14 +69,23 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
             return np.copy(self.ebv)
         elif name=='parallax':
             return np.copy(self.parallax)
+        elif name=='simobjid':
+            return np.copy(self.simobjid)
         raise RuntimeError("\n\nCannot get column %s\n\n" % name)
 
 
-def do_photometry(chunk, my_lock, output_dict):
+def do_photometry(chunk,
+                  obs_lock, obs_metadata_dict,
+                  star_lock, star_data_dict):
     """
     make sure that chunk is all from one htmid_6
 
     output_dict will accumulate metadata
+
+    query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
+    query += "varParamStr, parallax, ra, decl FROM stars "
+    query += "WHERE htmid_6=%d" % htmid
+
     """
     dummy_sed = sims_photUtils.Sed()
     data_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
@@ -114,9 +125,9 @@ def do_photometry(chunk, my_lock, output_dict):
 
     del dmag_raw
 
-    quiescent_fluxes = {}
-    for bp in 'ugrizy':
-        quiescent_fluxes[bp] = dummy_sed.fluxFromMag(var_gen.column_by_name('quiescent_%s' % bp))
+    quiescent_fluxes = np.zeros((len(chunk),6), dtype=float)
+    for i_bp, bp in enumerate('ugrizy'):
+        quiescent_fluxes[:, i_bp] = dummy_sed.fluxFromMag(var_gen.column_by_name('quiescent_%s' % bp))
 
     t_dmag = time.time()-t_start
     print('generated dmag in %e seconds' % t_dmag)
@@ -152,6 +163,45 @@ def do_photometry(chunk, my_lock, output_dict):
         valid = np.char.find(chip_name, 'None')<0
 
         obs_mask[:,i_obs] = valid
+
+    for i_star in range(len(chunk)):
+        if obs_mask[i_star].sum()==0:
+            print('did not observe %d' % int(chunk[i_star][0]))
+
+    t_flux = time.time()
+    print('calculating dflux')
+    dflux_arr = []
+    for i_star in range(len(chunk)):
+        star_filter = metadata_dict['filter'][obs_mask[i_star]]
+        q_flux = quiescent_fluxes[i_star][star_filter]
+        assert len(q_flux) == obs_mask[i_star].sum()
+        q_mag = dummy_sed.magFromFlux(q_flux)
+        tot_mag = q_mag + dmag[i_star,obs_mask[i_star]]
+        tot_flux = dummy_sed.fluxFromMag(tot_mag)
+        dflux = tot_flux-q_flux
+        dflux_arr.append(dflux)
+        assert len(dflux) == obs_mask[i_star].sum()
+    print('dflux took %e seconds' % (time.time()-t_flux))
+
+    with obs_lock:
+        obs_metadata_dict['mjd'].append(metadata_dict['mjd'])
+        obs_metadata_dict['obsHistID'].append(metadata_dict['obsHistID'])
+        obs_metadata_dict['filter'].append(metadata_dict['filter'])
+
+    with star_lock:
+        local_simobjid = var_gen.column_by_name('simobjid')
+        star_data_dict['simobjid'].append(local_simobjid)
+        star_data_dict['ra'].append(star_ra)
+        star_data_dict['dec'].append(star_dec)
+        for i_bp, bp in enumerate('ugrizy'):
+            star_data_dict['quiescent_%s' % bp].append(quiescent_fluxes[:,i_bp])
+        for i_star in range(len(local_simobjid)):
+            if len(dflux_arr[i_star]) == 0:
+                continue
+            star_data_dict['lc_id'].append(local_simobjid[i_star])
+            star_data_dict['lc_flux'].append(dflux_arr[i_star])
+            star_data_dict['lc_obsHistID'].append(metadata_dict['obsHistID'][obs_mask[i_star]])
+
 
 if __name__ == "__main__":
 
@@ -190,19 +240,31 @@ if __name__ == "__main__":
     query += "WHERE htmid_6=%d" % htmid
 
     mgr = multiprocessing.Manager()
-    my_lock = mgr.Lock()
-    output_dict = mgr.dict()
-    metadata_keys = ['ra', 'dec', 'simobjid']
-    for bp in 'ugrizy':
-        metadata_keys.append('flux_%s' % bp)
+    obs_lock = mgr.Lock()
+    star_lock = mgr.Lock()
+    obs_metadata_dict = mgr.dict()
+    star_data_dict = mgr.dict()
 
-    for k in metadata_keys:
-        output_dict[k] = mgr.list()
+    obs_metadata_dict['mjd'] = mgr.list()
+    obs_metadata_dict['obsHistID'] = mgr.list()
+    obs_metadata_dict['filter'] = mgr.list()
+
+    star_data_dict['simobjid'] = mgr.list()
+    star_data_dict['ra'] = mgr.list()
+    star_data_dict['dec'] = mgr.list()
+    for bp in 'ugrizy':
+        star_data_dict['quiescent_%s' % bp] = mgr.list()
+    star_data_dict['lc_flux'] = mgr.list()
+    star_data_dict['lc_obsHistID'] = mgr.list()
+    star_data_dict['lc_id'] = mgr.list()
+
 
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
         data_iterator = cursor.execute(query)
         chunk = data_iterator.fetchmany(chunk_size)
         t_start = time.time()
-        do_photometry(chunk, my_lock, output_dict)
+        do_photometry(chunk,
+                      obs_lock, obs_metadata_dict,
+                      star_lock, star_data_dict)
         print('that took %e seconds' % (time.time()-t_start))
