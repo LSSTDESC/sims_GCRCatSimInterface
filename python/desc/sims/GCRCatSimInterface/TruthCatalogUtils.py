@@ -12,14 +12,14 @@ from lsst.sims.utils import _getRotSkyPos
 from lsst.sims.utils import ObservationMetaData
 from lsst.sims.photUtils import Sed, getImsimFluxNorm
 from lsst.sims.catUtils.baseCatalogModels import StarObj
-from . import sprinklerCompound_DC2_truth
-from . import TwinklesCompoundInstanceCatalog_DC2
+from desc.sims.GCRCatSimInterface.TwinklesClasses import sprinklerCompound_DC2_truth
+from desc.sims.GCRCatSimInterface.TwinklesClasses import TwinklesCompoundInstanceCatalog_DC2
 from . import SQLSubCatalogMixin
 from . import diskDESCQAObject_protoDC2 as diskDESCQAObject
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject
 from . import agnDESCQAObject_protoDC2 as agnDESCQAObject
 from . import PhoSimDESCQA
-from . import TwinklesCatalogZPoint_DC2
+from desc.sims.GCRCatSimInterface.TwinklesClasses import TwinklesCatalogZPoint_DC2
 from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ["write_sprinkled_param_db",

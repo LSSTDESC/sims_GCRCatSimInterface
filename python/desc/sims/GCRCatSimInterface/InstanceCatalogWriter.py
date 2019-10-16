@@ -29,13 +29,19 @@ from . import SubCatalogMixin
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
-    agnDESCQAObject_protoDC2 as agnDESCQAObject, \
-    TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
-    sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
-    TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
+    agnDESCQAObject_protoDC2 as agnDESCQAObject
+
+try:
+    import desc.sims.GCRCatSimInterface.TwinklesClasses.sprinklerCompound_DC2 as sprinklerDESCQACompoundObject
+    import desc.sims.GCRCatSimInterface.TwinklesClasses.TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
+    import desc.sims.GCRCatSimInterface.TwinklesClasses.TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject
+    from desc.sims.GCRCatSimInterface.TwinklesClasses import twinkles_spec_map
+    HAS_TWINKLES = True
+except ImportError:
+    HAS_TWINKLES = False
+
 from . import DC2PhosimCatalogSN, SNeDBObject
 from . import hostImage
-from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
@@ -323,9 +329,11 @@ class InstanceCatalogWriter(object):
 
         # Add directory for writing the GLSN spectra to
         glsn_spectra_dir = str(os.path.join(full_out_dir, 'Dynamic'))
-        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
-        # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
+
+        if HAS_TWINKLES:
+            twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
+            # Ensure that the directory for GLSN spectra is created
 
         phosim_cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
@@ -440,6 +448,10 @@ class InstanceCatalogWriter(object):
                                        (obsHistID, duration))
         else:
 
+            if not HAS_TWINKLES:
+                raise RuntimeError("Cannot do_sprinkled; you have not imported "
+                                   "the Twinkles modules in sims_GCRCatSimInterface")
+
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
                 subcat_prefix = 'bulge_'
 
@@ -459,7 +471,6 @@ class InstanceCatalogWriter(object):
                 _agn_threads = self._agn_threads
 
             if do_sprinkled:
-
                 self.compoundGalICList = [SprinkledBulgeCat,
                                           SprinkledDiskCat,
                                           SprinkledAgnCat]
