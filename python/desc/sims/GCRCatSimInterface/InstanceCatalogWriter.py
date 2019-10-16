@@ -200,6 +200,9 @@ class InstanceCatalogWriter(object):
                                   driver='sqlite')
 
         self.sprinkler = sprinkler
+        if self.sprinkler and not HAS_TWINKLES:
+            raise RuntimeError("You are trying to enable the sprinkler; "
+                               "but Twinkles cannot be imported")
 
         if not os.path.isdir(sed_lookup_dir):
             raise IOError("\n%s\nis not a dir" % sed_lookup_dir)
