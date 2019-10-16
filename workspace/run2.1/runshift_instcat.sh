@@ -18,7 +18,6 @@ setup lsst_distrib
 setup lsst_sims
 setup -j -r $HOME/sims_GCRCatSimInterface_master/
 setup -j -r $HOME/throughputs
-setup -j -r $HOME/Twinkles
 
 declare -i i_start
 i_start=0
