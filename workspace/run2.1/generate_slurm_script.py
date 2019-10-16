@@ -63,8 +63,6 @@ if __name__ == "__main__":
     assert len(obs_hist_id) > 0
 
     obs_hist_id = np.array(obs_hist_id)
-    rng = np.random.RandomState(88123)
-    rng.shuffle(obs_hist_id)
 
     i_file_offset = 0
     for i_file, i_start in enumerate(range(0,len(obs_hist_id), args.n_obs)):
