@@ -1,9 +1,9 @@
 #!/bin/bash
 
-out_dir="{@:1:1}"
-config_file="{@:2:1}"
-n_parallel_jobs="{@:3:1}"
-obsid_list=("{@:4}")
+out_dir="${@:1:1}"
+config_file="${@:2:1}"
+n_parallel_jobs="${@:3:1}"
+obsid_list=("${@:4}")
 n_obsid=${#obsid_list[@]}
 declare -i n_per_job=${n_obsid}/${n_parallel_jobs}
 
