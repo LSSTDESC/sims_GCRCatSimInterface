@@ -697,9 +697,15 @@ def get_instance_catalogs():
                                        'DESCQACat_Disk', 'DESCQACat_Agn',
                                        'DESCQACat_Twinkles'])
 
-    return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
-                    PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
-                    PhoSimDESCQA_AGN, DESCQACat_Twinkles)
+    if HAS_TWINKLES:
+        return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
+                        PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
+                        PhoSimDESCQA_AGN, DESCQACat_Twinkles)
+    else:
+        return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
+                        PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
+                        PhoSimDESCQA_AGN, None)
+
 
 class DESCQACat_Bulge(PhoSimDESCQA):
 
