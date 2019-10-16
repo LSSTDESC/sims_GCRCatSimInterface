@@ -2,3 +2,4 @@
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
 #SBATCH --cpus-per-task=64
+#SBATCH -C haswell
