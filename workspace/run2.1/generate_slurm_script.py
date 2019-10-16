@@ -108,8 +108,9 @@ if __name__ == "__main__":
                 s = slice(i_0, i_0+args.d_obs)
                 these_obs = batch[s]
                 out_file.write('\n')
-                out_file.write('srun -N 1 -n 1 -c 24 --exclusive \\\n')
-                out_file.write('bash instcat_runner.sh ${out_dir} ')
+                out_file.write('srun -N 1 -n 1 -c 64 --exclusive \\\n')
+                out_file.write('shifter ${work_dir}/runshift_instcat.sh \\\n')
+                out_file.write('${out_dir} ')
                 out_file.write('${config_file} %d' % args.n_groups)
                 for ii in these_obs:
                     out_file.write(' %d' % ii)
