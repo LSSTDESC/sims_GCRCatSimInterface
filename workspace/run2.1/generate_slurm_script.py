@@ -28,7 +28,13 @@ if __name__ == "__main__":
                         'obsHistID must be < min_obs (default==-1)')
     parser.add_argument('--out_dir', type=str, default=None,
                         help='Where InstanceCatalogs will be written')
+    parser.add_argument('--config_file_name', type=str, default=None,
+                        help='Name of config file to use for InstanceCatalog '
+                             'generation')
     args = parser.parse_args()
+
+    if args.config_file_name is None:
+        raise RuntimeError("Must specify configfile")
 
     if args.out_dir is None:
         raise RuntimeError("Must specify an output directory")
@@ -60,8 +66,6 @@ if __name__ == "__main__":
     rng = np.random.RandomState(88123)
     rng.shuffle(obs_hist_id)
 
-    list_of_config_files = []
-
     i_file_offset = 0
     for i_file, i_start in enumerate(range(0,len(obs_hist_id), args.n_obs)):
         batch_slice = slice(i_start, i_start+args.n_obs)
@@ -72,6 +76,7 @@ if __name__ == "__main__":
             if os.path.isfile(out_name):
                 i_file_offset += 1
 
+        print('writing ',out_name)
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
             n_srun = int(np.ceil(len(batch)/args.d_obs))
@@ -85,12 +90,13 @@ if __name__ == "__main__":
                 for line in in_file:
                     out_file.write(line)
 
-            config_file_name = os.path.join('scratch_config_%d.json' % file_id)
-            list_of_config_files.append(config_file_name)
+            out_file.write('\n')
+            out_file.write('work_dir=%s\n' % os.environ['PWD'])
 
             out_file.write('\n')
             out_file.write('out_dir=%s\n' % args.out_dir)
-            out_file.write('config_file=%s\n' % config_file_name)
+            out_file.write('config_file=${work_dir}/%s\n' %
+                           args.config_file_name)
             out_file.write("if [ ! -d ${out_dir} ]; then\n")
             out_file.write("    mkdir -p ${out_dir}\n")
             out_file.write("fi\n")
@@ -111,7 +117,3 @@ if __name__ == "__main__":
             out_file.write("\necho 'master all done for %s (%d)'\n" % (args.out_dir, file_id))
             out_file.write('date\n')
 
-
-    print('need configs:')
-    for f_name in list_of_config_files:
-        print(f_name)
