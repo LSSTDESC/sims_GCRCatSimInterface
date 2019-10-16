@@ -231,14 +231,6 @@ if __name__ == "__main__":
     stellar_db_name = os.path.join(cache_dir, 'dc2_stellar_db.db')
     assert os.path.isfile(stellar_db_name)
 
-    htmid = 8978
-    chunk_size = 50000000//htmid_to_ct[htmid]
-    print('chunk_size %d' % chunk_size)
-
-    query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
-    query += "varParamStr, parallax, ra, decl FROM stars "
-    query += "WHERE htmid_6=%d" % htmid
-
     mgr = multiprocessing.Manager()
     obs_lock = mgr.Lock()
     star_lock = mgr.Lock()
@@ -258,13 +250,21 @@ if __name__ == "__main__":
     star_data_dict['lc_obsHistID'] = mgr.list()
     star_data_dict['lc_id'] = mgr.list()
 
-
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
-        data_iterator = cursor.execute(query)
-        chunk = data_iterator.fetchmany(chunk_size)
-        t_start = time.time()
-        do_photometry(chunk,
-                      obs_lock, obs_metadata_dict,
-                      star_lock, star_data_dict)
-        print('that took %e seconds' % (time.time()-t_start))
+
+        for htmid in [8978]:
+            chunk_size = 50000000//htmid_to_ct[htmid]
+            print('chunk_size %d' % chunk_size)
+
+            query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
+            query += "varParamStr, parallax, ra, decl FROM stars "
+            query += "WHERE htmid_6=%d" % htmid
+
+            data_iterator = cursor.execute(query)
+            chunk = data_iterator.fetchmany(chunk_size)
+            t_start = time.time()
+            do_photometry(chunk,
+                          obs_lock, obs_metadata_dict,
+                          star_lock, star_data_dict)
+            print('that took %e seconds' % (time.time()-t_start))
