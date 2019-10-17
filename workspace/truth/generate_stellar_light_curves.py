@@ -36,7 +36,7 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
 
         self.parallax = np.zeros(len(chunk), dtype=float)
         self.ebv = np.zeros(len(chunk), dtype=float)
-        self.varParamStr = np.empty(len(chunk), dtype=(str,100))
+        self.varParamStr = np.empty(len(chunk), dtype=(str,300))
         self.simobjid = np.empty(len(chunk), dtype=int)
         ccm_wav = None
         for i_star, star in enumerate(chunk):
