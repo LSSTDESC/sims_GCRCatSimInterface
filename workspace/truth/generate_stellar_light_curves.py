@@ -250,9 +250,13 @@ if __name__ == "__main__":
     star_data_dict['lc_obsHistID'] = mgr.list()
     star_data_dict['lc_id'] = mgr.list()
 
+    n_threads = 20
+
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
 
+        ct =0
+        t_start = time.time()
         for htmid in [8978]:
             chunk_size = 50000000//htmid_to_ct[htmid]
             print('chunk_size %d' % chunk_size)
@@ -263,8 +267,26 @@ if __name__ == "__main__":
 
             data_iterator = cursor.execute(query)
             chunk = data_iterator.fetchmany(chunk_size)
-            t_start = time.time()
-            do_photometry(chunk,
-                          obs_lock, obs_metadata_dict,
-                          star_lock, star_data_dict)
-            print('that took %e seconds' % (time.time()-t_start))
+            p_list = []
+            while len(chunk)>0:
+                p = multiprocessing.Process(target=do_photometry,
+                                      args=(chunk,
+                                            obs_lock, obs_metadata_dict,
+                                            star_lock, star_data_dict))
+                p.start()
+                p_list.append(p)
+                while len(p_list)>=n_threads:
+                    e_list = list([p.exitcode for p in p_list])
+                    was_popped = False
+                    for ii in range(len(e_list)-1,-1,-1):
+                        if e_list[ii] is not None:
+                            assert p_list[ii].exitcode is not None
+                            p_list.pop(ii)
+                            was_popped = True
+                            ct += chunk_size
+                    if was_popped:
+                        duration = (time.time()-t_start)/3600.0
+                        per = duration/ct
+                        print('ran %d in %e hrs (%e)' % (ct, duration, per))
+
+                chunk = data_iterator.fetchmany(chunk_size)
