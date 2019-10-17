@@ -1,8 +1,8 @@
 import os
-import sqlite3
 import h5py
 import numpy as np
 
+from lsst.sims.catalogs.db import DBObject
 from lsst.sims.utils import angularSeparation
 from lsst.sims.utils import getRotSkyPos
 from lsst.sims.utils import defaultSpecMap
@@ -85,6 +85,7 @@ def do_photometry(chunk,
     query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
     query += "varParamStr, parallax, ra, decl FROM stars "
     query += "WHERE htmid_6=%d" % htmid
+    query += " AND varParamSTr LIKE '%varMethodName%'"
 
     """
     dummy_sed = sims_photUtils.Sed()
@@ -252,41 +253,44 @@ if __name__ == "__main__":
 
     n_threads = 20
 
-    with sqlite3.connect(stellar_db_name) as conn:
-        cursor = conn.cursor()
+    stellar_db = DBObject(database=stellar_db_name, driver='sqlite')
 
-        ct =0
-        t_start = time.time()
-        for htmid in [8978]:
-            chunk_size = 50000000//htmid_to_ct[htmid]
-            print('chunk_size %d' % chunk_size)
+    ct =0
+    t_start = time.time()
+    db_dtype = np.dtype([('simobjid', int), ('htimd_6', int),
+                         ('sedFilename', (str, 300)), ('magNorm', float),
+                         ('ebv', float), ('varParamStr', (str, 300)),
+                         ('parallax', float), ('ra', float), ('decl', float)])
 
-            query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
-            query += "varParamStr, parallax, ra, decl FROM stars "
-            query += "WHERE htmid_6=%d" % htmid
+    for htmid in [8978]:
+        chunk_size = 50000000//htmid_to_ct[htmid]
+        print('chunk_size %d' % chunk_size)
 
-            data_iterator = cursor.execute(query)
-            chunk = data_iterator.fetchmany(chunk_size)
-            p_list = []
-            while len(chunk)>0:
-                p = multiprocessing.Process(target=do_photometry,
-                                      args=(chunk,
-                                            obs_lock, obs_metadata_dict,
-                                            star_lock, star_data_dict))
-                p.start()
-                p_list.append(p)
-                while len(p_list)>=n_threads:
-                    e_list = list([p.exitcode for p in p_list])
-                    was_popped = False
-                    for ii in range(len(e_list)-1,-1,-1):
-                        if e_list[ii] is not None:
-                            assert p_list[ii].exitcode is not None
-                            p_list.pop(ii)
-                            was_popped = True
-                            ct += chunk_size
-                    if was_popped:
-                        duration = (time.time()-t_start)/3600.0
-                        per = duration/ct
-                        print('ran %d in %e hrs (%e)' % (ct, duration, per))
+        query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
+        query += "varParamStr, parallax, ra, decl FROM stars "
+        query += "WHERE htmid_6=%d" % htmid
 
-                chunk = data_iterator.fetchmany(chunk_size)
+        data_iterator = stellar_db.get_arbitrary_chunk_iterator(query,
+                                                         chunk_size=chunk_size,
+                                                         dtype=db_dtype)
+        p_list = []
+        for chunk in data_iterator:
+            p = multiprocessing.Process(target=do_photometry,
+                                  args=(chunk,
+                                        obs_lock, obs_metadata_dict,
+                                        star_lock, star_data_dict))
+            p.start()
+            p_list.append(p)
+            while len(p_list)>=n_threads:
+                e_list = list([p.exitcode for p in p_list])
+                was_popped = False
+                for ii in range(len(e_list)-1,-1,-1):
+                    if e_list[ii] is not None:
+                        assert p_list[ii].exitcode is not None
+                        p_list.pop(ii)
+                        was_popped = True
+                        ct += chunk_size
+                if was_popped:
+                    duration = (time.time()-t_start)/3600.0
+                    per = duration/ct
+                    print('ran %d in %e hrs (%e)' % (ct, duration, per))
