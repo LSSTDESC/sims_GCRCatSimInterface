@@ -78,8 +78,6 @@ if __name__ == "__main__":
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
             n_srun = int(np.ceil(len(batch)/args.d_obs))
-            print('len(batch) %d d_obs %d n_surn %d' %
-            (len(batch),args.d_obs,n_srun))
             n_hrs = 5*int(np.ceil(args.d_obs/args.n_groups))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH ')
