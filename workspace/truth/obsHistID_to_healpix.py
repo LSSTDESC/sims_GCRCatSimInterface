@@ -31,7 +31,8 @@ def make_lookup(chunk, hs_list, my_lock, output_dict, mgr):
     print('looking up')
     bp_to_int = {'u':0, 'g':1, 'r':2, 'i':3, 'z':4, 'y':5}
 
-    radius_rad = np.radians(2.1)
+    radius_deg = 2.1
+    radius_rad = np.radians(radius_deg)
     local_lookup = {}
     local_dex = {}
     obsHistID_arr = []
@@ -49,9 +50,13 @@ def make_lookup(chunk, hs_list, my_lock, output_dict, mgr):
         bp = bp_to_int[pointing[5]]
         obs_xyz = xyz_from_ra_dec(np.degrees(ra), np.degrees(dec))
 
+        obs_hs = htmModule.halfSpaceFromRaDec(np.degrees(ra),
+                                              np.degrees(dec),
+                                              radius_deg)
+
         is_valid_pointing = True
         for hs in hs_list:
-            if not hs.contains_pt(obs_xyz):
+            if not hs.intersects_circle(obs_hs.vector, obs_hs.phi):
                 is_valid_pointing = False
                 break
 
