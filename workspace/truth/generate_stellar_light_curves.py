@@ -76,7 +76,8 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
 
 def do_photometry(chunk,
                   obs_lock, obs_metadata_dict,
-                  star_lock, star_data_dict):
+                  star_lock, star_data_dict,
+                  job_lock, job_dict):
     """
     make sure that chunk is all from one htmid_6
 
@@ -111,12 +112,12 @@ def do_photometry(chunk,
 
     has_dmag = False
     while not has_dmag:
-        with obs_lock:
-            if obs_metadata_dict['running_dmag']>=5:
+        with job_lock:
+            if job_dict['running_dmag']>=5:
                 continue
             else:
-                obs_metadata_dict['running_dmag'] += 1
-                print('running dmag %d' % obs_metadata_dict['running_dmag'])
+                job_dict['running_dmag'] += 1
+                print('running dmag %d' % job_dict['running_dmag'])
 
         t_start = time.time()
         var_gen = VariabilityGenerator(chunk)
@@ -135,9 +136,9 @@ def do_photometry(chunk,
 
         del dmag_raw
         has_dmag = True
-        with obs_lock:
-            obs_metadata_dict['running_dmag'] -= 1
-            print('running dmag %d' % obs_metadata_dict['running_dmag'])
+        with job_lock:
+            job_dict['running_dmag'] -= 1
+            print('running dmag %d' % job_dict['running_dmag'])
 
     quiescent_fluxes = np.zeros((len(chunk),6), dtype=float)
     for i_bp, bp in enumerate('ugrizy'):
@@ -250,8 +251,11 @@ if __name__ == "__main__":
     star_lock = mgr.Lock()
     obs_metadata_dict = mgr.dict()
     star_data_dict = mgr.dict()
+    job_dict = mgr.dict()
+    job_lock = mgr.Lock()
 
-    obs_metadata_dict['running_dmag'] = 0
+    job_dict['running_dmag'] = 0
+
     obs_metadata_dict['mjd'] = mgr.list()
     obs_metadata_dict['obsHistID'] = mgr.list()
     obs_metadata_dict['filter'] = mgr.list()
@@ -287,7 +291,8 @@ if __name__ == "__main__":
                 p = multiprocessing.Process(target=do_photometry,
                                       args=(chunk,
                                             obs_lock, obs_metadata_dict,
-                                            star_lock, star_data_dict))
+                                            star_lock, star_data_dict,
+                                            job_lock, job_dict))
                 p.start()
                 p_list.append(p)
                 while len(p_list)>=n_threads:
