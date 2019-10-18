@@ -120,7 +120,7 @@ def do_photometry(chunk,
                 continue
             else:
                 job_dict['running_dmag'] += 1
-                print('running dmag %d' % job_dict['running_dmag'])
+                #print('running dmag %d' % job_dict['running_dmag'])
 
         t_start = time.time()
         var_gen = VariabilityGenerator(chunk)
@@ -141,7 +141,7 @@ def do_photometry(chunk,
         has_dmag = True
         with job_lock:
             job_dict['running_dmag'] -= 1
-            print('running dmag %d' % job_dict['running_dmag'])
+            #print('running dmag %d' % job_dict['running_dmag'])
 
     quiescent_fluxes = np.zeros((len(chunk),6), dtype=float)
     for i_bp, bp in enumerate('ugrizy'):
