@@ -181,7 +181,8 @@ def do_photometry(chunk,
 
     for i_star in range(len(chunk)):
         if obs_mask[i_star].sum()==0:
-            print('did not observe %d' % int(chunk[i_star][0]))
+            print('did not observe %d -- %e %e' %
+                  (int(chunk[i_star][0]), star_ra[i_star], star_dec[i_star]))
 
     t_flux = time.time()
     #print('calculating dflux')
