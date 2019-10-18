@@ -290,3 +290,8 @@ if __name__ == "__main__":
                         print('ran %d in %e hrs (%e)' % (ct, duration, per))
 
                 chunk = data_iterator.fetchmany(chunk_size)
+
+            for p in p_list:
+                p.join()
+
+        print('that took %e hrs ' % ((time.time()-t_start)/3600.0))
