@@ -15,6 +15,8 @@ from lsst.sims.utils import htmModule
 from lsst.sims.utils import ra_dec_from_xyz
 from lsst.sims.utils import xyz_from_ra_dec
 
+from dc2_spatial_defintion import DC2_bounds
+
 htmid_level = 6
 
 def make_lookup(chunk, hs_list, my_lock, output_dict, mgr):
@@ -119,28 +121,8 @@ if __name__ == "__main__":
     if os.path.isfile(out_name):
         raise RuntimeError("\n\n%s\nalready exists\n" % out_name)
 
-    ne_corner = (71.46, -27.25)
-    nw_corner = (52.25, -27.25)
-    se_corner = (73.79, -44.33)
-    sw_corner = (49.92, -44.33)
-    pt_inside = (60.0, -30.0)
-
-    hs_list = []
-    hs_list.append(htmModule.halfSpaceFromPoints(ne_corner,
-                                                 nw_corner,
-                                                 pt_inside))
-
-    hs_list.append(htmModule.halfSpaceFromPoints(ne_corner,
-                                                 se_corner,
-                                                 pt_inside))
-
-    hs_list.append(htmModule.halfSpaceFromPoints(se_corner,
-                                                 sw_corner,
-                                                 pt_inside))
-
-    hs_list.append(htmModule.halfSpaceFromPoints(sw_corner,
-                                                 nw_corner,
-                                                 pt_inside))
+    dc2b = DC2_bounds()
+    hs_list = dc2b.hs_list
 
     mgr = multiprocessing.Manager()
     my_lock = mgr.Lock()

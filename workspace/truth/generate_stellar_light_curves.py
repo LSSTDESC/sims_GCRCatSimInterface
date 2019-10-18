@@ -11,6 +11,9 @@ from lsst.sims.utils import ObservationMetaData
 import lsst.sims.catUtils.mixins.VariabilityMixin as variability
 from lsst.sims.coordUtils import chipNameFromRaDecLSST
 
+from dc2_spatial_definition import DC2_bounds
+from lsst.sims.utils import xyz_from_ra_dec
+
 import multiprocessing
 import time
 
@@ -179,10 +182,24 @@ def do_photometry(chunk,
 
         obs_mask[:,i_obs] = valid
 
+    # verify that any stars with empty light curves are, in fact
+    # outside of DC2
+    region_of_interest = DC2_bounds()
+    xyz_offenders = []
     for i_star in range(len(chunk)):
         if obs_mask[i_star].sum()==0:
-            print('did not observe %d -- %e %e' %
-                  (int(chunk[i_star][0]), star_ra[i_star], star_dec[i_star]))
+            xyz_offenders.append(xyz_from_ra_dec(star_ra[i_star],
+                                                 star_dec[i_star]))
+
+    if len(xyz_offenders)>0:
+        xyz_offenders = np.array(xyz_offenders)
+        v0 = region_of_interest.hs_list[0].contains_many_pts(xyz_offenders)
+        v1 = region_of_interest.hs_list[1].contains_many_pts(xyz_offenders)
+        v2 = region_of_interest.hs_list[2].contains_many_pts(xyz_offenders)
+        v3 = region_of_interest.hs_list[3].contains_many_pts(xyz_offenders)
+        if (v0&v1&v2&v3).sum()>0:
+            msg = "\n\nsome stars in healpixel %d unobserved\n\n" % hpid
+            raise RuntimeError(msg)
 
     t_flux = time.time()
     #print('calculating dflux')
