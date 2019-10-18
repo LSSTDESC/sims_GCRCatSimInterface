@@ -236,7 +236,7 @@ def do_photometry(chunk,
             star_data_dict['lc_obsHistID'].append(metadata_dict['obsHistID'][obs_mask[i_star]])
 
 
-def _write_light_curve_data(out_dir, hpid, obs_dict, star_dict):
+def write_light_curve_data(out_dir, hpid, obs_dict, star_dict):
     out_file_name = os.path.join(out_dir, 'stellar_lc_%d.h5' % hpid)
     print('writing: %s' % out_file_name)
     with h5py.File(out_file_name, 'w') as out_file:
@@ -253,11 +253,15 @@ def _write_light_curve_data(out_dir, hpid, obs_dict, star_dict):
             out_file.create_dataset('%d_obsHistID' % simobjid,
                                     data=star_dict['lc_obsHistID'][ii])
 
-def write_light_curve_data(completed_hpid_list,
-                           p_hpid_list,
-                           obs_lock_hpid, obs_dict_hpid,
-                           star_lock_hpid, star_dict_hpid,
-                           out_dir):
+
+def find_lc_to_write(completed_hpid_list,
+                     p_hpid_list,
+                     obs_lock_hpid, obs_dict_hpid,
+                     star_lock_hpid, star_dict_hpid):
+
+    hpid_out = []
+    star_dict_out = []
+    obs_dict_out = []
 
     for hpid in completed_hpid_list:
         is_done = True
@@ -268,14 +272,23 @@ def write_light_curve_data(completed_hpid_list,
         if not is_done:
             continue
 
-        with star_lock_hpid[hpid]:
-            with obs_lock_hpid[hpid]:
-                obs_dict = obs_dict_hpid.pop(hpid)
-                star_dict = star_dict_hpid.pop(hpid)
-                _write_light_curve_data(out_dir, hpid, obs_dict, star_dict)
-
         star_lock_hpid.pop(hpid)
         obs_lock_hpid.pop(hpid)
+        star_dict = {}
+        star_root = star_dict_hpid.pop(hpid)
+        for k in list(star_root.keys()):
+            star_dict[k] = list(star_root.pop(k))
+        obs_dict = {}
+        obs_root = obs_dict_hpid.pop(hpid)
+        for k in list(obs_root.keys()):
+            obs_dict[k] = list(obs_root.pop(k))
+
+
+        hpid_out.append(hpid)
+        star_dict_out.append(star_dict)
+        obs_dict_out.append(obs_dict)
+
+    return hpid_out, obs_dict_out, star_dict_out
 
 
 if __name__ == "__main__":
@@ -324,6 +337,7 @@ if __name__ == "__main__":
 
     p_list = []
     p_hpid_list = []
+    w_list = []
     completed_hpid_list = []
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
@@ -360,7 +374,7 @@ if __name__ == "__main__":
 
             query = "SELECT simobjid, hpid, sedFilename, magNorm, ebv, "
             query += "varParamStr, parallax, ra, decl FROM stars "
-            query += "WHERE hpid=%d" % hpid
+            query += "WHERE hpid=%d LIMIT 100" % hpid
 
             data_iterator = cursor.execute(query)
             chunk = data_iterator.fetchmany(chunk_size)
@@ -375,7 +389,7 @@ if __name__ == "__main__":
                 p.start()
                 p_list.append(p)
                 p_hpid_list.append(hpid)
-                while len(p_list)>=n_threads:
+                while len(p_list) + len(w_list)>=n_threads:
                     e_list = list([p.exitcode for p in p_list])
                     was_popped = False
                     for ii in range(len(e_list)-1,-1,-1):
@@ -385,41 +399,63 @@ if __name__ == "__main__":
                             p_hpid_list.pop(ii)
                             was_popped = True
                             ct += chunk_size
+
+                    e_list = list([w.exitcode for w in w_list])
+                    for ii in range(len(e_list)-1,-1,-1):
+                        if e_list[ii] is not None:
+                            assert w_list[ii].exitcode is not None
+                            w_list.pop(ii)
+
                     if was_popped:
                         duration = (time.time()-t_start)/3600.0
                         per = duration/ct
                         print('ran %d in %e hrs (%e)' % (ct, duration, per))
 
-                        write_light_curve_data(completed_hpid_list,
+                chunk = data_iterator.fetchmany(chunk_size)
+            completed_hpid_list.append(hpid)
+
+            (hpid_to_write,
+             obs_to_write,
+             star_to_write) = find_lc_to_write(completed_hpid_list,
                                                p_hpid_list,
                                                obs_lock_hpid,
                                                obs_dict_hpid,
                                                star_lock_hpid,
-                                               star_dict_hpid,
-                                               out_dir)
+                                               star_dict_hpid)
 
-                chunk = data_iterator.fetchmany(chunk_size)
-            completed_hpid_list.append(hpid)
-            write_light_curve_data(completed_hpid_list,
-                                   p_hpid_list,
-                                   obs_lock_hpid,
-                                   obs_dict_hpid,
-                                   star_lock_hpid,
-                                   star_dict_hpid,
-                                   out_dir)
+            for hh, oo, ss in zip(hpid_to_write,
+                                  obs_to_write,
+                                  star_to_write):
+
+                w = multiprocessing.Process(target=write_light_curve_data,
+                                            args=(out_dir, hh, oo, ss))
+                w.start()
+                w_list.append(w)
 
 
     for p in p_list:
         p.join()
     p_hpid_list = []
 
-    write_light_curve_data(completed_hpid_list,
-                           p_hpid_list,
-                           obs_lock_hpid,
-                           obs_dict_hpid,
-                           star_lock_hpid,
-                           star_dict_hpid,
-                           out_dir)
+    (hpid_to_write,
+     obs_to_write,
+     star_to_write) = find_lc_to_write(completed_hpid_list,
+                                       p_hpid_list,
+                                       obs_lock_hpid,
+                                       obs_dict_hpid,
+                                       star_lock_hpid,
+                                       star_dict_hpid)
 
+    for hh, oo, ss in zip(hpid_to_write,
+                          obs_to_write,
+                          star_to_write):
+
+        w = multiprocessing.Process(target=write_light_curve_data,
+                                    args=(out_dir, hh, oo, ss))
+        w.start()
+        w_list.append(w)
+
+    for w in w_list:
+        w.join()
 
     print('that took %e hrs ' % ((time.time()-t_start)/3600.0))
