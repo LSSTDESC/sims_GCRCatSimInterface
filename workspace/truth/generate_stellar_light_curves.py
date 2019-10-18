@@ -20,7 +20,7 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
 
     def __init__(self, chunk):
         """
-        chunk = (simobjid, htmid_6, sedFilename, magNorm, ebv, varParamStr,
+        chunk = (simobjid, hpid, sedFilename, magNorm, ebv, varParamStr,
                  parallax, ra, dec)
         """
         self.photParams = sims_photUtils.PhotometricParameters(nexp=1,
@@ -79,26 +79,26 @@ def do_photometry(chunk,
                   star_lock, star_data_dict,
                   job_lock, job_dict):
     """
-    make sure that chunk is all from one htmid_6
+    make sure that chunk is all from one hpid
 
     output_dict will accumulate metadata
 
-    query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
+    query = "SELECT simobjid, hpid, sedFilename, magNorm, ebv, "
     query += "varParamStr, parallax, ra, decl FROM stars "
-    query += "WHERE htmid_6=%d" % htmid
+    query += "WHERE hpid=%d" % hpid
 
     """
     dummy_sed = sims_photUtils.Sed()
     data_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
     assert os.path.isdir(data_dir)
-    htmid_lookup_name = os.path.join(data_dir, 'htmid_6_to_obsHistID_lookup.h5')
-    assert os.path.isfile(htmid_lookup_name)
+    hpid_lookup_name = os.path.join(data_dir, 'hpid_to_obsHistID_lookup.h5')
+    assert os.path.isfile(hpid_lookup_name)
 
     metadata_dict = {}
     metadata_keys = ['obsHistID', 'ra', 'dec', 'rotTelPos', 'mjd', 'filter']
-    htmid = int(chunk[0][1])
-    with h5py.File(htmid_lookup_name, 'r') as in_file:
-        valid_obsid = in_file['%d' % htmid][()]
+    hpid = int(chunk[0][1])
+    with h5py.File(hpid_lookup_name, 'r') as in_file:
+        valid_obsid = in_file['%d' % hpid][()]
         for k in metadata_keys:
             metadata_dict[k] = in_file[k][()]
 
@@ -230,21 +230,24 @@ if __name__ == "__main__":
     kplr_dummy = variability.ParametrizedLightCurveMixin()
     kplr_dummy.load_parametrized_light_curves()
 
-    lookup_name = os.path.join(cache_dir, 'htmid_6_to_obsHistID_lookup.h5')
+    lookup_name = os.path.join(cache_dir, 'hpid_to_obsHistID_lookup.h5')
     assert os.path.isfile(lookup_name)
 
-    htmid_to_ct = {}
+    hpid_test = -1
+    hpid_to_ct = {}
     with h5py.File(lookup_name, 'r') as in_file:
         for k in in_file.keys():
             try:
-                htmid = int(k)
+                hpid = int(k)
             except ValueError:
                 continue
 
-            n_obs = len(in_file['%d' % htmid][()])
-            htmid_to_ct[htmid] = n_obs
+            n_obs = len(in_file['%d' % hpid][()])
+            hpid_to_ct[hpid] = n_obs
+            if n_obs>10000 and hpid_test<0:
+                hpid_test = hpid
 
-    stellar_db_name = os.path.join(cache_dir, 'dc2_stellar_db.db')
+    stellar_db_name = os.path.join(cache_dir, 'dc2_stellar_healpixel.db')
     assert os.path.isfile(stellar_db_name)
 
     mgr = multiprocessing.Manager()
@@ -275,15 +278,17 @@ if __name__ == "__main__":
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
 
+        print('hpid %d; %d' % (hpid_test, hpid_to_ct[hpid_test]))
+
         ct =0
         t_start = time.time()
-        for htmid in [8978]:
-            chunk_size = 50000000//htmid_to_ct[htmid]
+        for hpid in [hpid_test]:
+            chunk_size = 50000000//hpid_to_ct[hpid]
             print('chunk_size %d' % chunk_size)
 
-            query = "SELECT simobjid, htmid_6, sedFilename, magNorm, ebv, "
+            query = "SELECT simobjid, hpid, sedFilename, magNorm, ebv, "
             query += "varParamStr, parallax, ra, decl FROM stars "
-            query += "WHERE htmid_6=%d" % htmid
+            query += "WHERE hpid=%d" % hpid
 
             data_iterator = cursor.execute(query)
             chunk = data_iterator.fetchmany(chunk_size)
