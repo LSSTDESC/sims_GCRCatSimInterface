@@ -236,10 +236,55 @@ def do_photometry(chunk,
             star_data_dict['lc_obsHistID'].append(metadata_dict['obsHistID'][obs_mask[i_star]])
 
 
+def _write_light_curve_data(out_dir, hpid, obs_dict, star_dict):
+    out_file_name = os.path.join(out_dir, 'stellar_lc_%d.h5' % hpid)
+    print('writing: %s' % out_file_name)
+    with h5py.File(out_file_name, 'w') as out_file:
+        for k in obs_dict:
+            out_file.create_dataset(k, data=np.concatenate(obs_dict[k]))
+        for k in star_dict:
+            if k.startswith('lc'):
+                continue
+            out_file.create_dataset(k, data=np.concatenate(star_dict[k]))
+
+        for ii, simobjid in enumerate(star_dict['lc_id']):
+            out_file.create_dataset('%d_flux' % simobjid,
+                                    data=star_dict['lc_flux'][ii])
+            out_file.create_dataset('%d_obsHistID' % simobjid,
+                                    data=star_dict['lc_obsHistID'][ii])
+
+def write_light_curve_data(completed_hpid_list,
+                           p_hpid_list,
+                           obs_lock_hpid, obs_dict_hpid,
+                           star_lock_hpid, star_dict_hpid,
+                           out_dir):
+
+    for hpid in completed_hpid_list:
+        is_done = True
+        for hh in p_hpid_list:
+            if hh == hpid:
+                is_done = False
+                break
+        if not is_done:
+            continue
+
+        with star_lock_hpid[hpid]:
+            with obs_lock_hpid[hpid]:
+                obs_dict = obs_dict_hpid.pop(hpid)
+                star_dict = star_dict_hpid.pop(hpid)
+                _write_light_curve_data(out_dir, hpid, obs_dict, star_dict)
+
+        star_lock_hpid.pop(hpid)
+        obs_lock_hpid.pop(hpid)
+
+
 if __name__ == "__main__":
 
     cache_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
     assert os.path.isdir(cache_dir)
+    out_dir = os.path.join(cache_dir, 'dc2_stellar_lc')
+    if not os.path.isdir(out_dir):
+        os.makedirs(out_dir)
     sims_photUtils.cache_LSST_seds(wavelen_min=0.0,
                                    wavelen_max=1500.0,
                                    cache_dir=cache_dir)
@@ -278,6 +323,8 @@ if __name__ == "__main__":
     n_threads = 20
 
     p_list = []
+    p_hpid_list = []
+    completed_hpid_list = []
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
 
@@ -327,6 +374,7 @@ if __name__ == "__main__":
                                             job_lock, job_dict))
                 p.start()
                 p_list.append(p)
+                p_hpid_list.append(hpid)
                 while len(p_list)>=n_threads:
                     e_list = list([p.exitcode for p in p_list])
                     was_popped = False
@@ -334,6 +382,7 @@ if __name__ == "__main__":
                         if e_list[ii] is not None:
                             assert p_list[ii].exitcode is not None
                             p_list.pop(ii)
+                            p_hpid_list.pop(ii)
                             was_popped = True
                             ct += chunk_size
                     if was_popped:
@@ -341,9 +390,36 @@ if __name__ == "__main__":
                         per = duration/ct
                         print('ran %d in %e hrs (%e)' % (ct, duration, per))
 
+                        write_light_curve_data(completed_hpid_list,
+                                               p_hpid_list,
+                                               obs_lock_hpid,
+                                               obs_dict_hpid,
+                                               star_lock_hpid,
+                                               star_dict_hpid,
+                                               out_dir)
+
                 chunk = data_iterator.fetchmany(chunk_size)
+            completed_hpid_list.append(hpid)
+            write_light_curve_data(completed_hpid_list,
+                                   p_hpid_list,
+                                   obs_lock_hpid,
+                                   obs_dict_hpid,
+                                   star_lock_hpid,
+                                   star_dict_hpid,
+                                   out_dir)
+
 
     for p in p_list:
         p.join()
+    p_hpid_list = []
+
+    write_light_curve_data(completed_hpid_list,
+                           p_hpid_list,
+                           obs_lock_hpid,
+                           obs_dict_hpid,
+                           star_lock_hpid,
+                           star_dict_hpid,
+                           out_dir)
+
 
     print('that took %e hrs ' % ((time.time()-t_start)/3600.0))
