@@ -233,7 +233,6 @@ if __name__ == "__main__":
     lookup_name = os.path.join(cache_dir, 'hpid_to_obsHistID_lookup.h5')
     assert os.path.isfile(lookup_name)
 
-    hpid_test = -1
     hpid_to_ct = {}
     with h5py.File(lookup_name, 'r') as in_file:
         for k in in_file.keys():
@@ -244,45 +243,54 @@ if __name__ == "__main__":
 
             n_obs = len(in_file['%d' % hpid][()])
             hpid_to_ct[hpid] = n_obs
-            if n_obs>10000 and hpid_test<0:
-                hpid_test = hpid
 
     stellar_db_name = os.path.join(cache_dir, 'dc2_stellar_healpixel.db')
     assert os.path.isfile(stellar_db_name)
 
     mgr = multiprocessing.Manager()
-    obs_lock = mgr.Lock()
-    star_lock = mgr.Lock()
-    obs_metadata_dict = mgr.dict()
-    star_data_dict = mgr.dict()
     job_dict = mgr.dict()
     job_lock = mgr.Lock()
 
+    obs_dict_hpid = {}
+    obs_lock_hpid = {}
+    star_dict_hpid = {}
+    star_lock_hpid = {}
+
     job_dict['running_dmag'] = 0
-
-    obs_metadata_dict['mjd'] = mgr.list()
-    obs_metadata_dict['obsHistID'] = mgr.list()
-    obs_metadata_dict['filter'] = mgr.list()
-
-    star_data_dict['simobjid'] = mgr.list()
-    star_data_dict['ra'] = mgr.list()
-    star_data_dict['dec'] = mgr.list()
-    for bp in 'ugrizy':
-        star_data_dict['quiescent_%s' % bp] = mgr.list()
-    star_data_dict['lc_flux'] = mgr.list()
-    star_data_dict['lc_obsHistID'] = mgr.list()
-    star_data_dict['lc_id'] = mgr.list()
 
     n_threads = 20
 
+    p_list = []
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
 
-        print('hpid %d; %d' % (hpid_test, hpid_to_ct[hpid_test]))
-
         ct =0
         t_start = time.time()
-        for hpid in [hpid_test]:
+        for hpid in [9820, 9691, 9808, 9178, 9298]:
+
+            obs_lock = mgr.Lock()
+            star_lock = mgr.Lock()
+            obs_metadata_dict = mgr.dict()
+            star_data_dict = mgr.dict()
+
+            obs_metadata_dict['mjd'] = mgr.list()
+            obs_metadata_dict['obsHistID'] = mgr.list()
+            obs_metadata_dict['filter'] = mgr.list()
+
+            star_data_dict['simobjid'] = mgr.list()
+            star_data_dict['ra'] = mgr.list()
+            star_data_dict['dec'] = mgr.list()
+            for bp in 'ugrizy':
+                star_data_dict['quiescent_%s' % bp] = mgr.list()
+            star_data_dict['lc_flux'] = mgr.list()
+            star_data_dict['lc_obsHistID'] = mgr.list()
+            star_data_dict['lc_id'] = mgr.list()
+
+            obs_lock_hpid[hpid] = obs_lock
+            obs_dict_hpid[hpid] = obs_metadata_dict
+            star_lock_hpid[hpid] = star_lock
+            star_dict_hpid[hpid] = star_data_dict
+
             chunk_size = 50000000//hpid_to_ct[hpid]
             print('chunk_size %d' % chunk_size)
 
@@ -292,12 +300,13 @@ if __name__ == "__main__":
 
             data_iterator = cursor.execute(query)
             chunk = data_iterator.fetchmany(chunk_size)
-            p_list = []
             while len(chunk)>0:
                 p = multiprocessing.Process(target=do_photometry,
                                       args=(chunk,
-                                            obs_lock, obs_metadata_dict,
-                                            star_lock, star_data_dict,
+                                            obs_lock_hpid[hpid],
+                                            obs_dict_hpid[hpid],
+                                            star_lock_hpid[hpid],
+                                            star_dict_hpid[hpid],
                                             job_lock, job_dict))
                 p.start()
                 p_list.append(p)
@@ -317,7 +326,7 @@ if __name__ == "__main__":
 
                 chunk = data_iterator.fetchmany(chunk_size)
 
-            for p in p_list:
-                p.join()
+    for p in p_list:
+        p.join()
 
-        print('that took %e hrs ' % ((time.time()-t_start)/3600.0))
+    print('that took %e hrs ' % ((time.time()-t_start)/3600.0))
