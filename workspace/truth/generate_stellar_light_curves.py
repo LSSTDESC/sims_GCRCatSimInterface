@@ -109,21 +109,34 @@ def do_photometry(chunk,
     for k in metadata_dict.keys():
         metadata_dict[k] = metadata_dict[k][valid_dex]
 
-    t_start = time.time()
-    var_gen = VariabilityGenerator(chunk)
-    dmag_raw = var_gen.applyVariability(var_gen.varParamStr,
-                                        expmjd=metadata_dict['mjd'])
+    has_dmag = False
+    while not has_dmag:
+        with obs_lock:
+            if obs_metadata_dict['running_dmag']>=5:
+                continue
+            else:
+                obs_metadata_dict['running_dmag'] += 1
 
-    dmag_raw = dmag_raw.transpose([1,2,0]) # make the columns (star, mjd, filter)
-    assert dmag_raw.shape == (len(chunk), len(metadata_dict['mjd']), 6)
+        t_start = time.time()
+        var_gen = VariabilityGenerator(chunk)
+        dmag_raw = var_gen.applyVariability(var_gen.varParamStr,
+                                            expmjd=metadata_dict['mjd'])
 
-    dmag = np.zeros((len(chunk), len(metadata_dict['mjd'])),
-                    dtype=float)
+        dmag_raw = dmag_raw.transpose([1,2,0])
+        # make the columns (star, mjd, filter)
+        assert dmag_raw.shape == (len(chunk), len(metadata_dict['mjd']), 6)
 
-    for i_mjd in range(len(metadata_dict['mjd'])):
-        dmag[:,i_mjd] = dmag_raw[:,i_mjd,metadata_dict['filter'][i_mjd]]
+        dmag = np.zeros((len(chunk), len(metadata_dict['mjd'])),
+                        dtype=float)
 
-    del dmag_raw
+        for i_mjd in range(len(metadata_dict['mjd'])):
+            dmag[:,i_mjd] = dmag_raw[:,i_mjd,metadata_dict['filter'][i_mjd]]
+
+        del dmag_raw
+        has_dmag = True
+        with obs_lock:
+            obs_metadata_dict['running_dmag'] -= 1
+            print('running dmag %d' % obs_metadata_dict['running_dmag'])
 
     quiescent_fluxes = np.zeros((len(chunk),6), dtype=float)
     for i_bp, bp in enumerate('ugrizy'):
@@ -237,6 +250,7 @@ if __name__ == "__main__":
     obs_metadata_dict = mgr.dict()
     star_data_dict = mgr.dict()
 
+    obs_metadata_dict['running_dmag'] = 0
     obs_metadata_dict['mjd'] = mgr.list()
     obs_metadata_dict['obsHistID'] = mgr.list()
     obs_metadata_dict['filter'] = mgr.list()
