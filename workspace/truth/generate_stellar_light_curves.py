@@ -143,17 +143,17 @@ def do_photometry(chunk,
         quiescent_fluxes[:, i_bp] = dummy_sed.fluxFromMag(var_gen.column_by_name('quiescent_%s' % bp))
 
     t_dmag = time.time()-t_start
-    print('generated dmag in %e seconds' % t_dmag)
+    #print('generated dmag in %e seconds' % t_dmag)
 
-    print('dmag ',dmag.shape)
-    print('expmjd ',metadata_dict['mjd'].shape)
+    #print('dmag ',dmag.shape)
+    #print('expmjd ',metadata_dict['mjd'].shape)
 
     star_ra = np.array([c[7] for c in chunk])
     star_dec = np.array([c[8] for c in chunk])
 
     obs_mask = np.zeros((len(chunk), len(metadata_dict['mjd'])),
                         dtype=bool)
-    print('made mask')
+    #print('made mask')
 
     fov_radius = 2.1 # in degrees
     t_start = time.time()
@@ -182,7 +182,7 @@ def do_photometry(chunk,
             print('did not observe %d' % int(chunk[i_star][0]))
 
     t_flux = time.time()
-    print('calculating dflux')
+    #print('calculating dflux')
     dflux_arr = []
     for i_star in range(len(chunk)):
         star_filter = metadata_dict['filter'][obs_mask[i_star]]
@@ -194,7 +194,7 @@ def do_photometry(chunk,
         dflux = tot_flux-q_flux
         dflux_arr.append(dflux)
         assert len(dflux) == obs_mask[i_star].sum()
-    print('dflux took %e seconds' % (time.time()-t_flux))
+    #print('dflux took %e seconds' % (time.time()-t_flux))
 
     with obs_lock:
         obs_metadata_dict['mjd'].append(metadata_dict['mjd'])
