@@ -116,6 +116,7 @@ def do_photometry(chunk,
                 continue
             else:
                 obs_metadata_dict['running_dmag'] += 1
+                print('running dmag %d' % obs_metadata_dict['running_dmag'])
 
         t_start = time.time()
         var_gen = VariabilityGenerator(chunk)
