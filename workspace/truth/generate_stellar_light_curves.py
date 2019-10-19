@@ -344,7 +344,7 @@ if __name__ == "__main__":
 
         ct =0
         t_start = time.time()
-        for hpid in [9820, 9691, 9808, 9178, 9298]:
+        for hpid in hpid_to_ct.keys():
 
             obs_lock = mgr.Lock()
             star_lock = mgr.Lock()
@@ -374,7 +374,7 @@ if __name__ == "__main__":
 
             query = "SELECT simobjid, hpid, sedFilename, magNorm, ebv, "
             query += "varParamStr, parallax, ra, decl FROM stars "
-            query += "WHERE hpid=%d LIMIT 100" % hpid
+            query += "WHERE hpid=%d" % hpid
 
             data_iterator = cursor.execute(query)
             chunk = data_iterator.fetchmany(chunk_size)
