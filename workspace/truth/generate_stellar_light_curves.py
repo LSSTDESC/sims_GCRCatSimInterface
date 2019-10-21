@@ -349,7 +349,9 @@ if __name__ == "__main__":
 
         ct =0
         t_start = time.time()
-        for hpid in hpid_to_ct.keys():
+        hpid_key_list = list(hpid_to_ct.keys())
+        hpid_key_list.sort()
+        for hpid in hpid_key_list:
 
             obs_lock = mgr.Lock()
             star_lock = mgr.Lock()
