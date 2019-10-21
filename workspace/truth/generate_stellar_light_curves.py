@@ -263,7 +263,12 @@ def find_lc_to_write(completed_hpid_list,
     star_dict_out = []
     obs_dict_out = []
 
+    still_viable = list(star_lock_hpid.keys())
+
     for hpid in completed_hpid_list:
+        if not hpid in still_viable:
+            continue
+
         is_done = True
         for hh in p_hpid_list:
             if hh == hpid:
