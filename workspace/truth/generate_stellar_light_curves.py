@@ -17,6 +17,14 @@ from lsst.sims.utils import xyz_from_ra_dec
 import multiprocessing
 import time
 
+
+def write_status(msg):
+    pid = os.getpid()
+    file_name = 'status/status_%d.txt' % pid
+    with open(file_name, 'a') as out_file:
+        out_file.write('%s\n' % msg)
+
+
 class VariabilityGenerator(variability.StellarVariabilityModels,
                            variability.MLTflaringMixin,
                            variability.ParametrizedLightCurveMixin):
@@ -97,9 +105,14 @@ def do_photometry(chunk,
     hpid_lookup_name = os.path.join(data_dir, 'hpid_to_obsHistID_lookup.h5')
     assert os.path.isfile(hpid_lookup_name)
 
+    write_status('building metadata_dict')
+
     metadata_dict = {}
     metadata_keys = ['obsHistID', 'ra', 'dec', 'rotTelPos', 'mjd', 'filter']
     hpid = int(chunk[0][1])
+
+    write_status('running on %d' % hpid)
+
     with h5py.File(hpid_lookup_name, 'r') as in_file:
         valid_obsid = in_file['%d' % hpid][()]
         for k in metadata_keys:
@@ -122,8 +135,17 @@ def do_photometry(chunk,
                 job_dict['running_dmag'] += 1
                 #print('running dmag %d' % job_dict['running_dmag'])
 
+        write_status('running dmag')
+
         t_start = time.time()
         var_gen = VariabilityGenerator(chunk)
+
+        n_kplr = (np.char.find(var_gen.varParamStr, 'kplr')>=0).sum()
+        n_mlt = (np.char.find(var_gen.varParamStr, 'MLT')>=0).sum()
+        n_rrly = (np.char.find(var_gen.varParamStr, 'RRly')>=0).sum()
+
+        write_status('kplr %d mlt %d rrly %d' % (n_kplr,n_mlt,n_rrly))
+
         dmag_raw = var_gen.applyVariability(var_gen.varParamStr,
                                             expmjd=metadata_dict['mjd'])
 
@@ -160,6 +182,8 @@ def do_photometry(chunk,
                         dtype=bool)
     #print('made mask')
 
+    write_status('making obs_mask %d' % (len(metadata_dict['mjd'])))
+
     fov_radius = 2.1 # in degrees
     t_start = time.time()
     for i_obs in range(len(metadata_dict['mjd'])):
@@ -184,6 +208,9 @@ def do_photometry(chunk,
 
     # verify that any stars with empty light curves are, in fact
     # outside of DC2
+
+    write_status('verifying offenders')
+
     region_of_interest = DC2_bounds()
     xyz_offenders = []
     for i_star in range(len(chunk)):
@@ -203,6 +230,9 @@ def do_photometry(chunk,
 
     t_flux = time.time()
     #print('calculating dflux')
+
+    write_status('calculating dflux %s' % (str(obs_mask.shape)))
+
     dflux_arr = []
     for i_star in range(len(chunk)):
         star_filter = metadata_dict['filter'][obs_mask[i_star]]
@@ -216,10 +246,14 @@ def do_photometry(chunk,
         assert len(dflux) == obs_mask[i_star].sum()
     #print('dflux took %e seconds' % (time.time()-t_flux))
 
+    write_status('writing to obs_metadata_dict')
+
     with obs_lock:
         obs_metadata_dict['mjd'].append(metadata_dict['mjd'])
         obs_metadata_dict['obsHistID'].append(metadata_dict['obsHistID'])
         obs_metadata_dict['filter'].append(metadata_dict['filter'])
+
+    write_status('writing to star_data_dict')
 
     with star_lock:
         local_simobjid = var_gen.column_by_name('simobjid')
@@ -239,6 +273,7 @@ def do_photometry(chunk,
 def write_light_curve_data(out_dir, hpid, obs_dict, star_dict):
     out_file_name = os.path.join(out_dir, 'stellar_lc_%d.h5' % hpid)
     print('writing: %s' % out_file_name)
+    write_status('writing: %s' % out_file_name)
     with h5py.File(out_file_name, 'w') as out_file:
         for k in obs_dict:
             out_file.create_dataset(k, data=np.concatenate(obs_dict[k]))
