@@ -340,6 +340,10 @@ if __name__ == "__main__":
     job_dict = mgr.dict()
     job_lock = mgr.Lock()
 
+    print('created manager')
+    time.sleep(30)
+    print('moving on')
+
     obs_dict_hpid = {}
     obs_lock_hpid = {}
     star_dict_hpid = {}
