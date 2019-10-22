@@ -83,7 +83,7 @@ if __name__ == "__main__":
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
             n_srun = int(np.ceil(len(batch)/args.d_obs))
-            n_hrs = 5*int(np.ceil(args.d_obs/args.n_jobs))
+            n_hrs = 2+int(np.ceil(args.d_obs/args.n_jobs))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH ')
             out_file.write('--image=docker:lsstdesc/stack-jupyter:prod\n')
