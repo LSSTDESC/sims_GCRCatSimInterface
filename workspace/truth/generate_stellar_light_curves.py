@@ -349,8 +349,12 @@ if __name__ == "__main__":
 
         ct =0
         t_start = time.time()
-        hpid_key_list = list(hpid_to_ct.keys())
-        hpid_key_list.sort()
+        hpid_to_ct_items = hpid_to_ct.items()
+        hpid_key_list = np.array([itm[0] for itm in hpid_to_ct_items])
+        hpid_val_list = np.array([itm[1] for itm in hpid_to_ct_items])
+        sorted_dex = np.argsort(-1*hpid_val_list)
+        hpid_key_list = hpid_key_list[sorted_dex]
+
         for hpid in hpid_key_list:
 
             obs_lock = mgr.Lock()
