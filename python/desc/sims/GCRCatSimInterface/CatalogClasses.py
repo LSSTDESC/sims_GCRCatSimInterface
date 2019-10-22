@@ -361,18 +361,24 @@ class PhoSimDESCQA(PhoSimCatalogSersic2D, EBVmixin):
         if self._knots_available:
 
             if not hasattr(self, '_sprinkled_gid'):
-                twinkles_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
-                agn_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_agn_cache.csv')
-                sne_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_sne_cache.csv')
-                sprinkled_gid = []
-                for file_name in (agn_name, sne_name):
-                    with open(file_name, 'r') as in_file:
-                        for line in in_file:
-                            if line.startswith('galtileid'):
-                                continue
-                            params = line.strip().split(',')
-                            sprinkled_gid.append(int(params[0]))
-                self._sprinkled_gid = np.array(sprinkled_gid)
+                try:
+                    twinkles_dir = os.path.join(os.environ['TWINKLES_DIR'], 'data')
+                except KeyError:
+                    twinkles_dir = None
+                if twinkles_dir is None:
+                    self._sprinkled_gid = np.empty(0,dtype=int)
+                else:
+                    agn_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_agn_cache.csv')
+                    sne_name = os.path.join(twinkles_dir, 'cosmoDC2_v1.1.4_sne_cache.csv')
+                    sprinkled_gid = []
+                    for file_name in (agn_name, sne_name):
+                        with open(file_name, 'r') as in_file:
+                            for line in in_file:
+                                if line.startswith('galtileid'):
+                                    continue
+                                params = line.strip().split(',')
+                                sprinkled_gid.append(int(params[0]))
+                    self._sprinkled_gid = np.array(sprinkled_gid)
 
             lsst_i_mag = self.column_by_name('mag_true_i_lsst')
             knots_ratio = self.column_by_name('knots_flux_ratio')

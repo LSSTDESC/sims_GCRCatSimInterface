@@ -1,38 +1,25 @@
 import GCRCatalogs
 image_cat_config = GCRCatalogs.get_catalog_config('cosmoDC2_v1.1.4_image')
 
-healpix_pixels = image_cat_config['healpix_pixels'][:10]
+healpix_pixels = image_cat_config['healpix_pixels']
 
 header = '''#!/bin/bash -l
-#SBATCH -t 4:00:00
-#SBATCH -q premium
+#SBATCH --image=docker:lsstdesc/stack-jupyter:prod
+#SBATCH -t 2:00:00
+#SBATCH -q regular
 #SBATCH -A m1727
 #SBATCH --tasks-per-node=1
-#SBATCH --cpus-per-task=24
-#SBATCH -o sed_cache_v1.1.4_output.txt
-#SBATCH -e sed_cache_v1.1.4_err.txt
+#SBATCH --cpus-per-task=64
+#SBATCH -o sed_cache_191015_output.txt
+#SBATCH -e sed_cache_191015_err.txt
 #SBATCH -C haswell
 '''
 
 header += '\n#SBATCH -N %d\n\n' % len(healpix_pixels)
 
 header += '''
-python /global/common/software/lsst/common/miniconda/start-kernel-cli.py desc-stack
-setup -j -r $HOME/sims_data
-setup -j -r $HOME/sims_GCRCatSimInterface_master
-setup -j -r $HOME/sims_catalogs
-setup -j -r $HOME/sims_utils
-setup -j -r $HOME/sims_catUtils
-setup -j -r $HOME/sims_photUtils
-setup -j -r $HOME/Twinkles
-setup -j -r $HOME/throughputs
 
-export HDF5_USE_FILE_LOCKING=FALSE
-
-export OMP_NUM_THREADS=1
-export NUMEXPR_NUM_THREADS=1
-export MKL_NUM_THREADS=1
-
+work_dir=$HOME/sims_GCRCatSimInterface_master/workspace/sed_cache/
 out_dir=${SCRATCH}/sed_cache_v1.1.4/
 
 if [ ! -d ${out_dir} ]; then
@@ -42,15 +29,20 @@ fi\n\n
 
 with open('sed_fitting_script.sl', 'w') as out_file:
     out_file.write(header)
-    for hp in healpix_pixels:
-        out_file.write('srun -N 1 -n 1 -c 24 \\\n')
-        out_file.write('python fit_sed.py --healpix %d \\\n' % hp)
-        out_file.write('--catalog cosmoDC2_v1.1.4_image \\\n')
-        out_file.write('--out_dir ${out_dir} \\\n')
-        out_file.write('--out_name sed_fit_%d.h5 \\\n' % hp)
-        out_file.write('--n_threads 24 --lim 240000 &\n')
-        out_file.write('\n')
+    out_file.write('for hpid in')
+    ct = 0
+    for hpid in healpix_pixels:
+        out_file.write(' %d' % hpid)
+        ct += 1
+        if ct>0 and ct % 10 == 0:
+            out_file.write(' \\\n')
+    out_file.write('\n')
+    out_file.write('do\n')
+    out_file.write('    srun -N 1 -n 1 -c 64 shifter ')
+    out_file.write('${work_dir}runshift_fitsed.sh $out_dir \\\n')
+    out_file.write('    sed_fit_${hpid}.h5 60 ${hpid} &\n')
 
+    out_file.write('done\n')
     out_file.write('wait\n')
 
 exit()

@@ -29,13 +29,19 @@ from . import SubCatalogMixin
 from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
-    agnDESCQAObject_protoDC2 as agnDESCQAObject, \
-    TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject, \
-    sprinklerCompound_DC2 as sprinklerDESCQACompoundObject, \
-    TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
+    agnDESCQAObject_protoDC2 as agnDESCQAObject
+
+try:
+    import desc.sims.GCRCatSimInterface.TwinklesClasses.sprinklerCompound_DC2 as sprinklerDESCQACompoundObject
+    import desc.sims.GCRCatSimInterface.TwinklesClasses.TwinklesCatalogZPoint_DC2 as DESCQACat_Twinkles
+    import desc.sims.GCRCatSimInterface.TwinklesClasses.TwinklesCompoundInstanceCatalog_DC2 as twinklesDESCQACompoundObject
+    from desc.sims.GCRCatSimInterface.TwinklesClasses import twinkles_spec_map
+    HAS_TWINKLES = True
+except ImportError:
+    HAS_TWINKLES = False
+
 from . import DC2PhosimCatalogSN, SNeDBObject
 from . import hostImage
-from .TwinklesClasses import twinkles_spec_map
 
 __all__ = ['InstanceCatalogWriter', 'make_instcat_header', 'get_obs_md',
            'snphosimcat']
@@ -194,6 +200,9 @@ class InstanceCatalogWriter(object):
                                   driver='sqlite')
 
         self.sprinkler = sprinkler
+        if self.sprinkler and not HAS_TWINKLES:
+            raise RuntimeError("You are trying to enable the sprinkler; "
+                               "but Twinkles cannot be imported")
 
         if not os.path.isdir(sed_lookup_dir):
             raise IOError("\n%s\nis not a dir" % sed_lookup_dir)
@@ -273,7 +282,6 @@ class InstanceCatalogWriter(object):
         do_knots = True
         do_bulges = True
         do_disks = True
-        do_agn = True
         do_sprinkled = True
         do_hosts = True
         do_sne = True
@@ -288,8 +296,6 @@ class InstanceCatalogWriter(object):
                         do_bulges = False
                     if 'wrote disk' in line:
                         do_disks = False
-                    if 'wrote agn' in line:
-                        do_agn = False
                     if 'wrote galaxy catalogs with sprinkling' in line:
                         do_sprinkled = False
                     if 'wrote lensing host' in line:
@@ -326,9 +332,11 @@ class InstanceCatalogWriter(object):
 
         # Add directory for writing the GLSN spectra to
         glsn_spectra_dir = str(os.path.join(full_out_dir, 'Dynamic'))
-        twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
-        # Ensure that the directory for GLSN spectra is created
         os.makedirs(glsn_spectra_dir, exist_ok=True)
+
+        if HAS_TWINKLES:
+            twinkles_spec_map.subdir_map['(^specFileGLSN)'] = 'Dynamic'
+            # Ensure that the directory for GLSN spectra is created
 
         phosim_cat_name = 'phosim_cat_%d.txt' % obsHistID
         star_name = 'star_cat_%d.txt' % obsHistID
@@ -436,29 +444,16 @@ class InstanceCatalogWriter(object):
                         out_file.write('%d wrote disk catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
 
-            if do_agn:
-                agn_db = agnDESCQAObject(self.descqa_catalog)
-                agn_db._do_prefiltering = True
-                agn_db.field_ra = self.protoDC2_ra
-                agn_db.field_dec = self.protoDC2_dec
-                agn_db.agn_params_db = self.agn_db_name
-                cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
-                cat._agn_threads = self._agn_threads
-                cat.lsstBandpassDict = self.bp_dict
-                cat.photParams = self.phot_params
-                cat_name = 'agn_'+gal_name
-                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,
-                                  write_header=False)
-                written_catalog_names.append(cat_name)
-                del cat
-                del agn_db
-
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
                         duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote agn catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
         else:
+
+            if not HAS_TWINKLES:
+                raise RuntimeError("Cannot do_sprinkled; you have not imported "
+                                   "the Twinkles modules in sims_GCRCatSimInterface")
 
             class SprinkledBulgeCat(SubCatalogMixin, self.instcats.DESCQACat_Bulge):
                 subcat_prefix = 'bulge_'
@@ -479,7 +474,6 @@ class InstanceCatalogWriter(object):
                 _agn_threads = self._agn_threads
 
             if do_sprinkled:
-
                 self.compoundGalICList = [SprinkledBulgeCat,
                                           SprinkledDiskCat,
                                           SprinkledAgnCat]
@@ -706,9 +700,15 @@ def get_instance_catalogs():
                                        'DESCQACat_Disk', 'DESCQACat_Agn',
                                        'DESCQACat_Twinkles'])
 
-    return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
-                    PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
-                    PhoSimDESCQA_AGN, DESCQACat_Twinkles)
+    if HAS_TWINKLES:
+        return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
+                        PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
+                        PhoSimDESCQA_AGN, DESCQACat_Twinkles)
+    else:
+        return InstCats(MaskedPhoSimCatalogPoint, BrightStarCatalog,
+                        PhoSimDESCQA, DESCQACat_Bulge, DESCQACat_Disk,
+                        PhoSimDESCQA_AGN, None)
+
 
 class DESCQACat_Bulge(PhoSimDESCQA):
 

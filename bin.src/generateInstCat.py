@@ -9,8 +9,6 @@ import numbers
 import json
 from astropy._erfa import ErfaWarning
 
-import desc.sims.GCRCatSimInterface.validation as ic_valid
-
 with warnings.catch_warnings():
     warnings.filterwarnings('ignore', '\nThis call', UserWarning)
     warnings.filterwarnings('ignore', 'Duplicate object type', UserWarning)
@@ -79,46 +77,6 @@ def generate_instance_catalog(args=None, lock=None):
                                                                    fov=args.fov,
                                                                    status_dir=args.out_dir,
                                                                    pickup_file=pickup_file)
-
-            # commenting out validation code
-            # I noticed just before going into production that it
-            # explodes the memory footprint of InstanceCatalog generation
-            """
-            t_start = time.time()
-            ic_valid.validate_instance_catalog_magnitudes(args.out_dir,
-                                                          obsHistID,
-                                                          seed=obsHistID,
-                                                          nrows=5000)
-
-            if status_file_name is not None:
-                with open(status_file_name, 'a') as out_file:
-                    out_file.write('validated magnitudes %e\n' %
-                                   (time.time()-t_start))
-
-            t_start = time.time()
-            ic_valid.validate_instance_catalog_positions(args.out_dir,
-                                                         obsHistID,
-                                                         args.fov)
-
-            if status_file_name is not None:
-                with open(status_file_name, 'a') as out_file:
-                    out_file.write('validated positions %e\n' %
-                                   (time.time()-t_start))
-
-            t_start = time.time()
-            ic_valid.validate_agn_mags(args.out_dir,
-                                       obsHistID,
-                                       args.agn_db_name)
-
-            if status_file_name is not None:
-                with open(status_file_name, 'a') as out_file:
-                    out_file.write('validated AGN %e\n' %
-                                   (time.time()-t_start))
-
-            if status_file_name is not None:
-                with open(status_file_name, 'a') as out_file:
-                    out_file.write('fully validated InstanceCatalog\n')
-            """
 
             if args.job_log is not None:
                 if lock is not None:
