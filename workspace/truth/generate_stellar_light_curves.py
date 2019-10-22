@@ -17,6 +17,11 @@ from lsst.sims.utils import xyz_from_ra_dec
 import multiprocessing
 import time
 
+
+def create_out_name(out_dir, hpid):
+    out_file_name = os.path.join(out_dir, 'stellar_lc_%d.h5' % hpid)
+    return out_file_name
+
 class VariabilityGenerator(variability.StellarVariabilityModels,
                            variability.MLTflaringMixin,
                            variability.ParametrizedLightCurveMixin):
@@ -80,7 +85,8 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
 def do_photometry(chunk,
                   obs_lock, obs_metadata_dict,
                   star_lock, star_data_dict,
-                  job_lock, job_dict):
+                  job_lock, job_dict,
+                  out_dir):
     """
     make sure that chunk is all from one hpid
 
@@ -223,35 +229,32 @@ def do_photometry(chunk,
 
     with star_lock:
         local_simobjid = var_gen.column_by_name('simobjid')
+        out_file_name = create_out_name(out_dir, hpid)
+        with h5py.File(out_file_name, 'a') as out_file:
+            for i_star in range(len(local_simobjid)):
+                if len(dflux_arr[i_star])==0:
+                    continue
+                simobjid = local_simobjid[i_star]
+                out_file.create_dataset('%d_flux' % simobjid,
+                                        data=dflux_arr[i_star])
+                out_file.create_dataset('%d_obsHistID' % simobjid,
+                              data=metadata_dict['obsHistID'][obs_mask[i_star]])
+
         star_data_dict['simobjid'].append(local_simobjid)
         star_data_dict['ra'].append(star_ra)
         star_data_dict['dec'].append(star_dec)
         for i_bp, bp in enumerate('ugrizy'):
             star_data_dict['quiescent_%s' % bp].append(quiescent_fluxes[:,i_bp])
-        for i_star in range(len(local_simobjid)):
-            if len(dflux_arr[i_star]) == 0:
-                continue
-            star_data_dict['lc_id'].append(local_simobjid[i_star])
-            star_data_dict['lc_flux'].append(dflux_arr[i_star])
-            star_data_dict['lc_obsHistID'].append(metadata_dict['obsHistID'][obs_mask[i_star]])
 
 
-def write_light_curve_data(out_dir, hpid, obs_dict, star_dict):
-    out_file_name = os.path.join(out_dir, 'stellar_lc_%d.h5' % hpid)
+def write_light_curve_metadata(out_dir, hpid, obs_dict, star_dict):
+    out_file_name = create_out_name(out_dir, hpid)
     print('writing: %s' % out_file_name)
-    with h5py.File(out_file_name, 'w') as out_file:
+    with h5py.File(out_file_name, 'a') as out_file:
         for k in obs_dict:
             out_file.create_dataset(k, data=np.concatenate(obs_dict[k]))
         for k in star_dict:
-            if k.startswith('lc'):
-                continue
             out_file.create_dataset(k, data=np.concatenate(star_dict[k]))
-
-        for ii, simobjid in enumerate(star_dict['lc_id']):
-            out_file.create_dataset('%d_flux' % simobjid,
-                                    data=star_dict['lc_flux'][ii])
-            out_file.create_dataset('%d_obsHistID' % simobjid,
-                                    data=star_dict['lc_obsHistID'][ii])
 
 
 def find_lc_to_write(completed_hpid_list,
@@ -301,6 +304,12 @@ if __name__ == "__main__":
     cache_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
     assert os.path.isdir(cache_dir)
     out_dir = os.path.join(cache_dir, 'dc2_stellar_lc')
+
+    list_out_dir = os.listdir(out_dir)
+    if len(list_out_dir)>0:
+        msg = '\n\n%s\nis not empty\n\n'
+        raise RuntimeError(msg)
+
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
     sims_photUtils.cache_LSST_seds(wavelen_min=0.0,
@@ -371,9 +380,6 @@ if __name__ == "__main__":
             star_data_dict['dec'] = mgr.list()
             for bp in 'ugrizy':
                 star_data_dict['quiescent_%s' % bp] = mgr.list()
-            star_data_dict['lc_flux'] = mgr.list()
-            star_data_dict['lc_obsHistID'] = mgr.list()
-            star_data_dict['lc_id'] = mgr.list()
 
             obs_lock_hpid[hpid] = obs_lock
             obs_dict_hpid[hpid] = obs_metadata_dict
@@ -396,7 +402,8 @@ if __name__ == "__main__":
                                             obs_dict_hpid[hpid],
                                             star_lock_hpid[hpid],
                                             star_dict_hpid[hpid],
-                                            job_lock, job_dict))
+                                            job_lock, job_dict,
+                                            out_dir))
                 p.start()
                 p_list.append(p)
                 p_hpid_list.append(hpid)
@@ -438,7 +445,7 @@ if __name__ == "__main__":
                                   obs_to_write,
                                   star_to_write):
 
-                w = multiprocessing.Process(target=write_light_curve_data,
+                w = multiprocessing.Process(target=write_light_curve_metadata,
                                             args=(out_dir, hh, oo, ss))
                 w.start()
                 w_list.append(w)
@@ -461,7 +468,7 @@ if __name__ == "__main__":
                           obs_to_write,
                           star_to_write):
 
-        w = multiprocessing.Process(target=write_light_curve_data,
+        w = multiprocessing.Process(target=write_light_curve_metadata,
                                     args=(out_dir, hh, oo, ss))
         w.start()
         w_list.append(w)
