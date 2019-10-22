@@ -9,17 +9,22 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--candidate_file', type=str,
-                        default='data/wfd_obshistid_list.txt')
+                        default='data/wfd_obshistid_list.txt',
+                        help='File listing the obsHistID to simulate')
     parser.add_argument('--n_obs', type=int, default=1000,
-                        help='Number of pointings per slurm script '
+                        help='Number of obsHistID per slurm script '
                         '(default=1000)')
-    parser.add_argument('--n_groups', type=int, default=7,
-                        help='number of parallel groups to run per node '
+    parser.add_argument('--n_jobs', type=int, default=7,
+                        help='number of jobs to start per node '
                         '(default 7)')
     parser.add_argument('--d_obs', type=int, default=28,
-                        help='Number of pointings per node (default=28)')
+                        help='Number of obsHistID per node (default=28); '
+                        'this will result in (d_obs/n_jobs) catalogs '
+                        'being generated in serial by each of the n_jobs '
+                        ' per node')
     parser.add_argument('--already_done', type=str, default=None,
-                        help='file containing list of completed obsHistID')
+                        help='file containing list of already '
+                        'completed obsHistID')
     parser.add_argument('--max_obs', type=int, default=993348,
                         help='maximum allowed obsHistID '
                         '(default = 993348, corresponding to 4 yrs of survey)')
@@ -78,7 +83,7 @@ if __name__ == "__main__":
         with open(out_name, 'w') as out_file:
             file_id = i_file+i_file_offset
             n_srun = int(np.ceil(len(batch)/args.d_obs))
-            n_hrs = 5*int(np.ceil(args.d_obs/args.n_groups))
+            n_hrs = 5*int(np.ceil(args.d_obs/args.n_jobs))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH ')
             out_file.write('--image=docker:lsstdesc/stack-jupyter:prod\n')
@@ -109,7 +114,7 @@ if __name__ == "__main__":
                 out_file.write('srun -N 1 -n 1 -c 64 --exclusive \\\n')
                 out_file.write('shifter ${work_dir}/runshift_instcat.sh \\\n')
                 out_file.write('${out_dir} ')
-                out_file.write('${config_file} %d' % args.n_groups)
+                out_file.write('${config_file} %d' % args.n_jobs)
                 for ii in these_obs:
                     out_file.write(' %d' % ii)
                 out_file.write(' &\n\n')
