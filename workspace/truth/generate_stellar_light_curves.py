@@ -251,8 +251,11 @@ def write_light_curve_metadata(out_dir, hpid, obs_dict, star_dict):
     out_file_name = create_out_name(out_dir, hpid)
     print('writing: %s' % out_file_name)
     with h5py.File(out_file_name, 'a') as out_file:
+        obsid = np.concatenate(obs_dict['obsHistID'])
+        sorted_dex = np.argsort(obsid)
         for k in obs_dict:
-            out_file.create_dataset(k, data=np.concatenate(obs_dict[k]))
+            out_file.create_dataset(k,
+                               data=np.concatenate(obs_dict[k][sorted_dex]))
         for k in star_dict:
             out_file.create_dataset(k, data=np.concatenate(star_dict[k]))
 
