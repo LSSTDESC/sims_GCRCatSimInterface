@@ -25,19 +25,28 @@ def create_out_name(out_dir, hpid):
 class VariabilityGenerator(variability.StellarVariabilityModels,
                            variability.MLTflaringMixin,
                            variability.ParametrizedLightCurveMixin):
+    """
+    This is a class that mimics the API of an InstanceCatalog. This makes it
+    easier for us to generate light curves from sources with differing
+    variability models.
+    """
 
     def __init__(self, chunk):
         """
         chunk = (simobjid, hpid, sedFilename, magNorm, ebv, varParamStr,
                  parallax, ra, dec)
         """
+
+        # initialize some member variables expected by the
+        # stellar variability models
         self.photParams = sims_photUtils.PhotometricParameters(nexp=1,
                                                               exptime=30)
+        self.lsstBandpassDict = sims_photUtils.BandpassDict.loadTotalBandpassesFromFiles()
         self._actually_calculated_columns = []
         for bp in 'ugrizy':
             self._actually_calculated_columns.append('lsst_%s' % bp)
+
         sed_dir = os.environ['SIMS_SED_LIBRARY_DIR']
-        self.lsstBandpassDict = sims_photUtils.BandpassDict.loadTotalBandpassesFromFiles()
         self.quiescent_mags = {}
         for bp in 'ugrizy':
             self.quiescent_mags[bp] = np.zeros(len(chunk), dtype=float)
@@ -47,6 +56,8 @@ class VariabilityGenerator(variability.StellarVariabilityModels,
         self.varParamStr = np.empty(len(chunk), dtype=(str,300))
         self.simobjid = np.empty(len(chunk), dtype=int)
         ccm_wav = None
+
+        # find the quiescent magnitudes of the stars
         for i_star, star in enumerate(chunk):
             self.simobjid[i_star] = int(star[0])
             full_file_name = os.path.join(sed_dir,
@@ -88,16 +99,46 @@ def do_photometry(chunk,
                   job_lock, job_dict,
                   out_dir):
     """
-    make sure that chunk is all from one hpid
+    -Take a chunk from the stellar database
+    -Calculate the light curves for all of the stars in the chunk
+    -Write the light curves to disk
+    -Save the metadata and static data to dicts to be output later
 
-    output_dict will accumulate metadata
+    Parameters
+    ----------
+    chunk -- a set of stars returned by sqlite3.fetchmany()
+             the columns in chunk are:
+             simobjid, hpid, sedFilename, magNorm, ebv, varParamStr,
+             parallax, ra, decl
+             Note: chunk must be from one hpid (healpix pixel ID)
 
-    query = "SELECT simobjid, hpid, sedFilename, magNorm, ebv, "
-    query += "varParamStr, parallax, ra, decl FROM stars "
-    query += "WHERE hpid=%d" % hpid
+    obs_lock -- the lock corresponding to the observation metadata
+    for this healpixel
 
+    obs_metadata_dict -- the dict where observation metadata is stored
+
+    star_lock -- the lock corresponding to the stellar metadata for this
+    healpixel
+
+    star_data_dict -- the dict where stellar metadata (i.e. static data) is
+    stored
+
+    job_lock -- the lock used to prevent too many processes from entering
+    light curve generation at once
+
+    job_dict -- the dict keeping track of how many jobs are doing light curve
+    generation
+
+    out_dir -- directory where light curve files are to be stored
+
+    Returns
+    -------
+    None
     """
     dummy_sed = sims_photUtils.Sed()
+
+    # find the lookup file associating healpixel with obsHistID;
+    # this should probably actually be passed into the method
     data_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
     assert os.path.isdir(data_dir)
     hpid_lookup_name = os.path.join(data_dir, 'hpid_to_obsHistID_lookup.h5')
@@ -119,8 +160,11 @@ def do_photometry(chunk,
     for k in metadata_dict.keys():
         metadata_dict[k] = metadata_dict[k][valid_dex]
 
+    # generate delta_magnitude light curves
     has_dmag = False
     while not has_dmag:
+
+        # make sure no more than 5 processes are doing this at once
         with job_lock:
             if job_dict['running_dmag']>=5:
                 continue
@@ -134,7 +178,7 @@ def do_photometry(chunk,
                                             expmjd=metadata_dict['mjd'])
 
         dmag_raw = dmag_raw.transpose([1,2,0])
-        # make the columns (star, mjd, filter)
+        # transpose so the columns are (star, mjd, filter)
         assert dmag_raw.shape == (len(chunk), len(metadata_dict['mjd']), 6)
 
         dmag = np.zeros((len(chunk), len(metadata_dict['mjd'])),
@@ -154,17 +198,13 @@ def do_photometry(chunk,
         quiescent_fluxes[:, i_bp] = dummy_sed.fluxFromMag(var_gen.column_by_name('quiescent_%s' % bp))
 
     t_dmag = time.time()-t_start
-    #print('generated dmag in %e seconds' % t_dmag)
-
-    #print('dmag ',dmag.shape)
-    #print('expmjd ',metadata_dict['mjd'].shape)
 
     star_ra = np.array([c[7] for c in chunk])
     star_dec = np.array([c[8] for c in chunk])
 
+    # Now figure out which obsHistID are observing which stars
     obs_mask = np.zeros((len(chunk), len(metadata_dict['mjd'])),
                         dtype=bool)
-    #print('made mask')
 
     fov_radius = 2.1 # in degrees
     t_start = time.time()
@@ -208,7 +248,6 @@ def do_photometry(chunk,
             raise RuntimeError(msg)
 
     t_flux = time.time()
-    #print('calculating dflux')
     dflux_arr = []
     for i_star in range(len(chunk)):
         star_filter = metadata_dict['filter'][obs_mask[i_star]]
@@ -220,8 +259,8 @@ def do_photometry(chunk,
         dflux = tot_flux-q_flux
         dflux_arr.append(dflux)
         assert len(dflux) == obs_mask[i_star].sum()
-    #print('dflux took %e seconds' % (time.time()-t_flux))
 
+    # store metadata in the output dicts
     with obs_lock:
         obs_metadata_dict['mjd'].append(metadata_dict['mjd'])
         obs_metadata_dict['obsHistID'].append(metadata_dict['obsHistID'])
@@ -230,6 +269,9 @@ def do_photometry(chunk,
     with star_lock:
         local_simobjid = var_gen.column_by_name('simobjid')
         out_file_name = create_out_name(out_dir, hpid)
+
+        # write the light curves to disk now; otherwise, the memory
+        # footprint of the job becomes too large
         with h5py.File(out_file_name, 'a') as out_file:
             for i_star in range(len(local_simobjid)):
                 if len(dflux_arr[i_star])==0:
@@ -248,6 +290,23 @@ def do_photometry(chunk,
 
 
 def write_light_curve_metadata(out_dir, hpid, obs_dict, star_dict):
+    """
+    Write the metadata for a healpixel to disk
+
+    Parameters
+    ----------
+    out_dir -- the directory where the output file will be written
+    hpid -- the healpix pixel ID of
+    obs_dict -- the dict of observation metadata corresponding to this hpid
+    star_dict -- the dict of stellar metadata corresponding to this hpid
+
+    Returns
+    -------
+    Nothing. Writes the metadata to out_dir/stellar_lc_{hpid}.h5
+
+    Note 'stellar metadata' means static information about the stars
+    in the healpixel
+    """
     out_file_name = create_out_name(out_dir, hpid)
     print('writing: %s' % out_file_name)
     with h5py.File(out_file_name, 'a') as out_file:
@@ -264,13 +323,42 @@ def find_lc_to_write(completed_hpid_list,
                      p_hpid_list,
                      obs_lock_hpid, obs_dict_hpid,
                      star_lock_hpid, star_dict_hpid):
+    """
+    Look for healpixels whose metadata can be written to disk because they are
+    done being processed
 
+    Parameters
+    ----------
+    completed_hpid_list -- a list of the healpixels whose entire field of view have
+    been sent to do_photometry
+
+    p_hpid_list -- the list of healpixels corresponding to the currently running
+    do_photometry processes
+
+    obs_lock_hpid -- the dict of locks for observation metadata (keyed on hpid)
+
+    obs_dict_hpid -- the dict of output dicts for observation metadata (keyed on hpid)
+
+    star_lock_hpid -- the dict of locks for stellar metadata (keyed on hpid)
+
+    star_dict_hpid -- the dict of outputs dicts for stellar metdata (keyed on hpid)
+
+    Returns
+    --------
+    a list of hpid that can be written to disk
+    a list of corresponding observation metadata output dicts
+    a list of corresponding stellar metadata output dicts
+    """
     hpid_out = []
     star_dict_out = []
     obs_dict_out = []
 
     still_viable = list(star_lock_hpid.keys())
 
+    # scan through the completed hpid;
+    # if there are any who are not being run by a process
+    # listed in p_hpid_list, add that healpix and its
+    # output data to the list of outputs
     for hpid in completed_hpid_list:
         if not hpid in still_viable:
             continue
@@ -306,7 +394,15 @@ if __name__ == "__main__":
 
     cache_dir = '/astro/store/pogo4/danielsf/desc_dc2_truth'
     assert os.path.isdir(cache_dir)
-    out_dir = os.path.join(cache_dir, 'dc2_stellar_lc')
+    out_dir = os.path.join(cache_dir, 'dc2_stellar_lc')  # output directory
+
+    # The file generated by obsHistID_to_healpix.py
+    lookup_name = os.path.join(cache_dir, 'hpid_to_obsHistID_lookup.h5')
+    assert os.path.isfile(lookup_name)
+
+    # The database of stellar parameters
+    stellar_db_name = os.path.join(cache_dir, 'dc2_stellar_healpixel.db')
+    assert os.path.isfile(stellar_db_name)
 
     list_out_dir = os.listdir(out_dir)
     if len(list_out_dir)>0:
@@ -315,16 +411,24 @@ if __name__ == "__main__":
 
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
+
+
+    # cache_LSST_seds will load (or create, if it doesn't exist)
+    # a pickled file containing the entire LSST sims SED library.
+    # It is important to call it with wavelen_min and wavelen_max set
+    # because some of the SEDs extend far into the infrared, and
+    # loading and storing them can be very resource intensive.
+    # The pickle file will be saved in cache_dir for later use
+    # (it takes about 15 minutes to create the file the first time)
     sims_photUtils.cache_LSST_seds(wavelen_min=0.0,
                                    wavelen_max=1500.0,
                                    cache_dir=cache_dir)
 
+    # make sure that the Kepler light curves are loaded into memory
     kplr_dummy = variability.ParametrizedLightCurveMixin()
     kplr_dummy.load_parametrized_light_curves()
 
-    lookup_name = os.path.join(cache_dir, 'hpid_to_obsHistID_lookup.h5')
-    assert os.path.isfile(lookup_name)
-
+    # load the mapping between healpix pixel and obsHistID
     hpid_to_ct = {}
     with h5py.File(lookup_name, 'r') as in_file:
         for k in in_file.keys():
@@ -336,10 +440,15 @@ if __name__ == "__main__":
             n_obs = len(in_file['%d' % hpid][()])
             hpid_to_ct[hpid] = n_obs
 
-    stellar_db_name = os.path.join(cache_dir, 'dc2_stellar_healpixel.db')
-    assert os.path.isfile(stellar_db_name)
-
     mgr = multiprocessing.Manager()
+
+    # job_dict and job_lock exist to make sure that no more than
+    # 5 processes are running the "generate delta magnitue" part
+    # of the pipeline at once. This is the most memory intensive
+    # part of the pipeline (requiring about 7 GB per process); it
+    # is not actually the most time-consuming part, so it is alright
+    # to limit the number of processes that can be running that step
+    # at once.
     job_dict = mgr.dict()
     job_lock = mgr.Lock()
 
@@ -347,6 +456,9 @@ if __name__ == "__main__":
     time.sleep(30)
     print('moving on')
 
+    # Each healpixel will have its own dict storing observation metadata
+    # and stellar metadata; the locks prevent multiple processed from writing
+    # to the same dict at once.
     obs_dict_hpid = {}
     obs_lock_hpid = {}
     star_dict_hpid = {}
@@ -356,15 +468,18 @@ if __name__ == "__main__":
 
     n_threads = 20
 
-    p_list = []
+    p_list = []  # list of do_photometry processes
     p_hpid_list = []
-    w_list = []
+    w_list = []  # list of processes writing metadata to disk
     completed_hpid_list = []
     with sqlite3.connect(stellar_db_name) as conn:
         cursor = conn.cursor()
 
         ct =0
         t_start = time.time()
+
+        # sort healpix pixels so that you start with the pixels
+        # that are visited most often
         hpid_to_ct_items = hpid_to_ct.items()
         hpid_key_list = np.array([itm[0] for itm in hpid_to_ct_items])
         hpid_val_list = np.array([itm[1] for itm in hpid_to_ct_items])
@@ -373,6 +488,7 @@ if __name__ == "__main__":
 
         for hpid in hpid_key_list:
 
+            # create the output dicts and locks for this healpixel
             obs_lock = mgr.Lock()
             star_lock = mgr.Lock()
             obs_metadata_dict = mgr.dict()
@@ -393,6 +509,8 @@ if __name__ == "__main__":
             star_lock_hpid[hpid] = star_lock
             star_dict_hpid[hpid] = star_data_dict
 
+            # limit chunksize so there aren't more than
+            # 50 million (star,mjd) pairs being processed at once
             chunk_size = 50000000//hpid_to_ct[hpid]
             print('chunk_size %d' % chunk_size)
 
@@ -414,6 +532,9 @@ if __name__ == "__main__":
                 p.start()
                 p_list.append(p)
                 p_hpid_list.append(hpid)
+
+                # if all of the desired threads are taken, wait for a job
+                # to exit
                 while len(p_list) + len(w_list)>=n_threads:
                     e_list = list([p.exitcode for p in p_list])
                     was_popped = False
@@ -437,8 +558,11 @@ if __name__ == "__main__":
                         print('ran %d in %e hrs (%e)' % (ct, duration, per))
 
                 chunk = data_iterator.fetchmany(chunk_size)
+
             completed_hpid_list.append(hpid)
 
+            # look to see if any healpixels are ready to be written
+            # to disk
             (hpid_to_write,
              obs_to_write,
              star_to_write) = find_lc_to_write(completed_hpid_list,
