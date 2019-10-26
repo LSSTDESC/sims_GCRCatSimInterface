@@ -1,6 +1,7 @@
 import os
 import glob
 from collections import defaultdict
+import multiprocessing
 import numpy as np
 import pandas as pd
 from lsst.sims.photUtils import BandpassDict
@@ -134,23 +135,40 @@ def make_gal_truthcat(df):
     return pd.DataFrame(data=data)
 
 
-if __name__ == '__main__':
-    sed_dirs = (os.environ['SIMS_SED_LIBRARY_DIR'],
-                '/home/instcats/Run2.2i/00479028')
+def make_truth_cats(det_name):
+    sed_dirs = (os.environ['SIMS_SED_LIBRARY_DIR'], '00479028')
 
-    det_name = 'R22_S10'
-    instcat = f'/home/Run2.2i/truthcat_validation/instcats/{det_name}_cat.txt'
+    instcat = f'instcats/{det_name}_instcat.txt'
     truthcat = f'{det_name}_truthcat.pickle'
     gal_truthcat = f'{det_name}_gal_truthcat.pickle'
 
     if not os.path.isfile(truthcat):
+        print(f'generating {det_name} truthcat')
         df = extract_truth_info(instcat, sed_dirs)
         df.to_pickle(truthcat)
     else:
         df = pd.read_pickle(truthcat)
 
     if not os.path.isfile(gal_truthcat):
+        print(f'generating {det_name} galaxy truthcat')
         gal_df = make_gal_truthcat(df)
         gal_df.to_pickle(gal_truthcat)
     else:
         gal_df = pd.read_pickle(gal_truthcat)
+
+    return df, gal_df
+
+if __name__ == '__main__':
+    det_names = []
+    with open('sensor_list.txt') as fd:
+        for line in fd:
+            det_names.append('R{}{}_S{}{}'.format(*[_ for _ in line
+                                                    if _.isdigit()]))
+
+    with multiprocessing.Pool(processes=2) as pool:
+        workers = []
+        for det_name in det_names[:2]:
+            workers.append(pool.apply_async(make_truth_cats, (det_name,)))
+        pool.close()
+        pool.join()
+        [_.get() for _ in workers]
