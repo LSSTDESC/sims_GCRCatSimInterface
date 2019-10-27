@@ -17,8 +17,9 @@ def write_instcat(commands, obj_lines, outfile):
             output.write("{}\n".format(line.strip()))
 
 camera = LsstSimMapper().camera
-sensor_list = [det.getName() for det in camera
-               if det.getType() == cameraGeom.SCIENCE]
+#sensor_list = [det.getName() for det in camera
+#               if det.getType() == cameraGeom.SCIENCE]
+sensor_list = ['R:2,2 S:1,1']
 
 instcat = '/home/instcats/Run2.2i/00479028/phosim_cat_479028.txt'
 trimmer = InstCatTrimmer(instcat, sensor_list, log_level='DEBUG')

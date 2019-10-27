@@ -86,9 +86,10 @@ def extract_sed(object_line, sed_dirs, gamma2_sign=-1):
             galactic_rv = float(params[i_gal_dust_model+2])
 
     sed_file = find_file_path(sed_name, sed_dirs)
-    return unique_id, desc.imsim.SedWrapper(sed_file, mag_norm, redshift,
-                                            internal_av, internal_rv,
-                                            galactic_av, galactic_rv, bp_dict)
+    return unique_id, ra_phosim, dec_phosim,\
+        desc.imsim.SedWrapper(sed_file, mag_norm, redshift,
+                              internal_av, internal_rv,
+                              galactic_av, galactic_rv, bp_dict)
 
 
 def photParams(instcat):
@@ -99,23 +100,26 @@ def photParams(instcat):
 def extract_truth_info(instcat, sed_dirs):
     obj_ids = []
     gal_ids = []
+    ras, decs = [], []
     fluxes = defaultdict(list)
     phot_params = photParams(instcat)
     with open(instcat) as fd:
         for line in fd:
             if not line.startswith('object'):
                 continue
-            obj_id, sed = extract_sed(line, sed_dirs)
+            obj_id, ra, dec, sed = extract_sed(line, sed_dirs)
             try:
                 gal_id = int(obj_id) >> 10
             except ValueError:
                 gal_id = obj_id
             obj_ids.append(obj_id)
             gal_ids.append(gal_id)
+            ras.append(ra)
+            decs.append(dec)
             for band in 'ugrizy':
-                fluxes[band].append(sed.sed_obj.calcFlux(bp_dict[band]))
+                fluxes[band].append(sed.sed_obj.calcFlux(bp_dict[band])*1e9)
 
-    data = {'obj_id': obj_ids, 'gal_id': gal_ids}
+    data = {'obj_id': obj_ids, 'gal_id': gal_ids, 'ra': ras, 'dec': decs}
     for band in 'ugrizy':
         data[f'flux_{band}'] = fluxes[band]
     return pd.DataFrame(data=data)
@@ -124,23 +128,27 @@ def extract_truth_info(instcat, sed_dirs):
 def make_gal_truthcat(df):
     gal_ids = set(df['gal_id'])
     fluxes = defaultdict(lambda: np.zeros(len('ugrizy')))
+    coords = defaultdict(lambda: np.zeros(2))
     for iloc in range(len(df)):
         row = df.iloc[iloc]
+        gal_id = row['gal_id']
         for i, band in enumerate('ugrizy'):
-            fluxes[row['gal_id']][i] += row[f'flux_{band}']
+            fluxes[gal_id][i] += row[f'flux_{band}']
+        coords[gal_id][0] = row['ra']
+        coords[gal_id][1] = row['dec']
     gal_fluxes = np.array(list(fluxes.values())).transpose()
     data = {'gal_id': list(fluxes.keys())}
+    data['ra'] = [_[0] for _ in coords.values()]
+    data['dec'] = [_[1] for _ in coords.values()]
     for band, flux in zip('ugrizy', gal_fluxes):
         data[f'flux_{band}'] = flux
     return pd.DataFrame(data=data)
 
 
-def make_truth_cats(det_name):
-    sed_dirs = (os.environ['SIMS_SED_LIBRARY_DIR'], '00479028')
-
+def make_truth_cats(det_name, sed_dirs):
     instcat = f'instcats/{det_name}_instcat.txt'
-    truthcat = f'{det_name}_truthcat.pickle'
-    gal_truthcat = f'{det_name}_gal_truthcat.pickle'
+    truthcat = f'my_truth_cats/{det_name}_truthcat.pickle'
+    gal_truthcat = f'my_truth_cats/{det_name}_gal_truthcat.pickle'
 
     if not os.path.isfile(truthcat):
         print(f'generating {det_name} truthcat')
@@ -159,16 +167,22 @@ def make_truth_cats(det_name):
     return df, gal_df
 
 if __name__ == '__main__':
-    det_names = []
-    with open('sensor_list.txt') as fd:
-        for line in fd:
-            det_names.append('R{}{}_S{}{}'.format(*[_ for _ in line
-                                                    if _.isdigit()]))
+    sed_dirs = (os.environ['SIMS_SED_LIBRARY_DIR'],
+                '/home/instcats/Run2.2i/00479028')
 
-    with multiprocessing.Pool(processes=2) as pool:
+    det_names = []
+    with open('det_names.txt') as fd:
+        for line in fd:
+            det_name = 'R{}{}_S{}{}'.format(*[_ for _ in line if _.isdigit()])
+            if os.path.isfile(f'instcats/{det_name}_instcat.txt'):
+                det_names.append(det_name)
+
+    processes = 7
+    with multiprocessing.Pool(processes=processes) as pool:
         workers = []
-        for det_name in det_names[:2]:
-            workers.append(pool.apply_async(make_truth_cats, (det_name,)))
+        for det_name in det_names[2:]:
+            workers.append(pool.apply_async(make_truth_cats,
+                                            (det_name, sed_dirs)))
         pool.close()
         pool.join()
         [_.get() for _ in workers]
