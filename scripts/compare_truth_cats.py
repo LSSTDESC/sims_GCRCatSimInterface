@@ -31,7 +31,7 @@ for gal_cat in gal_cats:
     for gal_id in ids:
         if gal_id not in gal_ids:
             tc_flux.append(tc_flux_dict[gal_id])
-            gal_flux.append(gal_flux_dict[gal_id]/1e9)
+            gal_flux.append(gal_flux_dict[gal_id])
             ra.append(ra_dict[gal_id])
             dec.append(dec_dict[gal_id])
 print('!')

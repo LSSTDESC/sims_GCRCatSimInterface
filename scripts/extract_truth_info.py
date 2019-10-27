@@ -85,8 +85,10 @@ def extract_sed(object_line, sed_dirs, gamma2_sign=-1):
             galactic_av = float(params[i_gal_dust_model+1])
             galactic_rv = float(params[i_gal_dust_model+2])
 
+
+    mu = 1./((1. - kappa)**2 - (gamma1**2 + gamma2**2))
     sed_file = find_file_path(sed_name, sed_dirs)
-    return unique_id, ra_phosim, dec_phosim,\
+    return unique_id, ra_phosim, dec_phosim, mu, \
         desc.imsim.SedWrapper(sed_file, mag_norm, redshift,
                               internal_av, internal_rv,
                               galactic_av, galactic_rv, bp_dict)
@@ -107,7 +109,7 @@ def extract_truth_info(instcat, sed_dirs):
         for line in fd:
             if not line.startswith('object'):
                 continue
-            obj_id, ra, dec, sed = extract_sed(line, sed_dirs)
+            obj_id, ra, dec, mu, sed = extract_sed(line, sed_dirs)
             try:
                 gal_id = int(obj_id) >> 10
             except ValueError:
@@ -117,7 +119,7 @@ def extract_truth_info(instcat, sed_dirs):
             ras.append(ra)
             decs.append(dec)
             for band in 'ugrizy':
-                fluxes[band].append(sed.sed_obj.calcFlux(bp_dict[band])*1e9)
+                fluxes[band].append(mu*sed.sed_obj.calcFlux(bp_dict[band]))
 
     data = {'obj_id': obj_ids, 'gal_id': gal_ids, 'ra': ras, 'dec': decs}
     for band in 'ugrizy':
