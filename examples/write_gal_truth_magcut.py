@@ -49,6 +49,9 @@ assert os.path.isdir(sed_fit_dir)
 # hpid = 10069  # an example healpix pixel that has been fit
 hpid = 9430
 
+#mag_cut = 29.0     
+mag_cut = 20.0           #  Temporary for debugging
+
 sed_fit_name = os.path.join(sed_fit_dir, 'sed_fit_%d.h5' % hpid)
 assert os.path.isfile(sed_fit_name)
 
@@ -79,9 +82,9 @@ for colname in cosmoDC2_data.keys():
     cosmoDC2_data[colname] = cosmoDC2_data[colname][sorted_dex]
 
 # Find out which galaxy ids to process fully
-valid_ixes = np.where(cosmoDC2_data['mag_r_lsst'][()]<=29.0)
+valid_ixes = np.where(cosmoDC2_data['mag_r_lsst'][()]<= mag_cut)
 
-bad_ixes = np.where(cosmoDC2_data['mag_r_lsst'][()]>29.0)
+bad_ixes = np.where(cosmoDC2_data['mag_r_lsst'][()]> mag_cut)
 
 valid_gals = [cosmoDC2_data['galaxy_id'][()][i] for i in valid_ixes]
 
@@ -105,7 +108,8 @@ with h5py.File(sed_fit_name, 'r') as sed_fit_file:
     sed_names = [s.decode() for s in sed_names]  # because stored as bytes
 
     # we will just consider the first 100000 galaxies for this example
-    n_test_gals = 100000
+    #  n_test_gals = 100000
+    n_test_gals = 1000
     subset = slice(0, n_test_gals)
     galaxy_ids = sed_fit_file['galaxy_id'][()][subset]
 
@@ -180,6 +184,7 @@ with h5py.File(sed_fit_name, 'r') as sed_fit_file:
                     if gii == len(good_ixes):   # ran out of good ones
                         done = True
                         break
+                if done:  break
                 if good_ixes[gii] > i_gal :  # skipped over it; it's bad
                     continue
                 #if galaxy_ids[i_gal] in bad_gals[0] : continue
