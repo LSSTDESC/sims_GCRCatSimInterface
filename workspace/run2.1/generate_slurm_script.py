@@ -86,7 +86,7 @@ if __name__ == "__main__":
             n_hrs = 2+int(np.ceil(args.d_obs/args.n_jobs))
             out_file.write('#!/bin/bash -l\n')
             out_file.write('#SBATCH ')
-            out_file.write('--image=docker:lsstdesc/stack-jupyter:prod\n')
+            out_file.write('--image=docker:lsstdesc/stack-sims-cat:w_2019_37-sims_w_2019_37-v1\n')
             out_file.write('#SBATCH -N %d\n' % n_srun)
             out_file.write('#SBATCH -t %d:00:00\n' % n_hrs)
             out_file.write('#SBATCH -o slurm_out/batch_%d_out.txt\n' % file_id)
