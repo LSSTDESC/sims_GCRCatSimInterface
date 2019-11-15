@@ -242,16 +242,20 @@ if __name__ == "__main__":
                 dec = dec[valid]
                 obs_mag_i = obs_mag_i[valid]
 
-            tau = tau_from_params(redshift,
-                                  abs_mag_i,
-                                  bhm, rng=rng)
-
             sf_dict = {}
+            tau_dict = {}
             for bp in ('u', 'g', 'r', 'i', 'z', 'y'):
                 eff_wavelen = 10.0*bp_dict[bp].calcEffWavelen()[0]
-                sf_dict[bp] = SF_from_params(redshift, abs_mag_i,
-                                             bhm, eff_wavelen,
+                sf_dict[bp] = SF_from_params(redshift, 
+                                             abs_mag_i,
+                                             bhm, 
+                                             eff_wavelen,
                                              rng=rng)
+                tau_dict[bp] = tau_from_params(redshift,
+                                               abs_mag_i,
+                                               bhm, 
+                                               eff_wavelen,
+                                               rng=rng)
 
             # Cut on structure function value.
             # Specifically, we are looping over all LSST bandpasses
@@ -267,7 +271,6 @@ if __name__ == "__main__":
                 # to reflect the current cut on structure function
                 # values
                 redshift = redshift[valid]
-                tau = tau[valid]
                 log_edd_ratio = log_edd_ratio[valid]
                 abs_mag_i = abs_mag_i[valid]
                 obs_mag_i = obs_mag_i[valid]
@@ -277,26 +280,64 @@ if __name__ == "__main__":
                 dec = dec[valid]
                 for other_bp in 'ugrizy':
                     sf_dict[other_bp] = sf_dict[other_bp][valid]
+                    tau_dict[other_bp] = tau_dict[other_bp][valid]
 
             interpolated_m_i = np.interp(redshift, z_grid, m_i_grid)
             interpolated_mag_norm = np.interp(redshift, z_grid, mag_norm_grid)
             mag_norm = interpolated_mag_norm + (obs_mag_i - interpolated_m_i)
 
-            seed_arr = rng.randint(1,high=10000000, size=len(tau))
+            seed_arr = rng.randint(1, high=10000000, size=len(redshift))
 
             htmid = findHtmid(ra, dec, htmid_level)
 
-            vals = ((int(ii), int(hh), mm, '{"m": "applyAgn", '
-                          + '"p": {"seed": %d, "agn_tau": %.3e, "agn_sfu": %.3e, ' % (ss, tt, sfu)
-                          + '"agn_sfg": %.3e, "agn_sfr": %.3e, "agn_sfi": %.3e, ' % (sfg, sfr, sfi)
-                          + '"agn_sfz": %.3e, "agn_sfy": %.3e}}' % (sfz, sfy))
-                     for ii, hh, mm, ss, tt, sfu, sfg, sfr, sfi, sfz, sfy in
-                     zip(galaxy_id, htmid, mag_norm, seed_arr, tau,
-                         sf_dict['u'], sf_dict['g'], sf_dict['r'], sf_dict['i'],
-                         sf_dict['z'], sf_dict['y']))
+            varParamStr_format = '{"m": "applyAgn", "p": {"seed": %d, "agn_sf_u": %.3e, "agn_sf_g": %.3e, "agn_sf_r": %.3e, "agn_sf_i": %.3e, "agn_sf_z": %.3e, "agn_sf_y": %.3e, "agn_tau_u" : %.3e, "agn_tau_g" : %.3e, "agn_tau_r" : %.3e, "agn_tau_i" : %.3e, "agn_tau_z" : %.3e, "agn_tau_y" : %.3e}}'
 
-            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
-            connection.commit()
+            row_by_row = zip(galaxy_id, htmid, mag_norm, seed_arr,
+                             sf_dict['u'], 
+                             sf_dict['g'], 
+                             sf_dict['r'], 
+                             sf_dict['i'],
+                             sf_dict['z'], 
+                             sf_dict['y'],
+                             tau_dict['u'],
+                             tau_dict['g'],
+                             tau_dict['r'],
+                             tau_dict['i'],
+                             tau_dict['z'],
+                             tau_dict['y'])
+
+            vals = []
+            for gal_id_i, htmid_i, mag_norm_i, seed_arr_i, 
+                sf_u, 
+                sf_g, 
+                sf_r, 
+                sf_i, 
+                sf_z, 
+                sf_y, 
+                tau_u, 
+                tau_g, 
+                tau_r, 
+                tau_i, 
+                tau_z, 
+                tau_y in row_by_row:
+                vals.append((int(gal_id_i), int(htmid_i), mag_norm_i,
+                             varParamStr_format % (seed_arr_i,
+                                                   sf_u, 
+                                                   sf_g, 
+                                                   sf_r, 
+                                                   sf_i, 
+                                                   sf_z, 
+                                                   sf_y, 
+                                                   tau_u, 
+                                                   tau_g, 
+                                                   tau_r, 
+                                                   tau_i, 
+                                                   tau_z, 
+                                                   tau_y)
+                             ))
+
+                cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
+                connection.commit()
 
         assert ct_simulated == full_size
 
