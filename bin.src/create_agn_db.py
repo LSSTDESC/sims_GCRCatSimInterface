@@ -307,7 +307,7 @@ if __name__ == "__main__":
                              tau_dict['y'])
 
             vals = []
-            for gal_id_i, htmid_i, mag_norm_i, seed_arr_i, 
+            for (gal_id_i, htmid_i, mag_norm_i, seed_arr_i, 
                 sf_u, 
                 sf_g, 
                 sf_r, 
@@ -319,7 +319,7 @@ if __name__ == "__main__":
                 tau_r, 
                 tau_i, 
                 tau_z, 
-                tau_y in row_by_row:
+                tau_y) in row_by_row:
                 vals.append((int(gal_id_i), int(htmid_i), mag_norm_i,
                              varParamStr_format % (seed_arr_i,
                                                    sf_u, 
@@ -336,8 +336,8 @@ if __name__ == "__main__":
                                                    tau_y)
                              ))
 
-                cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
-                connection.commit()
+            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
+            connection.commit()
 
         assert ct_simulated == full_size
 
