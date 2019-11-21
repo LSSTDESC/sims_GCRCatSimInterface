@@ -186,7 +186,7 @@ def k_correction(sed_obj, bp, redshift):
 
 def tau_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
     """
-    Use equation (7) and Table 1 (7th row) of MacLeod et al.
+    Use equation (7) and Table 1 (last row) of MacLeod et al.
     to get tau from black hole parameters
 
     Parameters
@@ -197,6 +197,9 @@ def tau_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
     M_i is the absolute magnitude of the AGN in the i-band
 
     mbh is the mass of the blackhole in solar masses
+
+    eff_wavelen is the observer-frame effective
+    wavelength of the band in Angstroms
 
     rng is an option np.random.RandomState instantiation
     which will introduce scatter into the coefficients
@@ -237,7 +240,7 @@ def tau_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
 
 def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
     """
-    Use equation (7) and Table 1 (2nd row) of MacLeod et al.
+    Use equation (7) and Table 1 (5th row) of MacLeod et al.
     to get the structure function from black hole parameters
 
     Parameters
