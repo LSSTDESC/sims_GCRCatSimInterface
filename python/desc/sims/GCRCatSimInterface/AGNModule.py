@@ -213,25 +213,24 @@ def tau_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
     #    eff_wav_nm = bp_dict['i'].calcEffWavelen()
     #    tau_from_params._eff_wavelen_i = 10.0*eff_wav_nm[0]  # use phi; not sb
 
-    AA = 2.3
+    AA = 2.4
     BB = 0.17
-    CC = 0.01
-    DD = 0.12
+    CC = 0.03
+    DD = 0.21
 
     if rng is not None:
         if isinstance(redshift, numbers.Number):
             n_obj = 1
         else:
             n_obj = len(redshift)
-        AA += rng.normal(0.0, 0.1, size=n_obj)
+        AA += rng.normal(0.0, 0.2, size=n_obj)
         BB += rng.normal(0.0, 0.02, size=n_obj)
-        CC += rng.normal(0.0, 0.03, size=n_obj)
-        DD += rng.normal(0.0, 0.04, size=n_obj)
+        CC += rng.normal(0.0, 0.04, size=n_obj)
+        DD += rng.normal(0.0, 0.07, size=n_obj)
 
-    # in Angstroms for i-band
     eff_wavelen_rest = eff_wavelen/(1.0+redshift)
 
-    log_tau = AA + BB*np.log10(eff_wavelen/4000.0)
+    log_tau = AA + BB*np.log10(eff_wavelen_rest/4000.0)
     log_tau += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
     return np.power(10.0, log_tau)
 
@@ -262,20 +261,20 @@ def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
     SF -- the structure function of the light curve at infinite
     time lag of at the effective wavelength specified
     """
-    AA = -0.56
+    AA = -0.51
     BB = -0.479
-    CC = 0.111
-    DD = 0.11
+    CC = 0.131
+    DD = 0.18
 
     if rng is not None:
         if isinstance(redshift, numbers.Number):
             n_obj = 1
         else:
             n_obj = len(redshift)
-        AA += rng.normal(0.0, 0.01, size=n_obj)
+        AA += rng.normal(0.0, 0.02, size=n_obj)
         BB += rng.normal(0.0, 0.005, size=n_obj)
-        CC += rng.normal(0.0, 0.005, size=n_obj)
-        DD += rng.normal(0.0, 0.02, size=n_obj)
+        CC += rng.normal(0.0, 0.008, size=n_obj)
+        DD += rng.normal(0.0, 0.03, size=n_obj)
 
     eff_wavelen_rest = eff_wavelen/(1.0+redshift)
 
