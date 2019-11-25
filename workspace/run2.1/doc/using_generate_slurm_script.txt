@@ -1,0 +1,32 @@
+A typical invocation looks like this (reformatted for clarity):
+
+@cori01> python generate_slurm_script.py
+    --candidate_file data/master_obshistid_list.txt
+    --n_obs 100000 --d_obs 56 --n_jobs 14
+    --min_obs 1235518 --max_obs 1476730
+    --out_dir /global/cscratch1/sd/descim/instcat_y06_191125
+    --config_file_name config_file_2.1.wfd.json
+N already done 0
+writing  slurm_scripts/batch_script_0.sl
+
+
+This is to generate a file for year 6.
+The value for --n-obs is intended to be large enough that it will not
+limit the visits handled.
+Those visits will be the ones in the candidate file where
+   min_obs < visitid <= max_obs
+
+After the script is generated it will need to be edited somewhat and
+you may want to rename it.  The generated names are of the form
+  batch_script_N.sl
+ where N is the least non-negative integer such that this file doesn't
+ already exist.
+
+Items to change or consider changing within the file are
+
+1. Add line
+#SBATCH --job-name=[something informative]
+
+2. Modify values for -o and -e SBATCH options
+3. (Maybe) change value for -q  option (default is 'regular')
+4. (Maybe) change value for -t option

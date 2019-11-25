@@ -1,1 +1,3 @@
 # just a placeholder
+# Generated txt files should not be committed to the repo
+*.txt

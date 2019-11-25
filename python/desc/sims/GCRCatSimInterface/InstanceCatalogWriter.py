@@ -595,12 +595,6 @@ class InstanceCatalogWriter(object):
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
-                out_file.write("%d gzipping %s\n" % (obsHistID, tar_name))
-        p = subprocess.Popen(args=['gzip', tar_name])
-        p.wait()
-
-        if has_status_file:
-            with open(status_file, 'a') as out_file:
                 duration = (time.time()-self.t_start)/3600.0
                 out_file.write('%d all done -- took %.3e hrs\n' %
                                (obsHistID, duration))
