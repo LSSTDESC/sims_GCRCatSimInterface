@@ -624,6 +624,8 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
         Visit time in seconds.
     minsource: int [100]
         Minimum number of objects for phosim.py to simulate a chip.
+        Ignored.  As of 26 Nov. 2019 this value is no longer written to the
+        header file.
 
     Returns
     -------
@@ -633,11 +635,9 @@ def make_instcat_header(star_db, obs_md, outfile, object_catalogs=(),
     cat.phoSimHeaderMap = copy.deepcopy(DefaultPhoSimHeaderMap)
     cat.phoSimHeaderMap['nsnap'] = nsnap
     cat.phoSimHeaderMap['vistime'] = vistime
-    cat.phoSimHeaderMap['camconfig'] = 1
 
     with open(outfile, 'w') as output:
         cat.write_header(output)
-        output.write('minsource %i\n' % minsource)
         for cat_name in object_catalogs:
             output.write('includeobj %s.gz\n' % cat_name)
     return cat
