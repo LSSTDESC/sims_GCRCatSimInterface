@@ -195,8 +195,8 @@ if __name__ == '__main__':
     sed_dirs = [os.path.dirname(_) for _ in glob.glob('00*/phosim_cat*.txt')]
     sed_dirs.append(os.environ['SIMS_SED_LIBRARY_DIR'])
 
-#    visits = dict(u=2338, g=159521, r=40325, i=479028, z=8005, y=5883)
-    visits = dict(i=6824)
+    visits = dict(u=2338, g=159521, r=40325, i=479028, z=8005, y=5883)
+#    visits = dict(i=6824)
 
     processes = config['processes']
     bands = config['bands']

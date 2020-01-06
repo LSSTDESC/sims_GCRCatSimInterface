@@ -26,8 +26,8 @@ if run_description is None:
 
 disable_MW = config['disable_MW']
 
-#visits = dict(u=2338, g=159521, r=40325, i=479028, z=8005, y=5883)
-visits = dict(i=6824)
+visits = dict(u=2338, g=159521, r=40325, i=479028, z=8005, y=5883)
+#visits = dict(i=6824)
 bands = config['bands']
 
 if ((config['frac_diff_min'] is not None) and
