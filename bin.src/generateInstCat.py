@@ -53,7 +53,8 @@ def generate_instance_catalog(args=None, lock=None):
                                                    host_data_dir=args.host_data_dir,
                                                    sprinkler=args.enable_sprinkler,
                                                    gzip_threads=args.gzip_threads,
-                                                   config_dict=config_dict)
+                                                   config_dict=config_dict,
+                                                   unlensed_agn=args.unlensed_agn)
 
             generate_instance_catalog.instcat_writer = instcat_writer
 
