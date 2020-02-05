@@ -46,18 +46,6 @@ class ExtraGalacticVariabilityModels(Variability):
             mjd_is_number = False
 
         seed_arr = params['seed']
-        # tau_u_arr = params['agn_tau_u'].astype(float)
-        # tau_g_arr = params['agn_tau_g'].astype(float)
-        # tau_r_arr = params['agn_tau_r'].astype(float)
-        # tau_i_arr = params['agn_tau_i'].astype(float)
-        # tau_z_arr = params['agn_tau_z'].astype(float)
-        # tau_y_arr = params['agn_tau_y'].astype(float)
-        # sfu_arr = params['agn_sfu'].astype(float)
-        # sfg_arr = params['agn_sfg'].astype(float)
-        # sfr_arr = params['agn_sfr'].astype(float)
-        # sfi_arr = params['agn_sfi'].astype(float)
-        # sfz_arr = params['agn_sfz'].astype(float)
-        # sfy_arr = params['agn_sfy'].astype(float)
 
         duration_observer_frame = max_mjd - self._agn_walk_start_date
 
@@ -89,62 +77,67 @@ class ExtraGalacticVariabilityModels(Variability):
             #################
             # Try to subdivide the AGN into batches such that the number
             # of time steps simulated by each thread is close to equal
-            tot_steps = 0
-            n_steps = []
-            for tt, zz in zip(tau_arr[valid_dexes], redshift_arr[valid_dexes]):
-                dilation = 1.0+zz
-                dt = tt/100.0
-                dur = (duration_observer_frame/dilation)
-                nt = dur/dt
-                tot_steps += nt
-                n_steps.append(nt)
 
-            batch_target = tot_steps/self._agn_threads
-            i_start_arr = [0]
-            i_end_arr = []
-            current_batch = n_steps[0]
-            for ii in range(1,len(n_steps),1):
-                current_batch += n_steps[ii]
-                if ii == len(n_steps)-1:
-                    i_end_arr.append(len(n_steps))
-                elif len(i_start_arr)<self._agn_threads:
-                    if current_batch>=batch_target:
-                        i_end_arr.append(ii)
-                        i_start_arr.append(ii)
-                        current_batch = n_steps[ii]
+            for filt_num, filt_name in list(enumerate(['u', 'g', 'r', 'i', 'z', 'y'])):
+                tot_steps = 0
+                n_steps = []
+                tau_arr = params['agn_tau_%s' % filt_name].astype(float)
+                sf_arr = params['agn_sf_%s' % filt_name].astype(float)
 
-            if len(i_start_arr) != len(i_end_arr):
-                raise RuntimeError('len i_start %d len i_end %d; dexes %d' %
-                                   (len(i_start_arr),
-                                    len(i_end_arr),
-                                    len(valid_dexes[0])))
-            assert len(i_start_arr) <= self._agn_threads
-            ############
+                for tt, zz in zip(tau_arr[valid_dexes], redshift_arr[valid_dexes]):
+                    dilation = 1.0+zz
+                    dt = tt/100.0
+                    dur = (duration_observer_frame/dilation)
+                    nt = dur/dt
+                    tot_steps += nt
+                    n_steps.append(nt)
 
-            # Actually simulate the AGN on the the number of threads allotted
-            for i_start, i_end in zip(i_start_arr, i_end_arr):
-                dexes = valid_dexes[0][i_start:i_end]
+                batch_target = tot_steps/self._agn_threads
+                i_start_arr = [0]
+                i_end_arr = []
+                current_batch = n_steps[0]
+                for ii in range(1,len(n_steps),1):
+                    current_batch += n_steps[ii]
+                    if ii == len(n_steps)-1:
+                        i_end_arr.append(len(n_steps))
+                    elif len(i_start_arr)<self._agn_threads:
+                        if current_batch>=batch_target:
+                            i_end_arr.append(ii)
+                            i_start_arr.append(ii)
+                            current_batch = n_steps[ii]
+
+                if len(i_start_arr) != len(i_end_arr):
+                    raise RuntimeError('len i_start %d len i_end %d; dexes %d' %
+                                    (len(i_start_arr),
+                                        len(i_end_arr),
+                                        len(valid_dexes[0])))
+                assert len(i_start_arr) <= self._agn_threads
+                ############
+
+                # Actually simulate the AGN on the the number of threads allotted
+                for i_start, i_end in zip(i_start_arr, i_end_arr):
+                    dexes = valid_dexes[0][i_start:i_end]
+                    if mjd_is_number:
+                        out_dexes = range(i_start,i_end,1)
+                    else:
+                        out_dexes = dexes
+                    p = multiprocessing.Process(target=self._threaded_simulate_agn,
+                                                args=(expmjd, tau_arr[dexes],
+                                                    1.0+redshift_arr[dexes],
+                                                    sf_arr[dexes],
+                                                    seed_arr[dexes],
+                                                    out_dexes,
+                                                    out_struct))
+                    p.start()
+                    p_list.append(p)
+                for p in p_list:
+                    p.join()
+
                 if mjd_is_number:
-                    out_dexes = range(i_start,i_end,1)
+                    dMags[filt_num][valid_dexes] = out_struct[:]
                 else:
-                    out_dexes = dexes
-                p = multiprocessing.Process(target=self._threaded_simulate_agn,
-                                            args=(expmjd, tau_arr[dexes],
-                                                  1.0+redshift_arr[dexes],
-                                                  sfu_arr[dexes],
-                                                  seed_arr[dexes],
-                                                  out_dexes,
-                                                  out_struct))
-                p.start()
-                p_list.append(p)
-            for p in p_list:
-                p.join()
-
-            if mjd_is_number:
-                dMags[0][valid_dexes] = out_struct[:]
-            else:
-                for i_obj in out_struct.keys():
-                    dMags[0][i_obj] = out_struct[i_obj]
+                    for i_obj in out_struct.keys():
+                        dMags[filt_num][i_obj] = out_struct[i_obj]
 
         # for i_filter, filter_name in enumerate(('g', 'r', 'i', 'z', 'y')):
         #     for i_obj in valid_dexes[0]:
@@ -153,7 +146,7 @@ class ExtraGalacticVariabilityModels(Variability):
         return dMags
 
     def _threaded_simulate_agn(self, expmjd, tau_arr,
-                               time_dilation_arr, sf_u_arr,
+                               time_dilation_arr, sf_filt_arr,
                                seed_arr, dex_arr, out_struct):
 
         if isinstance(expmjd, numbers.Number):
@@ -161,12 +154,12 @@ class ExtraGalacticVariabilityModels(Variability):
         else:
             mjd_is_number = False
 
-        for tau, time_dilation, sf_u, seed, dex in \
-        zip(tau_arr, time_dilation_arr, sf_u_arr, seed_arr, dex_arr):
+        for tau, time_dilation, sf_filt, seed, dex in \
+        zip(tau_arr, time_dilation_arr, sf_filt_arr, seed_arr, dex_arr):
             out_struct[dex] = self._simulate_agn(expmjd, tau, time_dilation,
-                                                 sf_u, seed)
+                                                 sf_filt, seed)
 
-    def _simulate_agn(self, expmjd, tau, time_dilation, sf_u, seed):
+    def _simulate_agn(self, expmjd, tau, time_dilation, sf_filt, seed):
             """
             Simulate the u-band light curve for a single AGN
 
@@ -178,7 +171,7 @@ class ExtraGalacticVariabilityModels(Variability):
 
             time_dilation -- (1+z) for the AGN
 
-            sf_u -- the u-band structure function of the AGN
+            sf_filt -- the passband's structure function of the AGN
 
             seed -- the seed for the random number generator
 
@@ -223,7 +216,7 @@ class ExtraGalacticVariabilityModels(Variability):
                 #The second term differs from Zeljko's equation by sqrt(2.)
                 #because he assumes stdev = sf_u/sqrt(2)
                 dx1 = dx2
-                dx2 = -dx1*dt_over_tau + sf_u*es[i_time] + dx1
+                dx2 = -dx1*dt_over_tau + sf_filt*es[i_time] + dx1
                 x1 = x2
                 x2 += dt
 
