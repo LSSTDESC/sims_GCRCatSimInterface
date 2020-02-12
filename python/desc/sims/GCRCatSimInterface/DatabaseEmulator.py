@@ -14,13 +14,9 @@ from sqlalchemy import text
 from lsst.sims.catalogs.db import CatalogDBObject, ChunkIterator
 from lsst.sims.utils import htmModule as htm
 
-_GCR_IS_AVAILABLE = True
-try:
-    from GCR import GCRQuery
-    from GCR import dict_to_numpy_array
-    import GCRCatalogs
-except ImportError:
-    _GCR_IS_AVAILABLE = False
+from GCR import GCRQuery
+from GCR import dict_to_numpy_array
+import GCRCatalogs
 
 _LSST_IS_AVAILABLE = True
 try:
@@ -432,10 +428,6 @@ class DESCQAObject(object):
                                    'DESCQAObject')
 
             yaml_file_name = self.yaml_file_name
-
-        if not _GCR_IS_AVAILABLE:
-            raise RuntimeError("You cannot use DESCQAObject\n"
-                               "You do not have *GCR* installed and setup")
 
         if yaml_file_name + self._cat_cache_suffix not in _CATALOG_CACHE:
             t_start = time.time()
