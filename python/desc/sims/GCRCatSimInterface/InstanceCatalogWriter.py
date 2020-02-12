@@ -153,7 +153,7 @@ class InstanceCatalogWriter(object):
             Filename of the supernova parameter sqlite db file.
         sprinkler: bool [False]
             Flag to enable the Sprinkler.
-	host_image_dir: string
+        host_image_dir: string
             The location of the FITS images of lensed AGN/SNe hosts produced by generate_lensed_hosts_***.py
         host_data_dir: string
             Location of csv file of lensed host data created by the sprinkler
