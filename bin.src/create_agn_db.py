@@ -200,7 +200,9 @@ if __name__ == "__main__":
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
-                          (galaxy_id int, htmid_%d int, magNorm real, varParamStr text)''' % htmid_level)
+                       (galaxy_id int, htmid_%d int, magNorm real,
+                        redshift real, M_i real,
+                        varParamStr text)''' % htmid_level)
 
         connection.commit()
 
@@ -246,14 +248,14 @@ if __name__ == "__main__":
             tau_dict = {}
             for bp in ('u', 'g', 'r', 'i', 'z', 'y'):
                 eff_wavelen = 10.0*bp_dict[bp].calcEffWavelen()[0]
-                sf_dict[bp] = SF_from_params(redshift, 
+                sf_dict[bp] = SF_from_params(redshift,
                                              abs_mag_i,
-                                             bhm, 
+                                             bhm,
                                              eff_wavelen,
                                              rng=rng)
                 tau_dict[bp] = tau_from_params(redshift,
                                                abs_mag_i,
-                                               bhm, 
+                                               bhm,
                                                eff_wavelen,
                                                rng=rng)
 
@@ -290,14 +292,20 @@ if __name__ == "__main__":
 
             htmid = findHtmid(ra, dec, htmid_level)
 
-            varParamStr_format = '{"m": "applyAgn", "p": {"seed": %d, "agn_sf_u": %.3e, "agn_sf_g": %.3e, "agn_sf_r": %.3e, "agn_sf_i": %.3e, "agn_sf_z": %.3e, "agn_sf_y": %.3e, "agn_tau_u" : %.3e, "agn_tau_g" : %.3e, "agn_tau_r" : %.3e, "agn_tau_i" : %.3e, "agn_tau_z" : %.3e, "agn_tau_y" : %.3e}}'
+            varParamStr_format \
+                = ('{"m": "applyAgn", "p": {"seed": %d, '
+                   '"agn_sf_u": %.3e, "agn_sf_g": %.3e, "agn_sf_r": %.3e, '
+                   '"agn_sf_i": %.3e, "agn_sf_z": %.3e, "agn_sf_y": %.3e, '
+                   '"agn_tau_u" : %.3e, "agn_tau_g" : %.3e, "agn_tau_r" : %.3e, '
+                   '"agn_tau_i" : %.3e, "agn_tau_z" : %.3e, "agn_tau_y" : %.3e}}')
 
-            row_by_row = zip(galaxy_id, htmid, mag_norm, seed_arr,
-                             sf_dict['u'], 
-                             sf_dict['g'], 
-                             sf_dict['r'], 
+            row_by_row = zip(galaxy_id, htmid, mag_norm, redshift, abs_mag_i,
+                             seed_arr,
+                             sf_dict['u'],
+                             sf_dict['g'],
+                             sf_dict['r'],
                              sf_dict['i'],
-                             sf_dict['z'], 
+                             sf_dict['z'],
                              sf_dict['y'],
                              tau_dict['u'],
                              tau_dict['g'],
@@ -307,36 +315,39 @@ if __name__ == "__main__":
                              tau_dict['y'])
 
             vals = []
-            for (gal_id_i, htmid_i, mag_norm_i, seed_arr_i, 
-                sf_u, 
-                sf_g, 
-                sf_r, 
-                sf_i, 
-                sf_z, 
-                sf_y, 
-                tau_u, 
-                tau_g, 
-                tau_r, 
-                tau_i, 
-                tau_z, 
-                tau_y) in row_by_row:
+            for (gal_id_i, htmid_i, mag_norm_i, redshift_value, abs_mag_i_value,
+                 seed_arr_i,
+                 sf_u,
+                 sf_g,
+                 sf_r,
+                 sf_i,
+                 sf_z,
+                 sf_y,
+                 tau_u,
+                 tau_g,
+                 tau_r,
+                 tau_i,
+                 tau_z,
+                 tau_y) in row_by_row:
                 vals.append((int(gal_id_i), int(htmid_i), mag_norm_i,
+                             redshift_value, abs_mag_i_value,
                              varParamStr_format % (seed_arr_i,
-                                                   sf_u, 
-                                                   sf_g, 
-                                                   sf_r, 
-                                                   sf_i, 
-                                                   sf_z, 
-                                                   sf_y, 
-                                                   tau_u, 
-                                                   tau_g, 
-                                                   tau_r, 
-                                                   tau_i, 
-                                                   tau_z, 
+                                                   sf_u,
+                                                   sf_g,
+                                                   sf_r,
+                                                   sf_i,
+                                                   sf_z,
+                                                   sf_y,
+                                                   tau_u,
+                                                   tau_g,
+                                                   tau_r,
+                                                   tau_i,
+                                                   tau_z,
                                                    tau_y)
                              ))
 
-            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
+            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?, ?, ?)',
+                               vals)
             connection.commit()
 
         assert ct_simulated == full_size
