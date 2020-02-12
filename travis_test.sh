@@ -6,6 +6,9 @@ setup -t DC2production throughputs
 setup -t DC2production sims_skybrightness_data
 pip install nose
 pip install pylint
+pip install gcr
+git clone https://github.com/LSSTDESC/gcr-catalogs.git
+export PYTHONPATH=${TRAVIS_BUILD_DIR}/gcr-catalogs:${PYTHONPATH}
 eups declare sims_GCRCatSimInterface -r ${TRAVIS_BUILD_DIR} -t current
 setup sims_GCRCatSimInterface
 cd ${TRAVIS_BUILD_DIR}
