@@ -212,7 +212,7 @@ if __name__ == "__main__":
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
                        (galaxy_id int, htmid_%d int, magNorm real,
-                        redshift real, M_i real,
+                        redshift real, M_i real, ra real, dec real,
                         varParamStr text)''' % htmid_level)
 
         connection.commit()
@@ -303,6 +303,7 @@ if __name__ == "__main__":
                    '"agn_tau_i" : %.3e, "agn_tau_z" : %.3e, "agn_tau_y" : %.3e}}')
 
             row_by_row = zip(galaxy_id, htmid, mag_norm, redshift, abs_mag_i,
+                             ra, dec,
                              seed_arr,
                              sf_dict['u'],
                              sf_dict['g'],
@@ -319,6 +320,7 @@ if __name__ == "__main__":
 
             vals = []
             for (gal_id_i, htmid_i, mag_norm_i, redshift_value, abs_mag_i_value,
+                 ra_value, dec_value,
                  seed_arr_i,
                  sf_u,
                  sf_g,
@@ -334,6 +336,7 @@ if __name__ == "__main__":
                  tau_y) in row_by_row:
                 vals.append((int(gal_id_i), int(htmid_i), mag_norm_i,
                              redshift_value, abs_mag_i_value,
+                             ra_value, dec_value,
                              varParamStr_format % (seed_arr_i,
                                                    sf_u,
                                                    sf_g,
@@ -349,7 +352,8 @@ if __name__ == "__main__":
                                                    tau_y)
                              ))
 
-            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?, ?, ?)',
+            cursor.executemany('INSERT INTO agn_params '
+                               'VALUES(?, ?, ?, ?, ?, ?, ?, ?)',
                                vals)
             connection.commit()
 
