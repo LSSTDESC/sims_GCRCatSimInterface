@@ -196,6 +196,9 @@ if __name__ == "__main__":
         m_i_grid[i_z] = ss.calcMag(bp_dict['i'])
         mag_norm_grid[i_z] = ss.calcMag(imsimband)
 
+    bands = 'ugrizy'
+    # Effective wavelengths of each filter in Angstroms.
+    eff_wls = np.array([10.0*bp_dict[bp].calcEffWavelen()[0] for bp in bands])
     htmid_level = 8
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
@@ -244,20 +247,12 @@ if __name__ == "__main__":
                 dec = dec[valid]
                 obs_mag_i = obs_mag_i[valid]
 
-            sf_dict = {}
-            tau_dict = {}
-            for bp in ('u', 'g', 'r', 'i', 'z', 'y'):
-                eff_wavelen = 10.0*bp_dict[bp].calcEffWavelen()[0]
-                sf_dict[bp] = SF_from_params(redshift,
-                                             abs_mag_i,
-                                             bhm,
-                                             eff_wavelen,
-                                             rng=rng)
-                tau_dict[bp] = tau_from_params(redshift,
-                                               abs_mag_i,
-                                               bhm,
-                                               eff_wavelen,
-                                               rng=rng)
+            sf_values = SF_from_params(redshift, abs_mag_i, bhm, eff_wls,
+                                       rng=rng)
+            sf_dict = dict(zip(bands, sf_values))
+            tau_values = tau_from_params(redshift, abs_mag_i, bhm, eff_wls,
+                                         rng=rng)
+            tau_dict = dict(zip(bands, tau_values))
 
             # Cut on structure function value.
             # Specifically, we are looping over all LSST bandpasses
@@ -266,7 +261,7 @@ if __name__ == "__main__":
             # the end of this block of code, the only AGN that should
             # remain are those for whom all structure function values
             # are less than args.max_sf.
-            for bp in 'ugrizy':
+            for bp in bands:
                 valid = np.where(sf_dict[bp]<args.max_sf)
 
                 # update all data structures, including sf_dict
@@ -280,7 +275,7 @@ if __name__ == "__main__":
                 galaxy_id = galaxy_id[valid]
                 ra = ra[valid]
                 dec = dec[valid]
-                for other_bp in 'ugrizy':
+                for other_bp in bands:
                     sf_dict[other_bp] = sf_dict[other_bp][valid]
                     tau_dict[other_bp] = tau_dict[other_bp][valid]
 
