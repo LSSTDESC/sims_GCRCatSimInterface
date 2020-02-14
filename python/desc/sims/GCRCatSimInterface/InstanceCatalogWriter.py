@@ -121,7 +121,7 @@ class InstanceCatalogWriter(object):
                  agn_db_name=None, agn_threads=1, sn_db_name=None,
                  sprinkler=False, host_image_dir=None,
                  host_data_dir=None, config_dict=None,
-                 gzip_threads=3):
+                 gzip_threads=3, unlensed_agn=False):
         """
         Parameters
         ----------
@@ -153,13 +153,15 @@ class InstanceCatalogWriter(object):
             Filename of the supernova parameter sqlite db file.
         sprinkler: bool [False]
             Flag to enable the Sprinkler.
-	host_image_dir: string
+        host_image_dir: string
             The location of the FITS images of lensed AGN/SNe hosts produced by generate_lensed_hosts_***.py
         host_data_dir: string
             Location of csv file of lensed host data created by the sprinkler
         gzip_threads: int
             The number of gzip jobs that can be started in parallel after
             catalogs are written (default=3)
+        unlensed_agn: bool [False]
+            Flag to enable unlensed AGN
         """
         self.t_start = time.time()
         if not os.path.exists(opsimdb):
@@ -244,6 +246,7 @@ class InstanceCatalogWriter(object):
                               "%s\n\n" % host_data_dir)
 
         self.instcats = get_instance_catalogs()
+        self.do_agn = unlensed_agn
 
     def write_catalog(self, obsHistID, out_dir=None, fov=2, status_dir=None,
                       pickup_file=None):
@@ -285,6 +288,7 @@ class InstanceCatalogWriter(object):
         do_sprinkled = True
         do_hosts = True
         do_sne = True
+        do_agn = self.do_agn
         if pickup_file is not None and os.path.isfile(pickup_file):
             with open(pickup_file, 'r') as in_file:
                 for line in in_file:
@@ -302,6 +306,8 @@ class InstanceCatalogWriter(object):
                         do_hosts = False
                     if 'wrote SNe' in line:
                         do_sne = False
+                    if 'wrote agn' in line:
+                        do_agn = False
 
         if not os.path.exists(full_out_dir):
             os.makedirs(full_out_dir)
@@ -443,6 +449,22 @@ class InstanceCatalogWriter(object):
                         duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote disk catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
+            if do_agn:	
+                agn_db = agnDESCQAObject(self.descqa_catalog)	
+                agn_db._do_prefiltering = True	
+                agn_db.field_ra = self.protoDC2_ra	
+                agn_db.field_dec = self.protoDC2_dec	
+                agn_db.agn_params_db = self.agn_db_name	
+                cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)	
+                cat._agn_threads = self._agn_threads	
+                cat.lsstBandpassDict = self.bp_dict	
+                cat.photParams = self.phot_params	
+                cat_name = 'agn_'+gal_name	
+                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,	
+                                  write_header=False)	
+                written_catalog_names.append(cat_name)	
+                del cat	
+                del agn_db	
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
