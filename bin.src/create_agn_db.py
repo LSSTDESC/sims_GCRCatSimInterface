@@ -103,6 +103,10 @@ if __name__ == "__main__":
                         "function of the random walk driving AGN "
                         "variability.  Default=4 (in magnitudes)")
 
+    parser.add_argument('--disable_duty_cycle', default=False,
+                        action='store_true',
+                        help='Disable duty_cycle_on filter')
+
     args = parser.parse_args()
 
     if args.out_file is None:
@@ -142,6 +146,10 @@ if __name__ == "__main__":
     else:
         qty_names.append('blackHoleAccretionRate')
         filters.append((lambda x: x>0.0, 'blackHoleAccretionRate'))
+
+    if not args.disable_duty_cycle:
+        qty_names.append('duty_cycle_on')
+        filters.append((lambda x: x, 'duty_cycle_on'))
 
     cat_qties = cat.get_quantities(qty_names, filters=filters)
     if not use_direct_eddington:
