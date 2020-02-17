@@ -192,8 +192,13 @@ class ExtraGalacticVariabilityModels(Variability):
         expmjd_is_number = isinstance(expmjd, numbers.Number)
         mjds = np.array([expmjd]) if expmjd_is_number else np.array(expmjd)
 
+        if min(mjds) < self._agn_walk_start_date:
+            raise RuntimeError(f'mjds must start after {self._agn_walk_start_date}')
+
+        t_obs = np.arange(self._agn_walk_start_date, max(mjds + 1), dtype=float)
+        t_rest = t_obs/time_dilation/tau
+
         rng = np.random.RandomState(seed)
-        t_rest = mjds/time_dilation/tau
         nbins = len(t_rest)
         steps = rng.normal(0, 1, nbins)
         delta_mag_norm = np.zeros(nbins)
@@ -202,7 +207,8 @@ class ExtraGalacticVariabilityModels(Variability):
             dt = t_rest[i] - t_rest[i - 1]
             delta_mag_norm[i] = (delta_mag_norm[i - 1]*(1. - dt)
                                  + np.sqrt(2*dt)*sf_filt*steps[i])
-        return delta_mag_norm if not expmjd_is_number else delta_mag_norm[0]
+        dm_out = np.interp(mjds, t_obs, delta_mag_norm)
+        return dm_out if not expmjd_is_number else dm_out[0]
 
 
 class VariabilityAGN(ExtraGalacticVariabilityModels):
