@@ -160,77 +160,49 @@ class ExtraGalacticVariabilityModels(Variability):
                                                  sf_filt, seed)
 
     def _simulate_agn(self, expmjd, tau, time_dilation, sf_filt, seed):
-            """
-            Simulate the u-band light curve for a single AGN
+        """
+        Return the delta mag_norm values wrt the infinite-time average
+        mag_norm for the provided AGN light curve parameters.  mag_norm is
+        the object's un-reddened monochromatic magnitude at 500nm.
 
-            Parameters
-            ----------
-            expmjd -- a number or numpy array of dates for the light curver
+        Parameters
+        ----------
+        expmjd: np.array
+            Times at which to evaluate the light curve delta flux values
+            in MJD.  Observer frame.
+        tau: float
+            Variability time scale in days.
+        time_dilation: float
+            1 + redshift
+        sf_filt: float
+            Structure function parameter, i.e., asymptotic rms variability on
+            long time scales.
+        seed: int
+            Random number seed.
 
-            tau -- the characteristic timescale of the AGN in days
+        Returns
+        -------
+        np.array of delta mag_norm values.
 
-            time_dilation -- (1+z) for the AGN
+        Notes
+        -----
+        This code is based on/stolen from
+        https://github.com/astroML/astroML/blob/master/astroML/time_series/generate.py
+        """
+        expmjd_is_number = isinstance(expmjd, numbers.Number)
+        mjds = np.array([expmjd]) if expmjd_is_number else np.array(expmjd)
 
-            sf_filt -- the passband's structure function of the AGN
-
-            seed -- the seed for the random number generator
-
-            Returns
-            -------
-            a numpy array (or number) of delta_magnitude in the u-band at expmjd
-            """
-
-            if not isinstance(expmjd, numbers.Number):
-                d_m_out = np.zeros(len(expmjd))
-                duration_observer_frame = max(expmjd) - self._agn_walk_start_date
-            else:
-                duration_observer_frame = expmjd - self._agn_walk_start_date
-
-
-            rng = np.random.RandomState(seed)
-            dt = tau/100.
-            duration_rest_frame = duration_observer_frame/time_dilation
-            nbins = int(math.ceil(duration_rest_frame/dt))+1
-
-            time_dexes = np.round((expmjd-self._agn_walk_start_date)/(time_dilation*dt)).astype(int)
-            time_dex_map = {}
-            ct_dex = 0
-            if not isinstance(time_dexes, numbers.Number):
-                for i_t_dex, t_dex in enumerate(time_dexes):
-                    if t_dex in time_dex_map:
-                        time_dex_map[t_dex].append(i_t_dex)
-                    else:
-                        time_dex_map[t_dex] = [i_t_dex]
-                time_dexes = set(time_dexes)
-            else:
-                time_dex_map[time_dexes] = [0]
-                time_dexes = set([time_dexes])
-
-            dx2 = 0.0
-            x1 = 0.0
-            x2 = 0.0
-
-            dt_over_tau = dt/tau
-            es = rng.normal(0., 1., nbins)*math.sqrt(dt_over_tau)
-            for i_time in range(nbins):
-                #The second term differs from Zeljko's equation by sqrt(2.)
-                #because he assumes stdev = sf_u/sqrt(2)
-                dx1 = dx2
-                dx2 = -dx1*dt_over_tau + sf_filt*es[i_time] + dx1
-                x1 = x2
-                x2 += dt
-
-                if i_time in time_dexes:
-                    if isinstance(expmjd, numbers.Number):
-                        dm_val = ((expmjd-self._agn_walk_start_date)*(dx1-dx2)/time_dilation+dx2*x1-dx1*x2)/(x1-x2)
-                        d_m_out = dm_val
-                    else:
-                        for i_time_out in time_dex_map[i_time]:
-                            local_end = (expmjd[i_time_out]-self._agn_walk_start_date)/time_dilation
-                            dm_val = (local_end*(dx1-dx2)+dx2*x1-dx1*x2)/(x1-x2)
-                            d_m_out[i_time_out] = dm_val
-
-            return d_m_out
+        rng = np.random.RandomState(seed)
+        t_rest = mjds/time_dilation/tau
+        nbins = len(t_rest)
+        steps = rng.normal(0, 1, nbins)
+        delta_mag_norm = np.zeros(nbins)
+        delta_mag_norm[0] = steps[0]*sf_filt
+        for i in range(1, nbins):
+            dt = t_rest[i] - t_rest[i - 1]
+            delta_mag_norm[i] = (delta_mag_norm[i - 1]*(1. - dt)
+                                 + np.sqrt(2*dt)*sf_filt*steps[i])
+        return delta_mag_norm if not expmjd_is_number else delta_mag_norm[0]
 
 
 class VariabilityAGN(ExtraGalacticVariabilityModels):
