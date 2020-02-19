@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     use_direct_eddington = ('blackHoleEddingtonRatio' in qty_list)
 
-    qty_names= ['redshift_true', 'blackHoleMass', 'galaxy_id', 'ra', 'dec']
+    qty_names= ['redshift', 'blackHoleMass', 'galaxy_id', 'ra', 'dec']
     filters = [(lambda x: x>0.0, 'blackHoleMass'),
                (lambda x: np.log10(x)>args.mbh_cut, 'blackHoleMass')]
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     if not use_direct_eddington:
         accretion_rate_full = cat_qties['blackHoleAccretionRate']
 
-    redshift_full = cat_qties['redshift_true']
+    redshift_full = cat_qties['redshift']
     bhm_full = cat_qties['blackHoleMass']
     galaxy_id_full = cat_qties['galaxy_id']
     ra_full = cat_qties['ra']
