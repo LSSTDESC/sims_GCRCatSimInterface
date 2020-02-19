@@ -59,6 +59,7 @@ class BulgePhoSimCatalogTestCase(unittest.TestCase):
         if os.path.exists(cat_name):
             os.unlink(cat_name)
 
+    @unittest.skipUnless(os.path.isdir('/global/projecta/projectdirs/lsst/groups/CS/descqa/catalog'), 'DESCQA files at NERSC are not available.')
     def test_default_varParamStr(self):
         """
         Test that DESCQAObjects now return varParamStr='None' by default
