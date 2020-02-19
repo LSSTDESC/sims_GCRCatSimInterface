@@ -30,6 +30,7 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
     agnDESCQAObject_protoDC2 as agnDESCQAObject
+from .Variability import ExtraGalacticVariabilityModels
 
 try:
     import desc.sims.GCRCatSimInterface.TwinklesClasses.sprinklerCompound_DC2 as sprinklerDESCQACompoundObject
@@ -326,6 +327,9 @@ class InstanceCatalogWriter(object):
 
         if obs_md is None:
             return
+
+        ExtraGalacticVariabilityModels.filters_to_simulate.clear()
+        ExtraGalacticVariabilityModels.filters_to_simulate.extend(obs_md.bandpass)
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
