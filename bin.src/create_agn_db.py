@@ -62,6 +62,10 @@ def get_m_i(abs_mag_i, redshift):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('yaml_file', type=str,
+                        help="yaml file to load with GCRCatalogs.")
+
     parser.add_argument('--mbh_cut', type=float, default=7.0,
                         help="log10 of the minimum black hole mass "
                         "necessary to be considered an AGN "
@@ -87,11 +91,6 @@ if __name__ == "__main__":
     parser.add_argument('--clobber', type=str, default='False',
                         help="If 'True', will overwrite existing "
                         "out_dir/out_file.  Default='False'")
-
-    parser.add_argument('--yaml_file', type=str,
-                        default='protoDC2',
-                        help="yaml file to load with GCRCatalogs. "
-                        "Default = 'protoDC2'")
 
     parser.add_argument('--seed', type=int, default=81,
                         help="Seed value for random number generator "
