@@ -79,10 +79,6 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
         mbh = np.array(mbh)
         m_i = np.array(m_i)
 
-        theta_best = None
-        l_edd_0_best = None
-        mbh_0_best = None
-        err_best = None
         mm = np.zeros((3,3), dtype=float)
         bb = np.zeros(3, dtype=float)
         nn = len(m_i)
