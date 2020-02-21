@@ -1,8 +1,6 @@
 import numpy as np
 import os
 import numbers
-from lsst.utils import getPackageDir
-from lsst.sims.photUtils import Sed, BandpassDict
 
 __all__ = ["log_Eddington_ratio", "M_i_from_L_Mass", "k_correction",
            "tau_from_params", "SF_from_params"]
