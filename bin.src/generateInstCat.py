@@ -54,7 +54,7 @@ def generate_instance_catalog(args=None, lock=None):
                                                    sprinkler=args.enable_sprinkler,
                                                    gzip_threads=args.gzip_threads,
                                                    config_dict=config_dict,
-                                                   unlensed_agn=args.unlensed_agn)
+                                                   objects_to_skip=args.objects_to_skip.split())
 
             generate_instance_catalog.instcat_writer = instcat_writer
 
@@ -150,15 +150,14 @@ if __name__ == "__main__":
                         help="file where we will write 'job started/completed' messages")
     parser.add_argument('--pickup_dir', type=str, default=None,
                         help='directory to check for aborted job logs')
-    parser.add_argument('--unlensed_agn', default=False, action='store_true',
-                        help='flag to include unlensed AGN')
-                        
     args = parser.parse_args()
 
     if args.config_file is not None:
         with open(args.config_file, 'r') as in_file:
             config_dict = json.load(in_file)
             args.__dict__.update(config_dict)
+            if 'objects_to_skip' not in config_dict:
+                args.__dict__['objects_to_skip'] = ''
 
     print('args ',args.n_jobs,args.ids)
 

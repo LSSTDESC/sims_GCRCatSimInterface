@@ -21,6 +21,9 @@ class ExtraGalacticVariabilityModels(Variability):
 
     _agn_walk_start_date = 58580.0
     _agn_threads = 1
+    # Make the following class attribute a list so that we can modify
+    # it globally for all subclasses from the top-level code.
+    filters_to_simulate = ['u', 'g', 'r', 'i', 'z', 'y']
 
     @register_method('applyAgn')
     def applyAgn(self, valid_dexes, params, expmjd,
@@ -57,6 +60,8 @@ class ExtraGalacticVariabilityModels(Variability):
 
         if self._agn_threads == 1 or len(valid_dexes[0])==1:
             for filt_num, filt_name in list(enumerate(['u', 'g', 'r', 'i', 'z', 'y'])):
+                if filt_name not in self.filters_to_simulate:
+                    continue
                 tau_arr = params['agn_tau_%s' % filt_name].astype(float)
                 sf_arr = params['agn_sf_%s' % filt_name].astype(float)
                 for i_obj in valid_dexes[0]:
@@ -79,6 +84,8 @@ class ExtraGalacticVariabilityModels(Variability):
             # of time steps simulated by each thread is close to equal
 
             for filt_num, filt_name in list(enumerate(['u', 'g', 'r', 'i', 'z', 'y'])):
+                if filt_name not in self.filters_to_simulate:
+                    continue
                 tot_steps = 0
                 n_steps = []
                 tau_arr = params['agn_tau_%s' % filt_name].astype(float)

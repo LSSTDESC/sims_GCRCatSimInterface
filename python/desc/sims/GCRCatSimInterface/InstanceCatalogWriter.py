@@ -30,6 +30,7 @@ from . import bulgeDESCQAObject_protoDC2 as bulgeDESCQAObject, \
     diskDESCQAObject_protoDC2 as diskDESCQAObject, \
     knotsDESCQAObject_protoDC2 as knotsDESCQAObject, \
     agnDESCQAObject_protoDC2 as agnDESCQAObject
+from .Variability import ExtraGalacticVariabilityModels
 
 try:
     import desc.sims.GCRCatSimInterface.TwinklesClasses.sprinklerCompound_DC2 as sprinklerDESCQACompoundObject
@@ -121,7 +122,7 @@ class InstanceCatalogWriter(object):
                  agn_db_name=None, agn_threads=1, sn_db_name=None,
                  sprinkler=False, host_image_dir=None,
                  host_data_dir=None, config_dict=None,
-                 gzip_threads=3, unlensed_agn=False):
+                 gzip_threads=3, objects_to_skip=()):
         """
         Parameters
         ----------
@@ -160,8 +161,8 @@ class InstanceCatalogWriter(object):
         gzip_threads: int
             The number of gzip jobs that can be started in parallel after
             catalogs are written (default=3)
-        unlensed_agn: bool [False]
-            Flag to enable unlensed AGN
+        objects_to_skip: set-like or list-like [()]
+            Collection of object types to skip, e.g., stars, knots, bulges, disks, sne, agn
         """
         self.t_start = time.time()
         if not os.path.exists(opsimdb):
@@ -246,7 +247,11 @@ class InstanceCatalogWriter(object):
                               "%s\n\n" % host_data_dir)
 
         self.instcats = get_instance_catalogs()
-        self.do_agn = unlensed_agn
+        object_types = 'stars knots bulges disks sprinkled hosts sne agn'.split()
+        if any([_ not in object_types for _ in objects_to_skip]):
+            raise RuntimeError(f'objects_to_skip ({objects_to_skip}) '
+                               'contains invalid object types')
+        self.do_obj_type = {_: _ not in objects_to_skip for _ in object_types}
 
     def write_catalog(self, obsHistID, out_dir=None, fov=2, status_dir=None,
                       pickup_file=None):
@@ -281,33 +286,25 @@ class InstanceCatalogWriter(object):
         full_out_dir = os.path.join(out_dir, '%.8d' % obsHistID)
         tar_name = os.path.join(out_dir, '%.8d.tar' % obsHistID)
 
-        do_stars = True
-        do_knots = True
-        do_bulges = True
-        do_disks = True
-        do_sprinkled = True
-        do_hosts = True
-        do_sne = True
-        do_agn = self.do_agn
         if pickup_file is not None and os.path.isfile(pickup_file):
             with open(pickup_file, 'r') as in_file:
                 for line in in_file:
                     if 'wrote star' in line:
-                        do_stars = False
+                        self.do_obj_type['stars'] = False
                     if 'wrote knot' in line:
-                        do_knots = False
+                        self.do_obj_type['knots'] = False
                     if 'wrote bulge' in line:
-                        do_bulges = False
+                        self.do_obj_type['bulges'] = False
                     if 'wrote disk' in line:
-                        do_disks = False
+                        self.do_obj_type['disks'] = False
                     if 'wrote galaxy catalogs with sprinkling' in line:
-                        do_sprinkled = False
+                        self.do_obj_type['sprinkled'] = False
                     if 'wrote lensing host' in line:
-                        do_hosts = False
+                        self.do_obj_type['hosts'] = False
                     if 'wrote SNe' in line:
-                        do_sne = False
+                        self.do_obj_type['sne'] = False
                     if 'wrote agn' in line:
-                        do_agn = False
+                        self.do_obj_type['agn'] = False
 
         if not os.path.exists(full_out_dir):
             os.makedirs(full_out_dir)
@@ -330,6 +327,9 @@ class InstanceCatalogWriter(object):
 
         if obs_md is None:
             return
+
+        ExtraGalacticVariabilityModels.filters_to_simulate.clear()
+        ExtraGalacticVariabilityModels.filters_to_simulate.extend(obs_md.bandpass)
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
@@ -355,7 +355,7 @@ class InstanceCatalogWriter(object):
         written_catalog_names = []
         sprinkled_host_name = 'spr_hosts_%d.txt' % obsHistID
 
-        if do_stars:
+        if self.do_obj_type['stars']:
             star_cat = self.instcats.StarInstCat(self.star_db, obs_metadata=obs_md)
             star_cat.min_mag = self.min_mag
             star_cat.photParams = self.phot_params
@@ -380,7 +380,7 @@ class InstanceCatalogWriter(object):
                     out_file.write('%d wrote star catalog after %.3e hrs\n' %
                                    (obsHistID, duration))
 
-        if 'knots' in self.descqa_catalog and do_knots:
+        if 'knots' in self.descqa_catalog and self.do_obj_type['knots']:
             knots_db =  knotsDESCQAObject(self.descqa_catalog)
             knots_db.field_ra = self.protoDC2_ra
             knots_db.field_dec = self.protoDC2_dec
@@ -406,7 +406,7 @@ class InstanceCatalogWriter(object):
 
         if self.sprinkler is False:
 
-            if do_bulges:
+            if self.do_obj_type['bulges']:
                 bulge_db = bulgeDESCQAObject(self.descqa_catalog)
                 bulge_db.field_ra = self.protoDC2_ra
                 bulge_db.field_dec = self.protoDC2_dec
@@ -428,7 +428,7 @@ class InstanceCatalogWriter(object):
                         out_file.write('%d wrote bulge catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
 
-            if do_disks:
+            if self.do_obj_type['disks']:
                 disk_db = diskDESCQAObject(self.descqa_catalog)
                 disk_db.field_ra = self.protoDC2_ra
                 disk_db.field_dec = self.protoDC2_dec
@@ -449,22 +449,22 @@ class InstanceCatalogWriter(object):
                         duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote disk catalog after %.3e hrs\n' %
                                        (obsHistID, duration))
-            if do_agn:	
-                agn_db = agnDESCQAObject(self.descqa_catalog)	
-                agn_db._do_prefiltering = True	
-                agn_db.field_ra = self.protoDC2_ra	
-                agn_db.field_dec = self.protoDC2_dec	
-                agn_db.agn_params_db = self.agn_db_name	
-                cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)	
-                cat._agn_threads = self._agn_threads	
-                cat.lsstBandpassDict = self.bp_dict	
-                cat.photParams = self.phot_params	
-                cat_name = 'agn_'+gal_name	
-                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,	
-                                  write_header=False)	
-                written_catalog_names.append(cat_name)	
-                del cat	
-                del agn_db	
+            if self.do_obj_type['agn']:
+                agn_db = agnDESCQAObject(self.descqa_catalog)
+                agn_db._do_prefiltering = True
+                agn_db.field_ra = self.protoDC2_ra
+                agn_db.field_dec = self.protoDC2_dec
+                agn_db.agn_params_db = self.agn_db_name
+                cat = self.instcats.DESCQACat_Agn(agn_db, obs_metadata=obs_md)
+                cat._agn_threads = self._agn_threads
+                cat.lsstBandpassDict = self.bp_dict
+                cat.photParams = self.phot_params
+                cat_name = 'agn_'+gal_name
+                cat.write_catalog(os.path.join(full_out_dir, cat_name), chunk_size=5000,
+                                  write_header=False)
+                written_catalog_names.append(cat_name)
+                del cat
+                del agn_db
 
                 if has_status_file:
                     with open(status_file, 'a') as out_file:
@@ -495,7 +495,7 @@ class InstanceCatalogWriter(object):
                 catalog_type = 'sprinkled_agn_%d' % obs_md.OpsimMetaData['obsHistID']
                 _agn_threads = self._agn_threads
 
-            if do_sprinkled:
+            if self.do_obj_type['sprinkled']:
                 self.compoundGalICList = [SprinkledBulgeCat,
                                           SprinkledDiskCat,
                                           SprinkledAgnCat]
@@ -532,7 +532,7 @@ class InstanceCatalogWriter(object):
                         duration = (time.time()-self.t_start)/3600.0
                         out_file.write('%d wrote galaxy catalogs with sprinkling after %.3e hrs\n' % (obsHistID, duration))
 
-            if do_hosts:
+            if self.do_obj_type['hosts']:
                 host_cat = hostImage(obs_md.pointingRA, obs_md.pointingDec, fov)
                 host_cat.write_host_cat(os.path.join(self.host_image_dir, 'agn_lensed_bulges'),
                                         os.path.join(self.host_data_dir, 'cosmoDC2_v1.1.4_bulge_agn_host.csv'),
@@ -555,7 +555,7 @@ class InstanceCatalogWriter(object):
                         out_file.write('%d wrote lensing host catalog after %.3e hrs\n' % (obsHistID, duration))
 
         # SN instance catalogs
-        if self.sn_db_name is not None and do_sne:
+        if self.sn_db_name is not None and self.do_obj_type['sne']:
             phosimcatalog = snphosimcat(self.sn_db_name,
                                         obs_metadata=obs_md,
                                         objectIDtype=42,
