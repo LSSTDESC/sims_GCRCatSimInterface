@@ -15,7 +15,8 @@ from lsst.sims.coordUtils import getCornerRaDec
 from desc.sim_utils import DescObsMdGenerator
 
 conf.auto_max_age = None
-local_iers_file = '/home/imSim/data/19-10-30-finals2000A.all'
+#local_iers_file = '/home/imSim/data/19-10-30-finals2000A.all'
+local_iers_file = '~/dev/imSim/data/19-10-30-finals2000A.all'
 conf.iers_auto_url = 'file:' + os.path.abspath(local_iers_file)
 conf.auto_download = False
 
@@ -50,8 +51,7 @@ class RegionVisitFilter:
     """
     def __init__(self, opsim_db_file, region_corners):
         with sqlite3.connect(opsim_db_file) as conn:
-            self.df = pd.read_sql('''select obsHistID, descDitheredRA,
-                                  descDitheredDec from summary''', conn)
+            self.df = pd.read_sql('''select * from summary''', conn)
         self.df['ra'] = np.degrees(self.df['descDitheredRA'].to_numpy())
         self.df['dec'] = np.degrees(self.df['descDitheredDec'].to_numpy())
         for i, corner in enumerate(region_corners):
@@ -59,21 +59,26 @@ class RegionVisitFilter:
                                                    self.df['dec'].to_numpy(),
                                                    *corner)
 
-    def get_visits(self, fp_radius=2.0503):
+    def radius_selection(self, fp_radius=2.0503):
         """
         Query for visits with an offset < fp_radius.
         """
         my_df = self.df.query(f'sep0 < {fp_radius} or sep1 < {fp_radius} or '
                               f'sep2 < {fp_radius} or sep3 < {fp_radius}')
-        return set(my_df['obsHistID'])
+        return my_df
 
-opsim_db_file = '/home/DC2/minion_1016_desc_dithered_v4_trimmed.db'
+#opsim_db_file = '/home/DC2/minion_1016_desc_dithered_v4_trimmed.db'
+opsim_db_file = '/global/cscratch1/sd/jchiang8/desc/Run2.2i/minion_1016_desc_dithered_v4_trimmed.db'
+if not os.path.isfile(opsim_db_file):
+    raise FileNotFoundError(opsim_db_file)
 ddf_corners = ((53.764, -27.533), (52.486, -27.533),
                (52.479, -28.667), (53.771, -28.667))
 visit_filter = RegionVisitFilter(opsim_db_file, ddf_corners)
 
-ddf_visits = visit_filter.get_visits(fp_radius=1.76)
-candidates = ddf_visits.symmetric_difference(visit_filter.get_visits())
+ddf_fiducial = visit_filter.radius_selection(fp_radius=1.76)
+ddf_visits = set(ddf_fiducial['obsHistID'])
+ddf_inclusive = visit_filter.radius_selection()
+candidates = ddf_visits.symmetric_difference(set(ddf_inclusive['obsHistID']))
 
 print(f'{len(ddf_visits)} definite visits')
 print(f'processing {len(candidates)} candidate visits:')
@@ -82,6 +87,7 @@ lsst.log.setLevel('CameraMapper', lsst.log.WARN)
 camera = obs_lsst.LsstCamMapper().camera
 obs_gen = DescObsMdGenerator(opsim_db_file)
 
+ddf_additional = set()
 ddf_polygon = convex_polygon(ddf_corners)
 for i, visit in enumerate(candidates):
     with warnings.catch_warnings():
@@ -93,7 +99,21 @@ for i, visit in enumerate(candidates):
          fp_convex_polygon('R10_S00 R30_S20 R14_S02 R34_S22'.split(),
                            camera, obs_md)]:
         if ddf_polygon.relate(fp_polygon) != lsst.sphgeom.DISJOINT:
-            ddf_visits.add(visit)
+            ddf_additional.add(visit)
             break
 
-print("total DDF visits:", len(ddf_visits))
+# Extract a data frame for the additional visits, and add to the fiducial
+# set.
+visits = '(' + ','.join([str(_) for _ in ddf_additional]) + ')'
+command = f'select * from summary where obsHistID in {visits}'
+with sqlite3.connect(opsim_db_file) as conn:
+    df = pd.read_sql(command, conn)
+
+ddf_total = pd.concat((ddf_fiducial, df), ignore_index=True, sort=False)
+
+print("total DDF visits:", len(ddf_total))
+
+create_table = """CREATE TABLE IF NOT EXISTS Summary (obsHistID INTEGER, sessionID INTEGER, propID INTEGER, fieldID INTEGER, fieldRA REAL, fieldDec REAL, filter TEXT, expDate INTEGER, expMJD REAL, night INTEGER, visitTime REAL, visitExpTime REAL, finRank REAL, FWHMeff REAL, FWHMgeom REAL, transparency REAL, airmass REAL, vSkyBright REAL, filtSkyBrightness REAL, rotSkyPos REAL, rotTelPos REAL, lst REAL, altitude REAL, azimuth REAL, dist2Moon REAL, solarElong REAL, moonRA REAL, moonDec REAL, moonAlt REAL, moonAZ REAL, moonPhase REAL, sunAlt REAL, sunAz REAL, phaseAngle REAL, rScatter REAL, mieScatter REAL, moonIllum REAL, moonBright REAL, darkBright REAL, rawSeeing REAL, wind REAL, humidity REAL, slewDist REAL, slewTime REAL, fiveSigmaDepth REAL, ditheredRA REAL, ditheredDec REAL, descDitheredDec REAL, descDitheredRA REAL, descDitheredRotTelPos REAL);"""
+
+with sqlite3.connect('static_sims_ddf_visits.db') as conn:
+    ddf_total.to_sql('Summary', conn, schema=create_table, index=False)
