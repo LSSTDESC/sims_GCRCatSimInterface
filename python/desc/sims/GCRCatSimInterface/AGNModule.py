@@ -1,8 +1,6 @@
 import numpy as np
 import os
 import numbers
-from lsst.utils import getPackageDir
-from lsst.sims.photUtils import Sed, BandpassDict
 
 __all__ = ["log_Eddington_ratio", "M_i_from_L_Mass", "k_correction",
            "tau_from_params", "SF_from_params"]
@@ -79,10 +77,6 @@ def M_i_from_L_Mass(Ledd_ratio, bhmass):
         mbh = np.array(mbh)
         m_i = np.array(m_i)
 
-        theta_best = None
-        l_edd_0_best = None
-        mbh_0_best = None
-        err_best = None
         mm = np.zeros((3,3), dtype=float)
         bb = np.zeros(3, dtype=float)
         nn = len(m_i)
@@ -154,7 +148,7 @@ def k_correction(sed_obj, bp, redshift):
         msg += '%.6e < lambda < %.6e\n' % (restframe_min_wavelen,
                                            restframe_max_wavelen)
         msg += 'SED range '
-        mst += '%.6e < lambda < %.6e\n' % (sed_obj.wavelen.min(),
+        msg += '%.6e < lambda < %.6e\n' % (sed_obj.wavelen.min(),
                                            sed_obj.wavelen.max())
 
         raise RuntimeError(msg)
@@ -184,7 +178,7 @@ def k_correction(sed_obj, bp, redshift):
     return -2.5*np.log10((1.0+redshift)*observer_integral/restframe_integral)
 
 
-def tau_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
+def tau_from_params(redshift, M_i, mbh, eff_wls, rng=None):
     """
     Use equation (7) and Table 1 (last row) of MacLeod et al.
     to get tau from black hole parameters
@@ -198,8 +192,8 @@ def tau_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
 
     mbh is the mass of the blackhole in solar masses
 
-    eff_wavelen is the observer-frame effective
-    wavelength of the band in Angstroms
+    eff_wls is a sequence of the observer-frame effective
+    wavelengths of the band in Angstroms
 
     rng is an option np.random.RandomState instantiation
     which will introduce scatter into the coefficients
@@ -231,14 +225,17 @@ def tau_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
         CC += rng.normal(0.0, 0.04, size=n_obj)
         DD += rng.normal(0.0, 0.07, size=n_obj)
 
-    eff_wavelen_rest = eff_wavelen/(1.0+redshift)
+    tau_values = []
+    for eff_wavelen in eff_wls:
+        eff_wavelen_rest = eff_wavelen/(1.0+redshift)
 
-    log_tau = AA + BB*np.log10(eff_wavelen_rest/4000.0)
-    log_tau += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
-    return np.power(10.0, log_tau)
+        log_tau = AA + BB*np.log10(eff_wavelen_rest/4000.0)
+        log_tau += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
+        tau_values.append(np.power(10.0, log_tau))
+    return tau_values
 
 
-def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
+def SF_from_params(redshift, M_i, mbh, eff_wls, rng=None):
     """
     Use equation (7) and Table 1 (5th row) of MacLeod et al.
     to get the structure function from black hole parameters
@@ -252,8 +249,8 @@ def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
 
     mbh is the mass of the blackhole in solar masses
 
-    eff_wavelen is the observer-frame effective
-    wavelength of the band in Angstroms
+    eff_wls is a sequence of the observer-frame effective
+    wavelengths of the band in Angstroms
 
     rng is an option np.random.RandomState instantiation
     which will introduce scatter into the coefficients
@@ -279,9 +276,11 @@ def SF_from_params(redshift, M_i, mbh, eff_wavelen, rng=None):
         CC += rng.normal(0.0, 0.008, size=n_obj)
         DD += rng.normal(0.0, 0.03, size=n_obj)
 
-    eff_wavelen_rest = eff_wavelen/(1.0+redshift)
+    sf_values = []
+    for eff_wavelen in eff_wls:
+        eff_wavelen_rest = eff_wavelen/(1.0+redshift)
 
-    log_sf = AA + BB*np.log10(eff_wavelen_rest/4000.0)
-    log_sf += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
-
-    return np.power(10.0, log_sf)
+        log_sf = AA + BB*np.log10(eff_wavelen_rest/4000.0)
+        log_sf += CC*(M_i+23.0) + DD*(np.log10(mbh)-9.0)
+        sf_values.append(np.power(10.0, log_sf))
+    return sf_values

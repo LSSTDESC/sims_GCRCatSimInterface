@@ -62,6 +62,10 @@ def get_m_i(abs_mag_i, redshift):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('yaml_file', type=str,
+                        help="yaml file to load with GCRCatalogs.")
+
     parser.add_argument('--mbh_cut', type=float, default=7.0,
                         help="log10 of the minimum black hole mass "
                         "necessary to be considered an AGN "
@@ -88,11 +92,6 @@ if __name__ == "__main__":
                         help="If 'True', will overwrite existing "
                         "out_dir/out_file.  Default='False'")
 
-    parser.add_argument('--yaml_file', type=str,
-                        default='protoDC2',
-                        help="yaml file to load with GCRCatalogs. "
-                        "Default = 'protoDC2'")
-
     parser.add_argument('--seed', type=int, default=81,
                         help="Seed value for random number generator "
                         "used to introduce scatter into AGN parameter "
@@ -102,6 +101,10 @@ if __name__ == "__main__":
                         help="Maximum allowed value for the structure "
                         "function of the random walk driving AGN "
                         "variability.  Default=4 (in magnitudes)")
+
+    parser.add_argument('--disable_duty_cycle', default=False,
+                        action='store_true',
+                        help='Disable duty_cycle_on filter')
 
     args = parser.parse_args()
 
@@ -130,7 +133,7 @@ if __name__ == "__main__":
 
     use_direct_eddington = ('blackHoleEddingtonRatio' in qty_list)
 
-    qty_names= ['redshift_true', 'blackHoleMass', 'galaxy_id', 'ra', 'dec']
+    qty_names= ['redshift', 'blackHoleMass', 'galaxy_id', 'ra', 'dec']
     filters = [(lambda x: x>0.0, 'blackHoleMass'),
                (lambda x: np.log10(x)>args.mbh_cut, 'blackHoleMass')]
 
@@ -143,11 +146,15 @@ if __name__ == "__main__":
         qty_names.append('blackHoleAccretionRate')
         filters.append((lambda x: x>0.0, 'blackHoleAccretionRate'))
 
+    if not args.disable_duty_cycle:
+        qty_names.append('duty_cycle_on')
+        filters.append((lambda x: x, 'duty_cycle_on'))
+
     cat_qties = cat.get_quantities(qty_names, filters=filters)
     if not use_direct_eddington:
         accretion_rate_full = cat_qties['blackHoleAccretionRate']
 
-    redshift_full = cat_qties['redshift_true']
+    redshift_full = cat_qties['redshift']
     bhm_full = cat_qties['blackHoleMass']
     galaxy_id_full = cat_qties['galaxy_id']
     ra_full = cat_qties['ra']
@@ -196,11 +203,16 @@ if __name__ == "__main__":
         m_i_grid[i_z] = ss.calcMag(bp_dict['i'])
         mag_norm_grid[i_z] = ss.calcMag(imsimband)
 
+    bands = 'ugrizy'
+    # Effective wavelengths of each filter in Angstroms.
+    eff_wls = np.array([10.0*bp_dict[bp].calcEffWavelen()[0] for bp in bands])
     htmid_level = 8
     with sqlite3.connect(out_file_name) as connection:
         cursor = connection.cursor()
         cursor.execute('''CREATE TABLE agn_params
-                          (galaxy_id int, htmid_%d int, magNorm real, varParamStr text)''' % htmid_level)
+                       (galaxy_id int, htmid_%d int, magNorm real,
+                        redshift real, M_i real, ra real, dec real,
+                        varParamStr text)''' % htmid_level)
 
         connection.commit()
 
@@ -242,20 +254,12 @@ if __name__ == "__main__":
                 dec = dec[valid]
                 obs_mag_i = obs_mag_i[valid]
 
-            sf_dict = {}
-            tau_dict = {}
-            for bp in ('u', 'g', 'r', 'i', 'z', 'y'):
-                eff_wavelen = 10.0*bp_dict[bp].calcEffWavelen()[0]
-                sf_dict[bp] = SF_from_params(redshift, 
-                                             abs_mag_i,
-                                             bhm, 
-                                             eff_wavelen,
-                                             rng=rng)
-                tau_dict[bp] = tau_from_params(redshift,
-                                               abs_mag_i,
-                                               bhm, 
-                                               eff_wavelen,
-                                               rng=rng)
+            sf_values = SF_from_params(redshift, abs_mag_i, bhm, eff_wls,
+                                       rng=rng)
+            sf_dict = dict(zip(bands, sf_values))
+            tau_values = tau_from_params(redshift, abs_mag_i, bhm, eff_wls,
+                                         rng=rng)
+            tau_dict = dict(zip(bands, tau_values))
 
             # Cut on structure function value.
             # Specifically, we are looping over all LSST bandpasses
@@ -264,7 +268,7 @@ if __name__ == "__main__":
             # the end of this block of code, the only AGN that should
             # remain are those for whom all structure function values
             # are less than args.max_sf.
-            for bp in 'ugrizy':
+            for bp in bands:
                 valid = np.where(sf_dict[bp]<args.max_sf)
 
                 # update all data structures, including sf_dict
@@ -278,7 +282,7 @@ if __name__ == "__main__":
                 galaxy_id = galaxy_id[valid]
                 ra = ra[valid]
                 dec = dec[valid]
-                for other_bp in 'ugrizy':
+                for other_bp in bands:
                     sf_dict[other_bp] = sf_dict[other_bp][valid]
                     tau_dict[other_bp] = tau_dict[other_bp][valid]
 
@@ -290,14 +294,21 @@ if __name__ == "__main__":
 
             htmid = findHtmid(ra, dec, htmid_level)
 
-            varParamStr_format = '{"m": "applyAgn", "p": {"seed": %d, "agn_sf_u": %.3e, "agn_sf_g": %.3e, "agn_sf_r": %.3e, "agn_sf_i": %.3e, "agn_sf_z": %.3e, "agn_sf_y": %.3e, "agn_tau_u" : %.3e, "agn_tau_g" : %.3e, "agn_tau_r" : %.3e, "agn_tau_i" : %.3e, "agn_tau_z" : %.3e, "agn_tau_y" : %.3e}}'
+            varParamStr_format \
+                = ('{"m": "applyAgn", "p": {"seed": %d, '
+                   '"agn_sf_u": %.3e, "agn_sf_g": %.3e, "agn_sf_r": %.3e, '
+                   '"agn_sf_i": %.3e, "agn_sf_z": %.3e, "agn_sf_y": %.3e, '
+                   '"agn_tau_u" : %.3e, "agn_tau_g" : %.3e, "agn_tau_r" : %.3e, '
+                   '"agn_tau_i" : %.3e, "agn_tau_z" : %.3e, "agn_tau_y" : %.3e}}')
 
-            row_by_row = zip(galaxy_id, htmid, mag_norm, seed_arr,
-                             sf_dict['u'], 
-                             sf_dict['g'], 
-                             sf_dict['r'], 
+            row_by_row = zip(galaxy_id, htmid, mag_norm, redshift, abs_mag_i,
+                             ra, dec,
+                             seed_arr,
+                             sf_dict['u'],
+                             sf_dict['g'],
+                             sf_dict['r'],
                              sf_dict['i'],
-                             sf_dict['z'], 
+                             sf_dict['z'],
                              sf_dict['y'],
                              tau_dict['u'],
                              tau_dict['g'],
@@ -307,36 +318,42 @@ if __name__ == "__main__":
                              tau_dict['y'])
 
             vals = []
-            for (gal_id_i, htmid_i, mag_norm_i, seed_arr_i, 
-                sf_u, 
-                sf_g, 
-                sf_r, 
-                sf_i, 
-                sf_z, 
-                sf_y, 
-                tau_u, 
-                tau_g, 
-                tau_r, 
-                tau_i, 
-                tau_z, 
-                tau_y) in row_by_row:
+            for (gal_id_i, htmid_i, mag_norm_i, redshift_value, abs_mag_i_value,
+                 ra_value, dec_value,
+                 seed_arr_i,
+                 sf_u,
+                 sf_g,
+                 sf_r,
+                 sf_i,
+                 sf_z,
+                 sf_y,
+                 tau_u,
+                 tau_g,
+                 tau_r,
+                 tau_i,
+                 tau_z,
+                 tau_y) in row_by_row:
                 vals.append((int(gal_id_i), int(htmid_i), mag_norm_i,
+                             redshift_value, abs_mag_i_value,
+                             ra_value, dec_value,
                              varParamStr_format % (seed_arr_i,
-                                                   sf_u, 
-                                                   sf_g, 
-                                                   sf_r, 
-                                                   sf_i, 
-                                                   sf_z, 
-                                                   sf_y, 
-                                                   tau_u, 
-                                                   tau_g, 
-                                                   tau_r, 
-                                                   tau_i, 
-                                                   tau_z, 
+                                                   sf_u,
+                                                   sf_g,
+                                                   sf_r,
+                                                   sf_i,
+                                                   sf_z,
+                                                   sf_y,
+                                                   tau_u,
+                                                   tau_g,
+                                                   tau_r,
+                                                   tau_i,
+                                                   tau_z,
                                                    tau_y)
                              ))
 
-            cursor.executemany('INSERT INTO agn_params VALUES(?, ?, ?, ?)', vals)
+            cursor.executemany('INSERT INTO agn_params '
+                               'VALUES(?, ?, ?, ?, ?, ?, ?, ?)',
+                               vals)
             connection.commit()
 
         assert ct_simulated == full_size
