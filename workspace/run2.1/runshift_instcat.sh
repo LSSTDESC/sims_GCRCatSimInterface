@@ -11,10 +11,10 @@ export OMP_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 
-source scl_source enable devtoolset-6
+#source scl_source enable devtoolset-6
 source /opt/lsst/software/stack/loadLSST.bash
-setup -t w_2019_37 lsst_distrib
-setup -t sims_w_2019_37 lsst_sims
+setup -t w_2019_42 lsst_distrib
+setup -t sims_w_2019_42 lsst_sims
 setup -j -r $HOME/sims_GCRCatSimInterface
 setup -j -r $HOME/throughputs
 declare -i i_start
