@@ -399,7 +399,7 @@ class InstanceCatalogWriter(object):
                     duration = (time.time()-self.t_start)/3600.0
                     out_file.write('%d wrote knots catalog after %.3e hrs\n' %
                                    (obsHistID, duration))
-        else:
+        elif self.do_obj_type['knots']:
             # Creating empty knots component
             subprocess.check_call('cd %(full_out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
