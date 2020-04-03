@@ -58,7 +58,6 @@ def generate_instance_catalog(args=None, lock=None):
 
             generate_instance_catalog.instcat_writer = instcat_writer
 
-
         for obsHistID in args.ids:
             if args.job_log is not None:
                 if lock is not None:
@@ -80,7 +79,8 @@ def generate_instance_catalog(args=None, lock=None):
                                               fov=args.fov,
                                               status_dir=args.out_dir,
                                               pickup_file=pickup_file,
-                                              skip_tarball=args.skip_tarball)
+                                              skip_tarball=args.skip_tarball,
+                                              use_ddf_bounds=args.use_ddf_bounds)
 
             if args.job_log is not None:
                 if lock is not None:
@@ -155,6 +155,9 @@ if __name__ == "__main__":
                         help='directory to check for aborted job logs')
     parser.add_argument('--skip_tarball', default=False, action='store_true',
                         help='flag to skip making a tarball of the instance catalog folder')
+    parser.add_argument('--use_ddf_bounds', default=False, action='store_true',
+                        help='flag to restrict the instance catalog selection to a '
+                        'circle on the sky enclosing the DC2 DF region')
     args = parser.parse_args()
 
     if args.config_file is not None:
