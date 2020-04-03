@@ -73,11 +73,14 @@ def generate_instance_catalog(args=None, lock=None):
                 pickup_file = os.path.join(args.pickup_dir, 'job_log_%.8d.txt' % obsHistID)
                 config_dict['pickup_file'] = pickup_file
 
-            status_file_name = generate_instance_catalog.instcat_writer.write_catalog(obsHistID,
-                                                                   out_dir=args.out_dir,
-                                                                   fov=args.fov,
-                                                                   status_dir=args.out_dir,
-                                                                   pickup_file=pickup_file)
+            status_file_name \
+                = generate_instance_catalog \
+                .instcat_writer.write_catalog(obsHistID,
+                                              out_dir=args.out_dir,
+                                              fov=args.fov,
+                                              status_dir=args.out_dir,
+                                              pickup_file=pickup_file,
+                                              skip_tarball=args.skip_tarball)
 
             if args.job_log is not None:
                 if lock is not None:
@@ -150,6 +153,8 @@ if __name__ == "__main__":
                         help="file where we will write 'job started/completed' messages")
     parser.add_argument('--pickup_dir', type=str, default=None,
                         help='directory to check for aborted job logs')
+    parser.add_argument('--skip_tarball', default=False, action='store_true',
+                        help='flag to skip making a tarball of the instance catalog folder')
     args = parser.parse_args()
 
     if args.config_file is not None:

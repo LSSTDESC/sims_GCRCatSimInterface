@@ -254,7 +254,7 @@ class InstanceCatalogWriter(object):
         self.do_obj_type = {_: _ not in objects_to_skip for _ in object_types}
 
     def write_catalog(self, obsHistID, out_dir=None, fov=2, status_dir=None,
-                      pickup_file=None):
+                      pickup_file=None, skip_tarball=False):
         """
         Write the instance catalog for the specified obsHistID.
 
@@ -606,14 +606,16 @@ class InstanceCatalogWriter(object):
         for p in gzip_process_list:
             p.wait()
 
-        if has_status_file:
-            with open(status_file, 'a') as out_file:
-                out_file.write("%d tarring\n" % obsHistID)
-        p = subprocess.Popen(args=['tar', '-C', out_dir,
-                                   '-cf', tar_name, '%.8d' % obsHistID])
-        p.wait()
-        p = subprocess.Popen(args=['rm', '-rf', full_out_dir])
-        p.wait()
+        if not skip_tarball:
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write("%d tarring\n" % obsHistID)
+                    p = subprocess.Popen(args=['tar', '-C', out_dir,
+                                               '-cf', tar_name,
+                                               '%.8d' % obsHistID])
+            p.wait()
+            p = subprocess.Popen(args=['rm', '-rf', full_out_dir])
+            p.wait()
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
