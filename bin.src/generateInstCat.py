@@ -72,6 +72,11 @@ def generate_instance_catalog(args=None, lock=None):
                 pickup_file = os.path.join(args.pickup_dir, 'job_log_%.8d.txt' % obsHistID)
                 config_dict['pickup_file'] = pickup_file
 
+            if args.use_ddf_bounds:
+                region_bounds = (52.479, 53.771, -28.667, -27.533)
+            else:
+                region_bounds = None
+
             status_file_name \
                 = generate_instance_catalog \
                 .instcat_writer.write_catalog(obsHistID,
@@ -80,7 +85,7 @@ def generate_instance_catalog(args=None, lock=None):
                                               status_dir=args.out_dir,
                                               pickup_file=pickup_file,
                                               skip_tarball=args.skip_tarball,
-                                              use_ddf_bounds=args.use_ddf_bounds)
+                                              region_bounds=region_bounds)
 
             if args.job_log is not None:
                 if lock is not None:

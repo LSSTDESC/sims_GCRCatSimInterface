@@ -254,7 +254,7 @@ class InstanceCatalogWriter(object):
         self.do_obj_type = {_: _ not in objects_to_skip for _ in object_types}
 
     def write_catalog(self, obsHistID, out_dir=None, fov=2, status_dir=None,
-                      pickup_file=None, skip_tarball=False, use_ddf_bounds=False):
+                      pickup_file=None, skip_tarball=False, region_bounds=None):
         """
         Write the instance catalog for the specified obsHistID.
 
@@ -278,9 +278,10 @@ class InstanceCatalogWriter(object):
             sub-catalogs that did not complete.
         skip_tarball: bool [False]
             Flag to skip making a tarball out of the instance catalog folder.
-        use_ddf_bounds: bool [False]
-            Flag to reset the observation metadata pointing and bound length
-            to restrict to a sky cone enclosing the DC2 DDF region.
+        region_bounds: (float, float, float, float) [None]
+            Additional bounds on ra, dec to apply, specified by
+            `(ra_min, ra_max, dec_min, dec_max)`.  If None, then no
+            additional selection will be applied.
         """
 
         print('process %d doing %d' % (os.getpid(), obsHistID))
@@ -333,10 +334,8 @@ class InstanceCatalogWriter(object):
         if obs_md is None:
             return
 
-        if use_ddf_bounds:
-            obs_md.pointingRA = 53.125
-            obs_md.pointingDec = -28.10
-            obs_md.boundLength = 0.81
+        if region_bounds is not None:
+            obs_md.radec_bounds = region_bounds
 
         ExtraGalacticVariabilityModels.filters_to_simulate.clear()
         ExtraGalacticVariabilityModels.filters_to_simulate.extend(obs_md.bandpass)

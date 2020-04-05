@@ -236,7 +236,17 @@ class DESCQAChunkIterator(object):
                                          self._obs_metadata._pointingRA,
                                          self._obs_metadata._pointingDec)
 
-            self._data_indices = np.where(np.logical_and(prefilter_indices, ang_sep < radius_rad))[0]
+            condition = np.logical_and(prefilter_indices, ang_sep < radius_rad)
+            try:
+                ra_min, ra_max, dec_min, dec_max \
+                    = [np.radians(_) for _ in self._obs_metadata.radec_bounds]
+            except AttributeError:
+                pass
+            else:
+                condition &= ((ra_min <= ra) & (ra <= ra_max)
+                              & (dec_min <= dec) & (dec <= dec_max))
+
+            self._data_indices = np.where(condition)[0]
 
         if self._chunk_size is None:
             self._chunk_size = self._data_indices.size
@@ -314,9 +324,19 @@ class DESCQAChunkIterator_healpix(DESCQAChunkIterator):
                                          self._obs_metadata._pointingRA,
                                          self._obs_metadata._pointingDec)
 
-            valid_indices = np.where(np.logical_and(prefilter_indices,
-                                     np.logical_and(ra_dec['mag_r_lsst']<=29.0,
-                                                    ang_sep < radius_rad)))[0]
+            condition = np.logical_and(prefilter_indices,
+                                       np.logical_and(ra_dec['mag_r_lsst']<=29.0,
+                                                      ang_sep < radius_rad))
+            try:
+                ra_min, ra_max, dec_min, dec_max \
+                    = [np.radians(_) for _ in self._obs_metadata.radec_bounds]
+            except AttributeError:
+                pass
+            else:
+                condition &= ((ra_min <= ra) & (ra <= ra_max)
+                              & (dec_min <= dec) & (dec <= dec_max))
+
+            valid_indices = np.where(condition)[0]
             if len(valid_indices)>0:
                 self._healpix_and_indices_list.append((hp, healpix_filter, valid_indices))
 
