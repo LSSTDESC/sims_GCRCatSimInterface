@@ -8,10 +8,9 @@ from astropy.utils.iers import conf
 import numpy as np
 import pandas as pd
 import lsst.log
-import lsst.obs.lsst as obs_lsst
 import lsst.sphgeom
 from lsst.sims.utils import angularSeparation
-from lsst.sims.coordUtils import getCornerRaDec
+from lsst.sims.coordUtils import getCornerRaDec, lsst_camera
 from desc.sim_utils import DescObsMdGenerator
 
 conf.auto_max_age = None
@@ -84,7 +83,11 @@ print(f'{len(ddf_visits)} definite visits')
 print(f'processing {len(candidates)} candidate visits:')
 
 lsst.log.setLevel('CameraMapper', lsst.log.WARN)
-camera = obs_lsst.LsstCamMapper().camera
+
+camera = lsst_camera()
+corner_dets_0 = 'R:0,1 S:0,0^R:4,1 S:2,0^R:0,3 S:0,2^R:4,3 S:2,2'.split('^')
+corner_dets_1 = 'R:1,0 S:0,0^R:3,0 S:2,0^R:1,4 S:0,2^R:3,4 S:2,2'.split('^')
+
 obs_gen = DescObsMdGenerator(opsim_db_file)
 
 ddf_additional = set()
@@ -93,11 +96,8 @@ for i, visit in enumerate(candidates):
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         obs_md = obs_gen.create(visit)
-    for fp_polygon in \
-        [fp_convex_polygon('R01_S00 R41_S20 R03_S02 R43_S22'.split(),
-                           camera, obs_md),
-         fp_convex_polygon('R10_S00 R30_S20 R14_S02 R34_S22'.split(),
-                           camera, obs_md)]:
+    for fp_polygon in [fp_convex_polygon(corner_dets_0, camera, obs_md),
+                       fp_convex_polygon(corner_dets_1, camera, obs_md)]:
         if ddf_polygon.relate(fp_polygon) != lsst.sphgeom.DISJOINT:
             ddf_additional.add(visit)
             break
