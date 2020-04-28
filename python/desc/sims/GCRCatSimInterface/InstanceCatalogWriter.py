@@ -8,7 +8,6 @@ import copy
 import subprocess
 from collections import namedtuple
 import numpy as np
-import h5py
 import time
 
 from lsst.utils import getPackageDir
@@ -698,7 +697,8 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     """
     obs_md_list = obs_gen.getObservationMetaData(obsHistID=obsHistID,
                                                  boundType='circle',
-                                                 boundLength=fov)
+                                                 boundLength=fov,
+                                                 limit=1)
 
     if len(obs_md_list) == 0:
         print("There is no obsHistID == %d" % obsHistID)
