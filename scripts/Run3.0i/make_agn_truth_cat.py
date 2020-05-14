@@ -10,8 +10,8 @@ Metadata = namedtuple('Metadata', ['expMJD', 'band'])
 
 class AgnTruthCat:
     def __init__(self):
-        with sqlite3.connect('/global/cscratch1/sd/jchiang8/desc/Run2.2i/'
-                             'minion_1016_desc_dithered_v4_trimmed.db') \
+        with sqlite3.connect('/global/projecta/projectdirs/lsst/groups/SSim/'
+                             'DC2/minion_1016_desc_dithered_v4_trimmed.db') \
                              as conn:
             query = 'select obsHistID, expMJD, filter from summary'
             cursor = conn.execute(query)
@@ -21,6 +21,7 @@ class AgnTruthCat:
 
         self.sed_file = stc.find_sed_file('agnSED/agn.spec.gz')
         self.truth_cat = sqlite3.connect('agn_cosmoDC2_v1.1.4_ddf.db')
+
     def __call__(self, visit):
         mjd, band = self.md[visit]
         mjds = np.array([mjd])
@@ -47,6 +48,6 @@ class AgnTruthCat:
 
 if __name__ == '__main__':
     agn_truth_cat = AgnTruthCat()
-    visit = 709692
+    visit = 709680
     df = agn_truth_cat(visit)
     df.to_pickle(f'agn_fluxes_v{visit}.pkl')

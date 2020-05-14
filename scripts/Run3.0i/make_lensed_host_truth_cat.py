@@ -2,6 +2,7 @@ import os
 import glob
 from collections import namedtuple, defaultdict
 import sqlite3
+from astropy.io import fits
 import pandas as pd
 import lsst.sims.photUtils
 import desc.sims_truthcatalog as stc
@@ -10,8 +11,8 @@ Metadata = namedtuple('Metadata', ['expMJD', 'band'])
 
 class HostsTruthCat:
     def __init__(self, image_dir):
-        with sqlite3.connect('/global/cscratch1/sd/jchiang8/desc/Run2.2i/'
-                             'minion_1016_desc_dithered_v4_trimmed.db') \
+        with sqlite3.connect('/global/projecta/projectdirs/lsst/groups/SSim/'
+                             'DC2/minion_1016_desc_dithered_v4_trimmed.db') \
                              as conn:
             query = 'select obsHistID, expMJD, filter from summary'
             cursor = conn.execute(query)
@@ -19,8 +20,7 @@ class HostsTruthCat:
             for visit, expMJD, band in cursor:
                 self.md[visit] = Metadata(expMJD, band)
 
-        self.truth_cat = sqlite3.connect('/global/cscratch1/sd/brycek/'
-                                         'example_truth/host_truth.db')
+        self.truth_cat = sqlite3.connect('../truth_tables/host_truth.db')
         self.image_dir = image_dir
 
     def __call__(self, visit):
@@ -47,9 +47,9 @@ class HostsTruthCat:
         mag_norms = dict()
         filter_ = list('ugrizy').index(band)
         for item in files:
-            basename = os.path.basename(item)
-            tokens = basename.split('_')
-            mag_norms[tokens[0]] = float(tokens[filter_ + 1])
+            with fits.open(item) as hdus:
+                header = hdus[0].header
+                mag_norms[header['LENS_ID']] = header[f'MAGNORM{band.upper()}']
         return mag_norms
 
     def _process_df(self, df, band, data, component, host_type,
@@ -67,7 +67,7 @@ class HostsTruthCat:
             gRv = row['rv_mw']
             unique_id = f'{unique_sys_id}'# + component[0]
             sed_file = stc.find_sed_file(
-                row[f'sed_{component}_host'].decode('utf-8'))
+                row[f'sed_{component}_host'].lstrip('b').strip("'"))
             mag_norm = mag_norms[unique_sys_id]
             iAv = row[f'av_internal_{component}']
             iRv = row[f'rv_internal_{component}']
@@ -86,7 +86,7 @@ class HostsTruthCat:
         return data
 
 if __name__ == '__main__':
-    hosts_truth_cat = HostsTruthCat('../fits_lensed_stamps')
-    visit = 709692
+    hosts_truth_cat = HostsTruthCat('../FITS_stamps')
+    visit = 709680
     df = hosts_truth_cat(visit)
     df.to_pickle(f'host_fluxes_v{visit}.pkl')

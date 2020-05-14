@@ -9,8 +9,8 @@ Metadata = namedtuple('Metadata', ['expMJD', 'band'])
 
 class LensedSneTruthCat:
     def __init__(self):
-        with sqlite3.connect('/global/cscratch1/sd/jchiang8/desc/Run2.2i/'
-                             'minion_1016_desc_dithered_v4_trimmed.db') \
+        with sqlite3.connect('/global/projecta/projectdirs/lsst/groups/SSim/'
+                             'DC2/minion_1016_desc_dithered_v4_trimmed.db') \
                              as conn:
             query = 'select obsHistID, expMJD, filter from summary'
             cursor = conn.execute(query)
@@ -18,8 +18,8 @@ class LensedSneTruthCat:
             for visit, expMJD, band in cursor:
                 self.md[visit] = Metadata(expMJD, band)
 
-        self.truth_cat = sqlite3.connect('/global/cscratch1/sd/brycek/'
-                                         'example_truth/sne_truth.db')
+        self.truth_cat = sqlite3.connect('../truth_tables/'
+                                         'updated_lensed_sne_truth.db')
     def __call__(self, visit):
         mjd, band = self.md[visit]
         query = f'''select unique_id, ra, dec, redshift, t_delay,
@@ -43,6 +43,6 @@ class LensedSneTruthCat:
 
 if __name__ == '__main__':
     lensed_sne_truth_cat = LensedSneTruthCat()
-    visit = 709692
+    visit = 709680
     df = lensed_sne_truth_cat(visit)
     df.to_pickle(f'lensed_sne_fluxes_v{visit}.pkl')

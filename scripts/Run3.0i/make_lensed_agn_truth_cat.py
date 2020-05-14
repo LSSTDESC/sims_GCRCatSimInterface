@@ -9,8 +9,8 @@ Metadata = namedtuple('Metadata', ['expMJD', 'band'])
 
 class LensedAgnTruthCat:
     def __init__(self):
-        with sqlite3.connect('/global/cscratch1/sd/jchiang8/desc/Run2.2i/'
-                             'minion_1016_desc_dithered_v4_trimmed.db') \
+        with sqlite3.connect('/global/projecta/projectdirs/lsst/groups/SSim/'
+                             'DC2/minion_1016_desc_dithered_v4_trimmed.db') \
                              as conn:
             query = 'select obsHistID, expMJD, filter from summary'
             cursor = conn.execute(query)
@@ -19,8 +19,9 @@ class LensedAgnTruthCat:
                 self.md[visit] = Metadata(expMJD, band)
 
         self.sed_file = stc.find_sed_file('agnSED/agn.spec.gz')
-        self.truth_cat = sqlite3.connect('/global/cscratch1/sd/brycek/'
-                                         'example_truth/agn_truth.db')
+        self.truth_cat = sqlite3.connect('../truth_tables/'
+                                         'updated_lensed_agn_truth.db')
+
     def __call__(self, visit):
         mjd, band = self.md[visit]
         query = f'''select unique_id, ra, dec, redshift, t_delay, magnorm,
@@ -32,7 +33,7 @@ class LensedAgnTruthCat:
             (unique_id, ra, dec, z, t_delay, magnorm, magnification,
              seed, tau, sf, av, rv, lens_cat_sys_id) = row
             mjds = np.array([mjd - t_delay])
-            magnorm += (stc.agn_mag_norms(mjds, z, tau, sf, seed)[0]
+            magnorm += (stc.agn_mag_norms(mjds, z, tau, sf, seed, start_date=58350.)[0]
                         - 2.5*np.log10(np.abs(magnification)))
             synth_phot = stc.SyntheticPhotometry(self.sed_file, magnorm, z,
                                                  gAv=av, gRv=rv)
@@ -46,6 +47,6 @@ class LensedAgnTruthCat:
 
 if __name__ == '__main__':
     lensed_agn_truth_cat = LensedAgnTruthCat()
-    visit = 709692
+    visit = 709680
     df = lensed_agn_truth_cat(visit)
     df.to_pickle(f'lensed_agn_fluxes_v{visit}.pkl')
