@@ -603,7 +603,7 @@ class InstanceCatalogWriter(object):
             full_name = os.path.join(full_out_dir, orig_name)
             if not os.path.exists(full_name):
                 continue
-            p = subprocess.Popen(args=['gzip', full_name])
+            p = subprocess.Popen(args=['gzip', '-f', full_name])
             gzip_process_list.append(p)
 
             if len(gzip_process_list) >= self.gzip_threads:
