@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 from collections import namedtuple, defaultdict
 import sqlite3
@@ -11,8 +12,8 @@ Metadata = namedtuple('Metadata', ['expMJD', 'band'])
 
 class HostsTruthCat:
     def __init__(self, image_dir):
-        with sqlite3.connect('/global/projecta/projectdirs/lsst/groups/SSim/'
-                             'DC2/minion_1016_desc_dithered_v4_trimmed.db') \
+        with sqlite3.connect('/global/cfs/cdirs/descssim/DC2/'
+                             'minion_1016_desc_dithered_v4_trimmed.db') \
                              as conn:
             query = 'select obsHistID, expMJD, filter from summary'
             cursor = conn.execute(query)
@@ -20,7 +21,9 @@ class HostsTruthCat:
             for visit, expMJD, band in cursor:
                 self.md[visit] = Metadata(expMJD, band)
 
-        self.truth_cat = sqlite3.connect('../truth_tables/host_truth.db')
+        self.truth_cat = sqlite3.connect('/global/cfs/cdirs/descssim/DC2/'
+                                         'Run3.0i/truth_tables/'
+                                         'host_truth.db')
         self.image_dir = image_dir
 
     def __call__(self, visit):
@@ -86,7 +89,8 @@ class HostsTruthCat:
         return data
 
 if __name__ == '__main__':
-    hosts_truth_cat = HostsTruthCat('../FITS_stamps')
-    visit = 709680
+    hosts_truth_cat = HostsTruthCat('/global/cfs/cdirs/descssim/DC2/Run3.0i/'
+                                    'FITS_stamps')
+    visit = int(sys.argv[1])
     df = hosts_truth_cat(visit)
     df.to_pickle(f'host_fluxes_v{visit}.pkl')

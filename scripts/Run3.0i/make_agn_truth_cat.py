@@ -4,14 +4,15 @@ import json
 import sqlite3
 import numpy as np
 import pandas as pd
+import lsst.sims.photUtils as sims_photUtils
 import desc.sims_truthcatalog as stc
 
 Metadata = namedtuple('Metadata', ['expMJD', 'band'])
 
 class AgnTruthCat:
     def __init__(self):
-        with sqlite3.connect('/global/projecta/projectdirs/lsst/groups/SSim/'
-                             'DC2/minion_1016_desc_dithered_v4_trimmed.db') \
+        with sqlite3.connect('/global/cfs/cdirs/descssim/DC2/'
+                             'minion_1016_desc_dithered_v4_trimmed.db') \
                              as conn:
             query = 'select obsHistID, expMJD, filter from summary'
             cursor = conn.execute(query)
@@ -20,7 +21,13 @@ class AgnTruthCat:
                 self.md[visit] = Metadata(expMJD, band)
 
         self.sed_file = stc.find_sed_file('agnSED/agn.spec.gz')
-        self.truth_cat = sqlite3.connect('agn_cosmoDC2_v1.1.4_ddf.db')
+        self.truth_cat = sqlite3.connect('/global/cfs/cdirs/descssim/DC2/'
+                                         'Run3.0i/agn_cosmoDC2_v1.1.4_ddf.db')
+        self.photParams = sims_photUtils.PhotometricParameters(nexp=1,
+                                                               exptime=30,
+                                                               gain=1)
+        self.bp_dict \
+            = sims_photUtils.BandpassDict.loadTotalBandpassesFromFiles()
 
     def __call__(self, visit):
         mjd, band = self.md[visit]
@@ -43,11 +50,13 @@ class AgnTruthCat:
             data['ra'].append(ra)
             data['dec'].append(dec)
             data['flux'].append(synth_phot.calcFlux(band))
+            data['adu'].append(synth_phot.sed.calcADU(self.bp_dict[band],
+                                                      self.photParams))
         return pd.DataFrame(data=data)
 
 
 if __name__ == '__main__':
     agn_truth_cat = AgnTruthCat()
-    visit = 709680
+    visit = int(sys.argv[1])
     df = agn_truth_cat(visit)
     df.to_pickle(f'agn_fluxes_v{visit}.pkl')

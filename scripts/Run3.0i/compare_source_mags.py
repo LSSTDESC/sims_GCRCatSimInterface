@@ -109,7 +109,7 @@ if __name__ == '__main__':
     repo = 'repo_lensed_sne'
     butler = dp.Butler(repo)
 
-    visit = 709680
+    visit = 906935
     band = 'i'
 
     outfile = f'src_truth_match_v{visit}-{band}.pkl'
