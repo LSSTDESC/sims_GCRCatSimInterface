@@ -8,7 +8,6 @@ import copy
 import subprocess
 from collections import namedtuple
 import numpy as np
-import h5py
 import time
 
 from lsst.utils import getPackageDir
@@ -254,7 +253,7 @@ class InstanceCatalogWriter(object):
         self.do_obj_type = {_: _ not in objects_to_skip for _ in object_types}
 
     def write_catalog(self, obsHistID, out_dir=None, fov=2, status_dir=None,
-                      pickup_file=None):
+                      pickup_file=None, skip_tarball=False, region_bounds=None):
         """
         Write the instance catalog for the specified obsHistID.
 
@@ -269,13 +268,19 @@ class InstanceCatalogWriter(object):
         fov: float [2.]
             Field-of-view angular radius in degrees.  2 degrees will cover
             the LSST focal plane.
-        status_dir: str
+        status_dir: str [None]
             The directory in which to write the log file recording this job's
             progress.
-        pickup_file: str
+        pickup_file: str [None]
             The path to an aborted log file (the file written to status_dir).
             This job will resume where that one left off, only simulating
             sub-catalogs that did not complete.
+        skip_tarball: bool [False]
+            Flag to skip making a tarball out of the instance catalog folder.
+        region_bounds: (float, float, float, float) [None]
+            Additional bounds on ra, dec to apply, specified by
+            `(ra_min, ra_max, dec_min, dec_max)`.  If None, then no
+            additional selection will be applied.
         """
 
         print('process %d doing %d' % (os.getpid(), obsHistID))
@@ -327,6 +332,9 @@ class InstanceCatalogWriter(object):
 
         if obs_md is None:
             return
+
+        if region_bounds is not None:
+            obs_md.radec_bounds = region_bounds
 
         ExtraGalacticVariabilityModels.filters_to_simulate.clear()
         ExtraGalacticVariabilityModels.filters_to_simulate.extend(obs_md.bandpass)
@@ -399,7 +407,7 @@ class InstanceCatalogWriter(object):
                     duration = (time.time()-self.t_start)/3600.0
                     out_file.write('%d wrote knots catalog after %.3e hrs\n' %
                                    (obsHistID, duration))
-        else:
+        elif self.do_obj_type['knots']:
             # Creating empty knots component
             subprocess.check_call('cd %(full_out_dir)s; touch %(knots_name)s' % locals(), shell=True)
 
@@ -595,7 +603,7 @@ class InstanceCatalogWriter(object):
             full_name = os.path.join(full_out_dir, orig_name)
             if not os.path.exists(full_name):
                 continue
-            p = subprocess.Popen(args=['gzip', full_name])
+            p = subprocess.Popen(args=['gzip', '-f', full_name])
             gzip_process_list.append(p)
 
             if len(gzip_process_list) >= self.gzip_threads:
@@ -606,14 +614,16 @@ class InstanceCatalogWriter(object):
         for p in gzip_process_list:
             p.wait()
 
-        if has_status_file:
-            with open(status_file, 'a') as out_file:
-                out_file.write("%d tarring\n" % obsHistID)
-        p = subprocess.Popen(args=['tar', '-C', out_dir,
-                                   '-cf', tar_name, '%.8d' % obsHistID])
-        p.wait()
-        p = subprocess.Popen(args=['rm', '-rf', full_out_dir])
-        p.wait()
+        if not skip_tarball:
+            if has_status_file:
+                with open(status_file, 'a') as out_file:
+                    out_file.write("%d tarring\n" % obsHistID)
+                    p = subprocess.Popen(args=['tar', '-C', out_dir,
+                                               '-cf', tar_name,
+                                               '%.8d' % obsHistID])
+            p.wait()
+            p = subprocess.Popen(args=['rm', '-rf', full_out_dir])
+            p.wait()
 
         if has_status_file:
             with open(status_file, 'a') as out_file:
@@ -687,7 +697,8 @@ def get_obs_md(obs_gen, obsHistID, fov=2, dither=True):
     """
     obs_md_list = obs_gen.getObservationMetaData(obsHistID=obsHistID,
                                                  boundType='circle',
-                                                 boundLength=fov)
+                                                 boundLength=fov,
+                                                 limit=1)
 
     if len(obs_md_list) == 0:
         print("There is no obsHistID == %d" % obsHistID)
