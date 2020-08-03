@@ -47,21 +47,6 @@ class GenerateInstcat:
         phosim_cat_file = os.path.join(self.instcat_dir, visit_dir,
                                        f'phosim_cat_{visit}.txt')
 
-#        # Strongly lensed AGNs
-#        agn_truth_cat = os.path.join(self.config['truth_table_dir'],
-#                                     self.config['agn_truth_cat_basename'])
-#        file_out = os.path.join(self.instcat_dir, visit_dir,
-#                                f'lensed_agn_{visit}.txt')
-#        commands.append(f'time python {self.script_dir}/create_agn_ic.py '
-#                        f'--obs_db {self.opsim_db_file} '
-#                        f'--obs_id {visit} '
-#                        f'--agn_truth_cat {agn_truth_cat} '
-#                        f'--file_out {file_out}')
-#        commands.append(f'gzip -f {file_out}')
-#        commands.append(f'echo "includeobj {os.path.basename(file_out)}.gz" '
-#                        f'>> {phosim_cat_file}')
-#        commands.append('echo')
-
         # Strongly lensed SNe
         sne_truth_cat = os.path.join(self.config['truth_table_dir'],
                                      self.config['sne_truth_cat_basename'])
@@ -77,24 +62,6 @@ class GenerateInstcat:
                         f'--cat_file_name {cat_file_name}')
         commands.append(f'gzip -f {file_out}')
         commands.append(f'rm {phosim_cat_file}')
-
-#        # Lensed host galaxies
-#        host_truth_cat = os.path.join(self.config['truth_table_dir'],
-#                                      self.config['host_truth_cat_basename'])
-#        fits_stamp_dir = self.config['fits_stamp_dir']
-#        file_out = os.path.join(self.instcat_dir, visit_dir,
-#                                f'lensed_hosts_{visit}.txt')
-#        commands.append('time python '
-#                        f'{self.script_dir}/create_lensed_host_ic.py '
-#                        f'--obs_db {self.opsim_db_file} '
-#                        f'--obs_id {visit} '
-#                        f'--fov {self.fov} '
-#                        f'--host_truth_cat {host_truth_cat} '
-#                        f'--fits_stamp_dir {fits_stamp_dir} '
-#                        f'--file_out {file_out}')
-#        commands.append(f'gzip -f {file_out}')
-#        commands.append(f'echo "includeobj {os.path.basename(file_out)}.gz" '
-#                        f'>> {phosim_cat_file}')
 
         command = ';\n'.join(commands)
         if os.path.isfile(file_out + '.gz'):
