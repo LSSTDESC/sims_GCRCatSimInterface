@@ -302,7 +302,7 @@ def lensed_sersic_2d(xi1, xi2, yi1, yi2, source_cat, lens_cat):
     g_limage = ole.sersic_2d(yi1,yi2,ysc1,ysc2,Reff_arc,qs,phs,ndex)
     g_source = ole.sersic_2d(xi1,xi2,ysc1,ysc2,Reff_arc,qs,phs,ndex)
 
-    mag_lensed = mag_tot - 2.5*np.log(np.sum(g_limage)/np.sum(g_source))
+    mag_lensed = mag_tot - 2.5*np.log10(np.sum(g_limage)/np.sum(g_source))
 
     return mag_lensed, g_limage
 
@@ -360,7 +360,7 @@ def generate_lensed_host(xi1, xi2, lens_P, srcP_b, srcP_d):
 
     os.makedirs(os.path.join(outdir,'sne_lensed_disks'), exist_ok=True)
 
-    fits_limg_d = os.path.join(outdir,'sne_lensed_disks/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_b) + "_disk.fits" #\
+    fits_limg_d = os.path.join(outdir,'sne_lensed_disks/') + str(lens_P['UID_lens']) + "_" + str(lensed_mag_d) + "_disk.fits" #\
 
     pyfits.writeto(fits_limg_d, lensed_image_d.astype("float32"), overwrite=True)
 
