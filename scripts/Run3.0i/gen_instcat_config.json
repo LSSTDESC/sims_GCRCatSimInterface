@@ -1,0 +1,20 @@
+{
+    "gzip_threads": 1,
+    "objects_to_skip": "stars disks bulges knots sprinkled sne",
+    "descqa_catalog": "cosmoDC2_v1.1.4_DDF_combined_agn",
+    "sed_lookup_dir": "/global/cfs/cdirs/descssim/DC2/cosmoDC2_v1.1.4/sedLookup",
+    "db": "/global/cfs/cdirs/descssim/DC2/minion_1016_desc_dithered_v4_trimmed.db",
+    "agn_db_name": "/global/cfs/cdirs/descssim/DC2/Run3.0i/agn_cosmoDC2_v1.1.4_ddf.db",
+    "star_db_name": "/global/cfs/cdirs/descssim/DC2/dc2_stellar_db.db",
+    "skip_tarball": true,
+    "use_ddf_bounds": true,
+    "enable_sprinkler": false,
+    "instcat_dir": "instcats_2020-05-22",
+    "fov": 2.05,
+    "slsprinkler_dir": "/global/cscratch1/sd/jchiang8/desc/Run3.0i/SLSprinkler",
+    "truth_table_dir": "/global/cfs/cdirs/descssim/DC2/Run3.0i/truth_tables",
+    "agn_truth_cat_basename": "updated_lensed_agn_truth.db",
+    "sne_truth_cat_basename": "updated_lensed_sne_truth.db",
+    "host_truth_cat_basename": "host_truth.db",
+    "fits_stamp_dir": "/global/cfs/cdirs/descssim/DC2/Run3.0i/FITS_stamps"
+}
